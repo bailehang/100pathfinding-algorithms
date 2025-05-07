@@ -15,8 +15,6 @@ from matplotlib.patches import Rectangle
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) +
                 "/../../Search_based_Planning/")
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) +
-                "/../../")
 
 from Search_2D import plotting, env
 # Removed Reed-Shepp import as it has dependency issues
@@ -38,7 +36,7 @@ class VehicleModel:
         self.width = 1.2   # [m] - reduced width
         
         # Motion resolution
-        self.ds = 0.3  # Step size [m] - decreased for finer resolution with forward-only movement
+        self.ds = 1.0  # Step size [m] - decreased for finer resolution with forward-only movement
         
         # Steering discretization
         self.n_steer = 9  # Number of steering angles - increased for more steering options
@@ -629,7 +627,7 @@ def main():
         plt.ion()
         
         # Create a figure for animation
-        fig = plt.figure(figsize=(10, 6))
+        fig = plt.figure()
         
         # First, demonstrate the search process
         print("Animating search process...")
@@ -641,19 +639,19 @@ def main():
         for i in range(0, len(visited), batch_size):
             plt.clf()
             plot.plot_grid("Hybrid A* Search Process")
-            
+
             # Plot visited nodes so far
             vis_x = [v[0] for v in visited[:i+batch_size]]
             vis_y = [v[1] for v in visited[:i+batch_size]]
             plt.plot(vis_x, vis_y, ".c", markersize=1, label="Explored")
-            
+
             # Plot current exploration frontier
             if i > 0:
                 frontier_x = [v[0] for v in visited[i:i+batch_size]]
                 frontier_y = [v[1] for v in visited[i:i+batch_size]]
                 if frontier_x:  # Check if there are any frontier points
                     plt.plot(frontier_x, frontier_y, ".g", markersize=2, label="Frontier")
-            
+
             plt.axis("equal")
             plt.grid(True)
             if i == 0:
