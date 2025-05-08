@@ -1,6 +1,6 @@
 """
 D_star 2D
-@author: huiming zhou
+@author: clark bai
 """
 
 import os
@@ -68,7 +68,28 @@ class DStar:
             print("Please choose right area!")
         else:
             x, y = int(x), int(y)
-            if (x, y) not in self.obs:
+            if (x, y) in self.obs:
+                print("Remove obstacle at: s =", x, ",", "y =", y)
+                self.obs.remove((x, y))
+                self.Plot.update_obs(self.obs)
+
+                s = self.s_start
+                self.visited = set()
+                self.count += 1
+
+                while s != self.s_goal:
+                    if self.is_collision(s, self.PARENT[s]):
+                        self.modify(s)
+                        continue
+                    s = self.PARENT[s]
+
+                self.path = self.extract_path(self.s_start, self.s_goal)
+
+                plt.cla()
+                self.Plot.plot_grid("Dynamic A* (D*)")
+                self.plot_visited(self.visited)
+                self.plot_path(self.path)
+            elif (x, y) not in self.obs:
                 print("Add obstacle at: s =", x, ",", "y =", y)
                 self.obs.add((x, y))
                 self.Plot.update_obs(self.obs)
