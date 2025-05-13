@@ -46,6 +46,8 @@ Manual review and inspection.
                 -   Botea, Müller, Schaeffer (2004)
             -   **并行 A\* (Parallel A\*)**
                 -   Zhou & Zeng (2015)
+            -   **Hybrid A\***
+                -   Dolgov, Thrun, Montemerlo, Diebel (2008)
     -   **实时/动态启发式搜索 (Real-time/Dynamic Heuristic Search)**
         -   **LRTA\* (Learning Real-time A\*)**
             -   Korf (1990)
@@ -58,6 +60,8 @@ Manual review and inspection.
                 -   Koenig & Likhachev (2002)
             -   **Anytime D\***
                 -   Likhachev, Ferguson, Gordon, Stentz, Thrun (2005)
+            -   **Field D\***
+                -   Ferguson & Stentz (2007)
         -   **LPA\* (Lifelong Planning A\*)**
             -   Koenig, Likhachev, Furcy (2004)
         -   **ARA\* (Anytime Repairing A\*)**
@@ -76,8 +80,6 @@ Manual review and inspection.
                 -   Li, Wen, Wang, Zhang (2020)
             -   **Adaptive Theta\***
                 -   Ferguson & Stentz (2006)
-        -   **Field D\***
-            -   Ferguson & Stentz (2007)
         -   **JPS 家族 (Jump Point Search Family)**
             -   **JPS (Jump Point Search)**
                 -   Harabor & Grastien (2011)
@@ -161,9 +163,6 @@ Manual review and inspection.
     -   Dubins (1957)
 -   **Reeds-Shepp 曲线 (Reeds-Shepp Curves)**
     -   Reeds & Shepp (1990)
--   **特定应用优化 (Application-Specific Optimization)**
-    -   **Hybrid A\***
-        -   Dolgov, Thrun, Montemerlo, Diebel (2008)
 -   **车辆路径问题 (Vehicle Routing Problem - VRP)**
     -   Dantzig & Ramser (1959)
 
