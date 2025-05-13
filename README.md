@@ -22,6 +22,8 @@ Manual review and inspection.
 
 # Contents
 
+![Contents](images/Contents.png)
+
 ## 一、图搜索算法 (Graph Search Algorithms)
 -   **基础搜索 (Uninformed Search)**
     -   **广度优先搜索 (Breadth-First Searching - BFS)**
