@@ -2,95 +2,201 @@
 
 Based on the previous work of people, I am very interested in further summarizing all the pathfinding algorithms.
 
-
+## env
 python3.12
 pip install matplotlib
 
-Reference & Thanks
+## Thanks
+
+zju Prof. FeiGao
 
 https://github.com/zhm-real/PathPlanning
 
 https://github.com/ai-winter/ros_motion_planning
 
+## Warning
+AI assistance has been used in this article, mainly using 
+Claude 3.7, Doubao, ChatGPT for in-depth research and Manus.
+Manual review and inspection.
 
+-------------------
 
+# 路径规划算法脑图
 
+## 一、图搜索算法 (Graph Search Algorithms)
+-   **基础搜索 (Uninformed Search)**
+    -   **广度优先搜索 (Breadth-First Searching - BFS)**
+        -   Moore (1959), Lee (1961)
+    -   **深度优先搜索 (Depth-First Search - DFS)**
+        -   Trémaux (1882), Hopcroft & Tarjan (1973)
+-   **启发式搜索 (Informed/Heuristic Search)**
+    -   **最佳优先搜索 (Best-First Search - GBFS)**
+        -   Doran & Michie (1966), Pearl (1984) (概念性)
+    -   **Dijkstra 算法**
+        -   Dijkstra (1959)
+    -   **A\* 算法 (A\* Algorithm)**
+        -   Hart, Nilsson, Raphael (1968)
+        -   **A\* 变体与扩展 (A\* Variants & Extensions)**
+            -   **加权 A\* (Weighted A\*)**
+                -   Pohl (1970)
+            -   **双向 A\* (Bidirectional A\*)**
+                -   Pohl (1971)
+            -   **分层 A\* (Hierarchical A\* - HPA\*)**
+                -   Botea, Müller, Schaeffer (2004)
+            -   **并行 A\* (Parallel A\*)**
+                -   Zhou & Zeng (2015)
+    -   **实时/动态启发式搜索 (Real-time/Dynamic Heuristic Search)**
+        -   **LRTA\* (Learning Real-time A\*)**
+            -   Korf (1990)
+        -   **D\* 家族 (D\* Family)**
+            -   **D\* (Dynamic A\*)**
+                -   Stentz (1994)
+            -   **Focused D\***
+                -   Stentz (1995)
+            -   **D\* Lite**
+                -   Koenig & Likhachev (2002)
+            -   **Anytime D\***
+                -   Likhachev, Ferguson, Gordon, Stentz, Thrun (2005)
+        -   **LPA\* (Lifelong Planning A\*)**
+            -   Koenig, Likhachev, Furcy (2004)
+        -   **ARA\* (Anytime Repairing A\*)**
+            -   Likhachev, Gordon, Thrun (2003)
+        -   **RTAA\* (Real-time Adaptive A\*)**
+            -   Koenig & Likhachev (2006)
+    -   **任意角度路径规划 (Any-Angle Path Planning)**
+        -   **Theta\* 家族 (Theta\* Family)**
+            -   **Theta\***
+                -   Nash, Daniel, Koenig, Felner (2007)
+            -   **Lazy Theta\***
+                -   Nash, Koenig, Tovey (2010)
+            -   **S-Theta\***
+                -   Tang, Chen, Wu, Zhang, Chen (2021)
+            -   **Enhanced Theta\***
+                -   Li, Wen, Wang, Zhang (2020)
+            -   **Adaptive Theta\***
+                -   Ferguson & Stentz (2006)
+        -   **Field D\***
+            -   Ferguson & Stentz (2007)
+        -   **JPS 家族 (Jump Point Search Family)**
+            -   **JPS (Jump Point Search)**
+                -   Harabor & Grastien (2011)
+            -   **JPS+**
+                -   Harabor & Grastien (2012)
+            -   **JPS++**
+                -   Pochter, Zohar, Rosenschein, Sturtevant (2012)
+            -   **欧几里得 JPS (Euclidean JPS - EJPS)**
+                -   Strasser, Botea, Harabor (2016)
+            -   **分层 JPS (Hierarchical JPS - HJPS)**
+                -   Harabor & Grastien (2014)
+            -   **动态 JPS (Dynamic JPS)**
+                -   Papadakis (2013)
+            -   **JPS-Lite**
+                -   Gong, Zhang, Wang, Wang (2019)
+            -   **自适应 JPS (Adaptive JPS)**
+                -   Su, Hsueh (2016)
+    -   **格网规划 (Lattice Planning)**
+        -   Pivtoraiko, Kelly (2005), Likhachev & Ferguson (2009)
 
-| 编号 | 缩写         | 英文全称                          | 中文名        | 发表时间 | 发表人                                       | 论文名                                                                    |
-|------|--------------|---------------------------------|--------------|----------|--------------------------------------------|-------------------------------------------------------------------------|
-| 001  | BFS          | Breadth-First Search            | 广度优先搜索     | 1959     | **E. F. Moore**                           | *The Shortest Path Through a Maze*                                     |
-| 002  | DFS          | Depth-First Search              | 深度优先搜索     | 1972     | **R. E. Tarjan**                          | *Depth-First Search and Linear Graph Algorithms*                       |
-| 003  | GBFS         | Greedy Best-First Search        | 贪婪最佳优先搜索   | 1966     | **B. W. Doran & D. Michie**               | *Experiments with the Graph Traverser Program*                         |
-| 004  | Dijkstra     | Dijkstra’s Algorithm            | Dijkstra算法 | 1959     | **E. W. Dijkstra**                        | *A Note on Two Problems in Connexion with Graphs*                      |
-| 005  | A*           | A* Search                      | A* 搜索     | 1968     | **P. E. Hart, N. J. Nilsson, B. Raphael** | *A Formal Basis for the Heuristic Determination of Minimum Cost Paths* |
-| 006  | Bi-A*        | Bidirectional A*                | 双向 A*     | 1969     | **I. Pohl**                               | *Bi-Directional Heuristic Search in Path Problems*                     |
-| 007  | WA*          | Weighted A*                    | 加权 A*     | 1970     | **I. Pohl**                               | *Heuristic Path Algorithm (HPA) – Weighted A***                       |
-| 008  | HPA*         | Hierarchical Path-Finding A*    | 分层 A*     | 2004     | **A. Botea, M. Müller, J. Schaeffer**     | *Near-Optimal Hierarchical Path-Finding (HPA*)*                       |
-| 009  | PA*          | Parallel A*                    | 并行 A*     | 1987     | **V. N. Rao & V. Kumar**                  | *Parallel Best-First Search of State-Space Graphs*                     |
-| 010  | Hybrid A*    | Hybrid A*                      | 混合 A*     | 2008     | **D. Dolgov, S. Thrun et al.**            | *Practical Search Techniques in Path Planning for Autonomous Driving*  |
-| 011  | LRTA*        | Learning Real-Time A*           | 实时学习 A*   | 1990     | **R. E. Korf**                            | *Real-Time Heuristic Search (LRTA*)*                                  |
-| 012  | Repair A*    | Repairing A*                   | 修复 A*     | 1994     | **A. Stentz**                             | *Optimal and Efficient Path Planning for Partially-Known Environments* |
-| 013  | LPA*         | Lifelong Planning A*           | 终身规划 A*   | 2001     | **S. Koenig & M. Likhachev**              | *Lifelong Planning A**                                                |
-| 014  | ARA*         | Anytime Repairing A*          | 任意时修复 A*  | 2003     | **M. Likhachev, G. Gordon, S. Thrun**     | *ARA*: Anytime A* with Provable Bounds on Sub-Optimality*            |
-| 015  | RTAA*        | Real-Time Adaptive A*          | 实时自适应 A*  | 2006     | **S. Koenig & X. Sun**                    | *Real-Time Adaptive A**                                               |
-| 016  | D*           | Dynamic A*                     | 动态 A*     | 1994     | **A. Stentz**                             | *Optimal and Efficient Path Planning for Partially-Known Environments* |
-| 017  | Foc. D*      | Focused D*                     | 焦点 D*     | 1995     | **A. Stentz**                             | *The Focused D* Algorithm for Real-Time Replanning*                   |
-| 018  | D* Lite     | D* Lite                       | D* Lite     | 2002     | **S. Koenig & M. Likhachev**              | *D* Lite*                                                             |
-| 019  | Any-D*       | Anytime D*                     | 任意时 D*    | 2005     | **M. Likhachev & D. Ferguson**            | *Anytime Dynamic A* (AD*)*                                           |
-| 020  | Field D*     | Field D*                       | 场域 D*      | 2006     | **D. Ferguson & A. Stentz**               | *Field D*: An Interpolation-Based Path Planner and Replanner*         |
+## 二、基于采样的路径规划 (Sampling-Based Path Planning)
+-   **随机路径规划 (Random Path Planning - RPP)**
+    -   Barraquand & Latombe (1991)
+-   **快速扩展随机树 (Rapidly-Exploring Random Trees - RRT)**
+    -   **基础 RRT (Basic RRT)**
+        -   LaValle (1998)
+    -   **目标偏向 RRT (Goal-bias RRT)**
+        -   LaValle & Kuffner (2001) 
+    -   **RRT-Connect**
+        -   Kuffner & LaValle (2000)
+    -   **动态 RRT (Dynamic RRT)**
+        -   Ferguson, Howard, Likhachev (2008)
+    -   **RRT-Dubins (考虑运动学约束)**
+        -   LaValle & Kuffner (2001) (Dubins with RRT)
+-   **最优快速扩展随机树 (Optimal RRTs)**
+    -   **RRT\***
+        -   Karaman & Frazzoli (2011)
+    -   **Informed RRT\***
+        -   Gammell, Srinivasa, Barfoot (2014)
 
-规划中
+## 三、智能优化算法 (Intelligent Optimization Algorithms)
+-   **蚁群优化 (Ant Colony Optimization - ACO)**
+    -   Dorigo, Maniezzo, Colorni (1991, 1996), Dorigo & Di Caro (1999)
+-   **遗传算法 (Genetic Algorithm - GA)**
+    -   Holland (1975/1992)
+-   **粒子群优化 (Particle Swarm Optimization - PSO)**
+    -   Kennedy & Eberhart (1995)
 
+## 四、反应式与几何规划 (Reactive & Geometric Planning)
+-   **人工势场法 (Artificial Potential Field - APF)**
+    -   Khatib (1986)
+-   **动态窗口法 (Dynamic Window Approach - DWA)**
+    -   Fox, Burgard, Thrun (1997)
+-   **向量场直方图 (Vector Field Histogram - VFH)**
+    -   Borenstein & Koren (1991)
+-   **Voronoi 图方法 (Voronoi Diagram Methods)**
+    -   **基础 Voronoi 图 (Basic Voronoi Diagram)**
+        -   Voronoi (1908), Shamos & Hoey (1975) 
+    -   **Voronoi 场 (Voronoi Field)**
+        -   Okabe, Boots, Sugihara, Chiu (2000) 
+    -   **加权 Voronoi 图 (Weighted Voronoi Diagram)**
+        -   Aurenhammer & Edelsbrunner (1984)
+    -   **模糊 Voronoi 图 (Fuzzy Voronoi Diagram)**
+        -   Jooyandeh, Mohades Khorasani (2008)
+    -   **自适应 Voronoi 场 (Adaptive Voronoi Field)**
+        -   Garrido, Moreno, Blanco, Medina (2010)
 
-21.Theta* Theta*: Any-Angle Path Planning on Grids
-22.Lazy Theta* Lazy Theta*: Any-Angle Path Planning and Path Length Analysis in 3D
-23.S-Theta* S-Theta: low steering path-planning algorithm
-24.Enhanced Theta（增强型 Theta）
-25.Multi - Agent Theta（多智能体 Theta）
-26.Adaptive Theta（自适应 Theta）
+## 五、基于曲线与运动学的规划 (Curve-Based & Kinematic Planning)
+-   **多项式曲线 (Polynomial Curves)**
+    -   Richter, Bry, Roy (2013)
+-   **贝塞尔曲线 (Bezier Curves)**
+    -   Bezier (1960s), Forrest (1972)
+-   **样条曲线 (Spline Curves)**
+    -   **三次样条曲线 (Cubic Spline)**
+        -   Ahlberg, Nilson, Walsh (1967)
+    -   **B样条曲线 (B-Spline)**
+        -   de Boor (1972), Cox (1972)
+-   **时间弹性带 (Timed Elastic Band - TEB)**
+    -   Rösmann, Hoffmann, Bertram (2012, 2017)
+-   **Dubins 曲线 (Dubins Curves)**
+    -   Dubins (1957)
+-   **Reeds-Shepp 曲线 (Reeds-Shepp Curves)**
+    -   Reeds & Shepp (1990)
+-   **特定应用优化 (Application-Specific Optimization)**
+    -   **Hybrid A\***
+        -   Dolgov, Thrun, Montemerlo, Diebel (2008)
+-   **车辆路径问题 (Vehicle Routing Problem - VRP)**
+    -   Dantzig & Ramser (1959)
 
-27.JPS  jump point search 跳跃点寻路算法
-28.JPS+
-29.JPS++  (双向)
-30.欧几里得 JPS（Euclidean JPS, EJPS
-31.Hierarchical JPS, HJPS）
-32.动态 JPS（Dynamic JPS
-33.多代理 JPS
-34.JPS-Lite
-35.自适应 JPS（Adaptive JPS）
-36.
-37.Voronoi
-38.Voronoi Field
-39.Weighted Voronoi Diagram
-40.Fuzzy Voronoi Diagram（模糊 Voronoi 图）
-41.Adaptive Voronoi Field（自适应 Voronoi 场）
-42.
-43.RRT 快速扩展随机树 Rapidly-Exploring Random Trees: A New Tool for Path Planning
-44.Goal-bias RRT    快速找到可行
-45.RRT-Connect    双向扩展加速收敛
-46.RRT*    渐近最优    离线规划
-47.Informed RRT*    最优解收敛更
-48.Dynamic RRT    动态环境适应性    
-49.RRT-Dubins    考虑运动学约束
-50.
-51.
-52.
-53.ACO 蚁群优化 Ant Colony Optimization: A New Meta-Heuristic
-54.GA 遗传算法 Adaptation in Natural and Artificial Systems
-55.PSO 粒子群优化 Particle Swarm Optimization
-56.DWA 动态窗口 The Dynamic Window Approach to Collision Avoidance
-57.PID 单积分器动力 Mapping Single-Integrator Dynamics to Unicycle Control Commands 学
-58.LQR 线性二次型调节器  Linear Quadratic Regulator 
-59.APF  人工势场法 Real-time obstacle avoidance for manipulators and mobile robots
-60.RPP 随机路径规划 Random Path Planning 基于随机采样思想
-61.TEB 时间弹性带 Timed Elastic Band
-62.MPC 模型预测控制 Model Predictive Control
-63.Lattice  空间离散寻路
+## 六、基于模型的控制与规划 (Model-Based Control & Planning)
+-   **PID 控制器 (PID Controller - for path following)**
+    -   Minorsky (1922), Ziegler & Nichols (1942)
+-   **线性二次型调节器 (Linear Quadratic Regulator - LQR)**
+    -   Kalman (1960)
+-   **模型预测控制 (Model Predictive Control - MPC)**
+    -   Cutler & Ramaker (1980), Garcia, Prett, Morari (1989)
 
-64.Polynomia 多项式函数来描述路径
-65.Bezier 贝塞尔曲线路径
-66.Cubic Spline 三次样条曲线
-67.BSpline B 样条曲线
-68.Dubins
-69.Reeds-Shepp RS曲线
-70. VRP Vehicle Routing Problem
+## 七、多智能体路径规划 (Multi-Agent Path Finding - MAPF)
+-   **基于速度障碍 (Velocity Obstacle - VO) 的方法**
+    -   **速度障碍 (VO)**
+        -   Fiorini & Shiller (1998)
+    -   **相互速度障碍 (Reciprocal Velocity Obstacles - RVO)**
+        -   van den Berg, Lin, Manocha (2008)
+    -   **混合相互速度障碍 (Hybrid Reciprocal Velocity Obstacles - HRVO)**
+        -   Snape, van den Berg, Guy, Manocha (2011)
+    -   **最优相互碰撞避免 (Optimal Reciprocal Collision Avoidance - ORCA)**
+        -   van den Berg, Guy, Lin, Manocha (2008, 2011)
+    -   **行人最优相互碰撞避免 (Pedestrian ORCA - PORCA)**
+        -   Luo, Cai, Bera, Hsu, Lee, Manocha (2018)
+    -   **椭圆相互速度障碍 (Elliptical Reciprocal Velocity Obstacles - ERVO / EORCA)**
+        -   Best, Narang, Manocha (2016)
+-   **基于搜索的冲突解决 (Search-Based Conflict Resolution)**
+    -   **冲突驱动搜索 (Conflict-Based Search - CBS)**
+        -   Sharon, Stern, Felner, Sturtevant (2012, 2015)
+    -   **分层协作 A\* (Hierarchical Cooperative A\* - HCA\*)**
+        -   Silver (2005)
+    -   **窗口化分层协作 A\* (Windowed HCA\* - WHCA\*)**
+        -   Silver (2005)
+
+## 八、其他规划方法 (Other Planning Methods)
+-   **凸集图规划 (Graph of Convex Sets - GCS / GCS\*)**
+    -   Marcucci, Tedrake (2019), Chia, Jiang, Graesdal, Kaelbling, Tedrake (2024)
+
