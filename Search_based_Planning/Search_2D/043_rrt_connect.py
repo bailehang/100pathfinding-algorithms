@@ -1,5 +1,5 @@
 """
-RRT (Rapidly-exploring Random Tree) Algorithm Implementation
+RRT-Connect Algorithm Implementation
 @author: huiming zhou
 """
 
@@ -55,8 +55,35 @@ class Env:
             [37, 7, 3],
             [37, 23, 3]
         ]
-
         return obs_cir
+
+    def obs_map(self):
+        """
+        Create obstacles map
+        :return: obstacles in a set
+        """
+        obs = set()
+        
+        # Add boundary obstacles
+        for (x, y, w, h) in self.obs_boundary:
+            for i in range(x, x + w):
+                for j in range(y, y + h):
+                    obs.add((i, j))
+        
+        # Add rectangular obstacles
+        for (x, y, w, h) in self.obs_rectangle:
+            for i in range(x, x + w):
+                for j in range(y, y + h):
+                    obs.add((i, j))
+        
+        # Add circular obstacles (approximated as squares for simplicity)
+        for (x, y, r) in self.obs_circle:
+            for i in range(x - r, x + r):
+                for j in range(y - r, y + r):
+                    if math.hypot(i - x, j - y) <= r:
+                        obs.add((i, j))
+        
+        return obs
 
 
 class Plotting:
@@ -66,11 +93,6 @@ class Plotting:
         self.obs_bound = self.env.obs_boundary
         self.obs_circle = self.env.obs_circle
         self.obs_rectangle = self.env.obs_rectangle
-
-    def animation(self, nodelist, path, name, animation=False):
-        self.plot_grid(name)
-        self.plot_visited(nodelist, animation)
-        self.plot_path(path)
 
     def animation_connect(self, V1, V2, path, name):
         self.plot_grid(name)
@@ -117,24 +139,6 @@ class Plotting:
         plt.axis("equal")
 
     @staticmethod
-    def plot_visited(nodelist, animation):
-        if animation:
-            count = 0
-            for node in nodelist:
-                count += 1
-                if node.parent:
-                    plt.plot([node.parent.x, node.x], [node.parent.y, node.y], "-g")
-                    plt.gcf().canvas.mpl_connect('key_release_event',
-                                                 lambda event:
-                                                 [exit(0) if event.key == 'escape' else None])
-                    if count % 10 == 0:
-                        plt.pause(0.001)
-        else:
-            for node in nodelist:
-                if node.parent:
-                    plt.plot([node.parent.x, node.x], [node.parent.y, node.y], "-g")
-
-    @staticmethod
     def plot_visited_connect(V1, V2):
         len1, len2 = len(V1), len(V2)
 
@@ -165,31 +169,92 @@ class Plotting:
 class Utils:
     def __init__(self):
         self.env = Env()
-
         self.delta = 0.5
         self.obs_circle = self.env.obs_circle
         self.obs_rectangle = self.env.obs_rectangle
         self.obs_boundary = self.env.obs_boundary
 
-    def update_obs(self, obs_cir, obs_bound, obs_rec):
-        self.obs_circle = obs_cir
-        self.obs_boundary = obs_bound
-        self.obs_rectangle = obs_rec
+    def is_collision(self, node_start, node_end):
+        """
+        Check if the path between two nodes collides with obstacles
+        :param node_start: start node
+        :param node_end: end node
+        :return: True if path is in collision, False otherwise
+        """
+        if self.is_inside_obs(node_start) or self.is_inside_obs(node_end):
+            return True
+
+        o, d = self.get_ray(node_start, node_end)
+        obs_vertex = self.get_obs_vertex()
+
+        for (v1, v2, v3, v4) in obs_vertex:
+            if self.is_intersect_rec(node_start, node_end, o, d, v1, v2):
+                return True
+            if self.is_intersect_rec(node_start, node_end, o, d, v2, v3):
+                return True
+            if self.is_intersect_rec(node_start, node_end, o, d, v3, v4):
+                return True
+            if self.is_intersect_rec(node_start, node_end, o, d, v4, v1):
+                return True
+
+        for (x, y, r) in self.obs_circle:
+            if self.is_intersect_circle(o, d, [x, y], r):
+                return True
+
+        return False
+
+    def is_inside_obs(self, node):
+        """
+        Check if the node is inside any obstacle
+        :param node: node
+        :return: True if inside obstacle, False otherwise
+        """
+        delta = self.delta
+
+        for (x, y, r) in self.obs_circle:
+            if math.hypot(node.x - x, node.y - y) <= r + delta:
+                return True
+
+        for (x, y, w, h) in self.obs_rectangle:
+            if 0 <= node.x - (x - delta) <= w + 2 * delta \
+                    and 0 <= node.y - (y - delta) <= h + 2 * delta:
+                return True
+
+        for (x, y, w, h) in self.obs_boundary:
+            if 0 <= node.x - (x - delta) <= w + 2 * delta \
+                    and 0 <= node.y - (y - delta) <= h + 2 * delta:
+                return True
+
+        return False
 
     def get_obs_vertex(self):
+        """
+        Get vertices of rectangular obstacles
+        :return: vertices of obstacles
+        """
         delta = self.delta
         obs_list = []
 
-        for (ox, oy, w, h) in self.obs_rectangle:
-            vertex_list = [[ox - delta, oy - delta],
-                           [ox + w + delta, oy - delta],
-                           [ox + w + delta, oy + h + delta],
-                           [ox - delta, oy + h + delta]]
+        for (x, y, w, h) in self.obs_rectangle:
+            vertex_list = [[x - delta, y - delta],
+                           [x + w + delta, y - delta],
+                           [x + w + delta, y + h + delta],
+                           [x - delta, y + h + delta]]
             obs_list.append(vertex_list)
 
         return obs_list
 
     def is_intersect_rec(self, start, end, o, d, a, b):
+        """
+        Check if the line segment (start, end) intersects with line segment (a, b)
+        :param start: start node
+        :param end: end node
+        :param o: origin
+        :param d: direction
+        :param a: first vertex
+        :param b: second vertex
+        :return: True if the line segment intersects with the line, False otherwise
+        """
         v1 = [o[0] - a[0], o[1] - a[1]]
         v2 = [b[0] - a[0], b[1] - a[1]]
         v3 = [-d[1], d[0]]
@@ -212,6 +277,14 @@ class Utils:
         return False
 
     def is_intersect_circle(self, o, d, a, r):
+        """
+        Check if the line segment intersects with the circle
+        :param o: origin
+        :param d: direction
+        :param a: circle center
+        :param r: circle radius
+        :return: True if the line segment intersects with the circle, False otherwise
+        """
         d2 = np.dot(d, d)
         delta = self.delta
 
@@ -227,67 +300,38 @@ class Utils:
 
         return False
 
-    def is_collision(self, start, end):
-        if self.is_inside_obs(start) or self.is_inside_obs(end):
-            return True
-
-        o, d = self.get_ray(start, end)
-        obs_vertex = self.get_obs_vertex()
-
-        for (v1, v2, v3, v4) in obs_vertex:
-            if self.is_intersect_rec(start, end, o, d, v1, v2):
-                return True
-            if self.is_intersect_rec(start, end, o, d, v2, v3):
-                return True
-            if self.is_intersect_rec(start, end, o, d, v3, v4):
-                return True
-            if self.is_intersect_rec(start, end, o, d, v4, v1):
-                return True
-
-        for (x, y, r) in self.obs_circle:
-            if self.is_intersect_circle(o, d, [x, y], r):
-                return True
-
-        return False
-
-    def is_inside_obs(self, node):
-        delta = self.delta
-
-        for (x, y, r) in self.obs_circle:
-            if math.hypot(node.x - x, node.y - y) <= r + delta:
-                return True
-
-        for (x, y, w, h) in self.obs_rectangle:
-            if 0 <= node.x - (x - delta) <= w + 2 * delta \
-                    and 0 <= node.y - (y - delta) <= h + 2 * delta:
-                return True
-
-        for (x, y, w, h) in self.obs_boundary:
-            if 0 <= node.x - (x - delta) <= w + 2 * delta \
-                    and 0 <= node.y - (y - delta) <= h + 2 * delta:
-                return True
-
-        return False
-
     @staticmethod
     def get_ray(start, end):
+        """
+        Get the ray from start to end
+        :param start: start node
+        :param end: end node
+        :return: origin and direction of the ray
+        """
         orig = [start.x, start.y]
         direc = [end.x - start.x, end.y - start.y]
         return orig, direc
 
     @staticmethod
     def get_dist(start, end):
+        """
+        Calculate the distance between two nodes
+        :param start: start node
+        :param end: end node
+        :return: distance
+        """
         return math.hypot(end.x - start.x, end.y - start.y)
 
 
-class Rrt:
+class RrtConnect:
     def __init__(self, s_start, s_goal, step_len, goal_sample_rate, iter_max):
         self.s_start = Node(s_start)
         self.s_goal = Node(s_goal)
         self.step_len = step_len
         self.goal_sample_rate = goal_sample_rate
         self.iter_max = iter_max
-        self.vertex = [self.s_start]
+        self.V1 = [self.s_start]
+        self.V2 = [self.s_goal]
 
         self.env = Env()
         self.plotting = Plotting(s_start, s_goal)
@@ -301,28 +345,62 @@ class Rrt:
 
     def planning(self):
         for i in range(self.iter_max):
-            node_rand = self.generate_random_node(self.goal_sample_rate)
-            node_near = self.nearest_neighbor(self.vertex, node_rand)
+            node_rand = self.generate_random_node(self.s_goal, self.goal_sample_rate)
+            node_near = self.nearest_neighbor(self.V1, node_rand)
             node_new = self.new_state(node_near, node_rand)
 
             if node_new and not self.utils.is_collision(node_near, node_new):
-                self.vertex.append(node_new)
-                dist, _ = self.get_distance_and_angle(node_new, self.s_goal)
+                self.V1.append(node_new)
+                node_near_prim = self.nearest_neighbor(self.V2, node_new)
+                node_new_prim = self.new_state(node_near_prim, node_new)
 
-                if dist <= self.step_len and not self.utils.is_collision(node_new, self.s_goal):
-                    self.new_state(node_new, self.s_goal)
-                    return self.extract_path(node_new)
+                if node_new_prim and not self.utils.is_collision(node_near_prim, node_new_prim):
+                    self.V2.append(node_new_prim)
+
+                    while True:
+                        node_new_prim2 = self.new_state(node_new_prim, node_new)
+                        if node_new_prim2 and not self.utils.is_collision(node_new_prim2, node_new_prim):
+                            self.V2.append(node_new_prim2)
+                            node_new_prim = self.change_node(node_new_prim, node_new_prim2)
+                        else:
+                            break
+
+                        if self.is_node_same(node_new_prim, node_new):
+                            break
+
+                if self.is_node_same(node_new_prim, node_new):
+                    return self.extract_path(node_new, node_new_prim)
+
+            if len(self.V2) < len(self.V1):
+                list_mid = self.V2
+                self.V2 = self.V1
+                self.V1 = list_mid
 
         return None
 
-    def generate_random_node(self, goal_sample_rate):
+    @staticmethod
+    def change_node(node_new_prim, node_new_prim2):
+        node_new = Node((node_new_prim2.x, node_new_prim2.y))
+        node_new.parent = node_new_prim
+
+        return node_new
+
+    @staticmethod
+    def is_node_same(node_new_prim, node_new):
+        if node_new_prim.x == node_new.x and \
+                node_new_prim.y == node_new.y:
+            return True
+
+        return False
+
+    def generate_random_node(self, sample_goal, goal_sample_rate):
         delta = self.utils.delta
 
         if np.random.random() > goal_sample_rate:
             return Node((np.random.uniform(self.x_range[0] + delta, self.x_range[1] - delta),
                          np.random.uniform(self.y_range[0] + delta, self.y_range[1] - delta)))
 
-        return self.s_goal
+        return sample_goal
 
     @staticmethod
     def nearest_neighbor(node_list, n):
@@ -339,15 +417,22 @@ class Rrt:
 
         return node_new
 
-    def extract_path(self, node_end):
-        path = [(self.s_goal.x, self.s_goal.y)]
-        node_now = node_end
+    def extract_path(self, node_new, node_new_prim):
+        path1 = [(node_new.x, node_new.y)]
+        node_now = node_new
 
         while node_now.parent is not None:
             node_now = node_now.parent
-            path.append((node_now.x, node_now.y))
+            path1.append((node_now.x, node_now.y))
 
-        return path
+        path2 = [(node_new_prim.x, node_new_prim.y)]
+        node_now = node_new_prim
+
+        while node_now.parent is not None:
+            node_now = node_now.parent
+            path2.append((node_now.x, node_now.y))
+
+        return list(list(reversed(path1)) + path2)
 
     @staticmethod
     def get_distance_and_angle(node_start, node_end):
@@ -360,11 +445,11 @@ def main():
     x_start = (2, 2)  # Starting node
     x_goal = (49, 24)  # Goal node
 
-    rrt = Rrt(x_start, x_goal, 0.5, 0.05, 10000)
-    path = rrt.planning()
+    rrt_conn = RrtConnect(x_start, x_goal, 0.8, 0.05, 5000)
+    path = rrt_conn.planning()
 
     if path:
-        rrt.plotting.animation(rrt.vertex, path, "RRT", True)
+        rrt_conn.plotting.animation_connect(rrt_conn.V1, rrt_conn.V2, path, "RRT-Connect")
     else:
         print("No Path Found!")
 

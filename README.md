@@ -37,17 +37,17 @@ Manual review and inspection.
         -   Dijkstra (1959)
     -   **A\* 算法 (A\* Algorithm)**
         -   Hart, Nilsson, Raphael (1968)
-        -   **A\* 变体与扩展 (A\* Variants & Extensions)**
-            -   **加权 A\* (Weighted A\*)**
-                -   Pohl (1970)
-            -   **双向 A\* (Bidirectional A\*)**
-                -   Pohl (1971)
-            -   **分层 A\* (Hierarchical A\* - HPA\*)**
-                -   Botea, Müller, Schaeffer (2004)
-            -   **并行 A\* (Parallel A\*)**
-                -   Zhou & Zeng (2015)
-            -   **Hybrid A\***
-                -   Dolgov, Thrun, Montemerlo, Diebel (2008)
+    -   **A\* 变体与扩展 (A\* Variants & Extensions)**
+        -   **双向 A\* (Bidirectional A\*)**
+            -   Pohl (1971)
+        -   **加权 A\* (Weighted A\*)**
+            -   Pohl (1970)
+        -   **分层 A\* (Hierarchical A\* - HPA\*)**
+            -   Botea, Müller, Schaeffer (2004)
+        -   **并行 A\* (Parallel A\*)**
+            -   Zhou & Zeng (2015)
+        -   **Hybrid A\* **
+            -   Dolgov, Thrun, Montemerlo, Diebel (2008)
     -   **实时/动态启发式搜索 (Real-time/Dynamic Heuristic Search)**
         -   **LRTA\* (Learning Real-time A\*)**
             -   Korf (1990)
