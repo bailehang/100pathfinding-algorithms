@@ -2,8 +2,7 @@
 
 Based on the previous work of people, I am very interested in further summarizing all the pathfinding algorithms.
 
-## env
-python3.12
+## Env  python3.12
 pip install matplotlib
 
 ## Thanks
@@ -21,7 +20,7 @@ Manual review and inspection.
 
 -------------------
 
-# 路径规划算法脑图
+# Contents
 
 ## 一、图搜索算法 (Graph Search Algorithms)
 -   **基础搜索 (Uninformed Search)**
