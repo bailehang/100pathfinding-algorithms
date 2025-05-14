@@ -2,15 +2,15 @@
 
 Based on the previous work of people, I am very interested in further summarizing all the pathfinding algorithms.
 
-## Env  python3.12
-pip install matplotlib
+## Quick Start  
+pip install matplotlib   #python3.12
 
 ## Thanks
 
-zju Prof. FeiGao
+ZJU Prof. FeiGao
 
+Some code references
 https://github.com/zhm-real/PathPlanning
-
 https://github.com/ai-winter/ros_motion_planning
 
 ## Warning
