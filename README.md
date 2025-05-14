@@ -28,7 +28,7 @@ Manual review and inspection.
 -   **基础搜索 (Uninformed Search)**
     -   **广度优先搜索 (Breadth-First Searching - BFS)**
         -   Moore (1959), Lee (1961)
-        -   ![001_bfs.gif](gif/001_bfs.gif)
+        ![001_bfs](gif/001_bfs.gif)
     -   **深度优先搜索 (Depth-First Search - DFS)**
         -   Trémaux (1882), Hopcroft & Tarjan (1973)
 -   **启发式搜索 (Informed/Heuristic Search)**
