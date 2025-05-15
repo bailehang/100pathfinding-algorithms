@@ -130,17 +130,32 @@ class Plotting:
         """Capture the current figure as a frame with correct color handling"""
         fig = plt.gcf()
         fig.canvas.draw()
-
+        
         # Get the RGBA buffer from the canvas
         buf = fig.canvas.tostring_argb()
         w, h = fig.canvas.get_width_height()
-
-        # Convert to numpy array and reshape
-        data = np.frombuffer(fig.canvas.tostring_argb(), dtype=np.uint8)
+        
+        # Convert to numpy array
+        data = np.frombuffer(buf, dtype=np.uint8)
+        
+        # Calculate the correct dimensions based on the data size
+        # Each pixel has 4 channels (ARGB), so total size = w * h * 4
+        # Therefore, each color channel has w * h elements
+        total_pixels = len(data) // 4
+        
+        # Calculate width and height that will work with the data size
+        # We can use the aspect ratio from get_width_height() but ensure total pixels match
+        aspect_ratio = w / h
+        calculated_h = int(np.sqrt(total_pixels / aspect_ratio))
+        calculated_w = int(total_pixels / calculated_h)
+        
+        # Extract color channels
         r = data[1::4]  # Red channel
         g = data[2::4]  # Green channel
         b = data[3::4]  # Blue channel
-        image = np.stack([r, g, b], axis=-1).reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        
+        # Reshape using calculated dimensions
+        image = np.stack([r, g, b], axis=-1).reshape((calculated_h, calculated_w, 3))
 
         # Add to frames
         self.frames.append(image)
