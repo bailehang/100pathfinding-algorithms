@@ -1,6 +1,6 @@
 # 100pathfinding-algorithms
 
-Based on the previous work of people, I am very interested in further summarizing all the pathfinding algorithms.
+I am very interested in further summarizing all the pathfinding algorithms.
 
 ## Quick Start  
 pip install matplotlib   #python3.12
@@ -10,11 +10,13 @@ pip install matplotlib   #python3.12
 ZJU Prof. FeiGao
 
 Some code references
+
 https://github.com/zhm-real/PathPlanning
+
 https://github.com/ai-winter/ros_motion_planning
 
 ## Warning
-AI assistance has been used in this article, mainly using 
+AI assistance has been used in this article
 Claude 3.7, Doubao, ChatGPT for in-depth research and Manus.
 Manual review and inspection.
 
@@ -33,8 +35,9 @@ Manual review and inspection.
         -   Trémaux (1882), Hopcroft & Tarjan (1973)
         ![002_dfs](Search_based_Planning/Search_2D/gif/002_dfs.gif)
 -   **启发式搜索 (Informed/Heuristic Search)**
-    -   **最佳优先搜索 (Best-First Search - GBFS)**
-        -   Doran & Michie (1966), Pearl (1984) (概念性)
+    -   **贪婪最佳优先搜索 (Greedy Best-First Search - GBFS)**
+        -   Doran & Michie (1966), Pearl (1984)
+        ![003_GBFS](Search_based_Planning/Search_2D/gif/003_GBFS.gif)
     -   **Dijkstra 算法**
         -   Dijkstra (1959)
     -   **A\* 算法 (A\* Algorithm)**
