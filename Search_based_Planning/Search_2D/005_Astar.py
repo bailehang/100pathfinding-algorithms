@@ -5,7 +5,6 @@ A_star 2D
 
 import math
 import os
-import sys
 import matplotlib.pyplot as plt
 from PIL import Image
 import numpy as np
@@ -153,17 +152,32 @@ class Plotting:
         """Capture the current figure as a frame with correct color handling"""
         fig = plt.gcf()
         fig.canvas.draw()
-
+        
         # Get the RGBA buffer from the canvas
         buf = fig.canvas.tostring_argb()
         w, h = fig.canvas.get_width_height()
-
-        # Convert to numpy array and reshape
-        data = np.frombuffer(fig.canvas.tostring_argb(), dtype=np.uint8)
+        
+        # Convert to numpy array
+        data = np.frombuffer(buf, dtype=np.uint8)
+        
+        # Calculate the correct dimensions based on the data size
+        # Each pixel has 4 channels (ARGB), so total size = w * h * 4
+        # Therefore, each color channel has w * h elements
+        total_pixels = len(data) // 4
+        
+        # Calculate width and height that will work with the data size
+        # We can use the aspect ratio from get_width_height() but ensure total pixels match
+        aspect_ratio = w / h
+        calculated_h = int(np.sqrt(total_pixels / aspect_ratio))
+        calculated_w = int(total_pixels / calculated_h)
+        
+        # Extract color channels
         r = data[1::4]  # Red channel
         g = data[2::4]  # Green channel
         b = data[3::4]  # Blue channel
-        image = np.stack([r, g, b], axis=-1).reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        
+        # Reshape using calculated dimensions
+        image = np.stack([r, g, b], axis=-1).reshape((calculated_h, calculated_w, 3))
 
         # Add to frames
         self.frames.append(image)
@@ -176,23 +190,50 @@ class Plotting:
         gif_path = os.path.join(gif_dir, f"{name}.gif")
 
         print(f"Saving GIF animation to {gif_path}...")
+        print(f"Number of frames captured: {len(self.frames)}")
+        
+        # Check absolute path
+        abs_path = os.path.abspath(gif_path)
+        print(f"Absolute path: {abs_path}")
 
-        # Check if frames list is not empty before saving
+        # Check if f`rames `list is not empty before saving
         if self.frames:
-            # Convert NumPy arrays to PIL Images, then to GIF-compatible mode (P with palette)
-            frames_p = [Image.fromarray(frame).convert('P', palette=Image.ADAPTIVE, colors=256) for frame in self.frames]
+            try:
+                # Convert NumPy arrays to PIL Images
+                print("Converting frames to PIL Images...")
+                frames_p = []
+                for i, frame in enumerate(self.frames):
+                    try:
+                        img = Image.fromarray(frame)
+                        img_p = img.convert('P', palette=Image.ADAPTIVE, colors=256)
+                        frames_p.append(img_p)
+                        if i % 10 == 0:
+                            print(f"Converted frame {i+1}/{len(self.frames)}")
+                    except Exception as e:
+                        print(f"Error converting frame {i}: {e}")
+                
+                print(f"Successfully converted {len(frames_p)} frames")
 
-            # Save with proper disposal method to avoid artifacts
-            frames_p[0].save(
-                gif_path,
-                format='GIF',
-                append_images=frames_p[1:],
-                save_all=True,
-                duration=int(1000 / fps),
-                loop=0,
-                disposal=2  # Replace previous frame
-            )
-            print(f"GIF animation saved to {gif_path}")
+                # Save with proper disposal method to avoid artifacts
+                print("Saving GIF file...")
+                frames_p[0].save(
+                    gif_path,
+                    format='GIF',
+                    append_images=frames_p[1:],
+                    save_all=True,
+                    duration=int(1000 / fps),
+                    loop=0,
+                    disposal=2  # Replace previous frame
+                )
+                print(f"GIF animation saved to {gif_path}")
+                
+                # Verify file was created
+                if os.path.exists(gif_path):
+                    print(f"File exists with size: {os.path.getsize(gif_path) / 1024:.2f} KB")
+                else:
+                    print("WARNING: File does not exist after saving!")
+            except Exception as e:
+                print(f"Error during GIF creation: {e}")
         else:
             print("No frames to save!")
 
