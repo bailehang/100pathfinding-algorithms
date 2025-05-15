@@ -40,6 +40,7 @@ Manual review and inspection.
         ![003_GBFS](Search_based_Planning/Search_2D/gif/003_GBFS.gif)
     -   **Dijkstra 算法**
         -   Dijkstra (1959)
+        ![004_Dijkstra](Search_based_Planning/Search_2D/gif/004_Dijkstra.gif)
     -   **A\* 算法 (A\* Algorithm)**
         -   Hart, Nilsson, Raphael (1968)
     -   **A\* 变体与扩展 (A\* Variants & Extensions)**
