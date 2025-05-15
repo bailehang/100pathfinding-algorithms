@@ -17,7 +17,9 @@ https://github.com/ai-winter/ros_motion_planning
 
 ## Warning
 AI assistance has been used in this article
+
 Claude 3.7, Doubao, ChatGPT for in-depth research and Manus.
+
 Manual review and inspection.
 
 -------------------
@@ -43,6 +45,7 @@ Manual review and inspection.
         ![004_Dijkstra](Search_based_Planning/Search_2D/gif/004_Dijkstra.gif)
     -   **A\* 算法 (A\* Algorithm)**
         -   Hart, Nilsson, Raphael (1968)
+        ![005_Astar](Search_based_Planning/Search_2D/gif/005_Astar.gif)
     -   **A\* 变体与扩展 (A\* Variants & Extensions)**
         -   **双向 A\* (Bidirectional A\*)**
             -   Pohl (1971)
