@@ -6,19 +6,284 @@ Reference: "Practical Search Techniques in Path Planning for Autonomous Driving"
 """
 
 import os
-import sys
 import math
 import heapq
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
+from PIL import Image
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) +
-                "/../../Search_based_Planning/")
 
-from Search_2D import plotting, env
-# Removed Reed-Shepp import as it has dependency issues
-# from CurvesGenerator import reeds_shepp
+class Env:
+    """Environment class for 2D grid world"""
+    def __init__(self):
+        self.x_range = 51  # size of background
+        self.y_range = 31
+        self.motions = [(-1, 0), (-1, 1), (0, 1), (1, 1),
+                        (1, 0), (1, -1), (0, -1), (-1, -1)]
+        self.obs = self.obs_map()
+
+    def update_obs(self, obs):
+        self.obs = obs
+
+    def obs_map(self):
+        """
+        Initialize obstacles' positions
+        :return: map of obstacles
+        """
+        x = self.x_range
+        y = self.y_range
+        obs = set()
+
+        # Add boundary obstacles
+        for i in range(x):
+            obs.add((i, 0))
+        for i in range(x):
+            obs.add((i, y - 1))
+        for i in range(y):
+            obs.add((0, i))
+        for i in range(y):
+            obs.add((x - 1, i))
+
+        # Add additional obstacles
+        for i in range(10, 21):
+            obs.add((i, 15))
+        for i in range(15):
+            obs.add((20, i))
+        for i in range(15, 30):
+            obs.add((30, i))
+        for i in range(16):
+            obs.add((40, i))
+
+        return obs
+
+
+class Plotting:
+    """Plotting class for visualization with GIF support"""
+    
+    def __init__(self, xI, xG):
+        """
+        Initialize the plotting class
+        :param xI: start point [x, y]
+        :param xG: goal point [x, y]
+        """
+        self.xI, self.xG = xI, xG
+        self.frames = []
+        
+        # Initialize environment
+        self.env = Env()
+        self.obs = self.env.obs_map()
+
+    def update_obs(self, obs):
+        """Update obstacles"""
+        self.obs = obs
+
+    def animation(self, path, visited, name, save_gif=False):
+        """Animate the search process and final path"""
+        self.plot_grid(name)
+        self.plot_visited(visited)
+        self.plot_path(path)
+        plt.show()
+        if save_gif:
+            self.save_animation_as_gif(name)
+
+    def animation_vehicle(self, path, visited, vehicle_model, name, save_gif=False):
+        """Animate the vehicle movement along the final path"""
+        self.plot_grid(name)
+        self.plot_visited(visited, cl='lightgray', marker_size=1)
+        self.plot_vehicle_movement(path, vehicle_model)
+        plt.show()
+        if save_gif:
+            self.save_animation_as_gif(name)
+
+    def plot_grid(self, name):
+        """Plot the grid with obstacles, start and goal points"""
+        obs_x = [x[0] for x in self.obs]
+        obs_y = [x[1] for x in self.obs]
+
+        plt.plot(self.xI[0], self.xI[1], "bs")
+        plt.plot(self.xG[0], self.xG[1], "gs")
+        plt.plot(obs_x, obs_y, "sk")
+        plt.title(name)
+        plt.axis("equal")
+
+        # Capture the initial grid frame
+        self.capture_frame()
+
+    def plot_visited(self, visited, cl='gray', marker_size=5):
+        """Plot visited nodes during search"""
+        if self.xI in visited:
+            visited.remove(self.xI)
+        if self.xG in visited:
+            visited.remove(self.xG)
+
+        count = 0
+        for x in visited:
+            count += 1
+            plt.plot(x[0], x[1], color=cl, marker='o', markersize=marker_size)
+            plt.gcf().canvas.mpl_connect('key_release_event',
+                                         lambda event: [exit(0) if event.key == 'escape' else None])
+
+            if count < len(visited) / 3:
+                length = 20
+            elif count < len(visited) * 2 / 3:
+                length = 30
+            else:
+                length = 40
+
+            if count % length == 0:
+                plt.pause(0.01)
+                self.capture_frame()
+
+        plt.pause(0.1)
+        self.capture_frame()
+
+    def plot_path(self, path, cl='r', flag=False):
+        """Plot the final path"""
+        if not path:
+            return
+            
+        path_x = [path[i][0] for i in range(len(path))]
+        path_y = [path[i][1] for i in range(len(path))]
+
+        if not flag:
+            plt.plot(path_x, path_y, linewidth='3', color='r')
+        else:
+            plt.plot(path_x, path_y, linewidth='3', color=cl)
+
+        plt.plot(self.xI[0], self.xI[1], "bs")
+        plt.plot(self.xG[0], self.xG[1], "gs")
+
+        plt.pause(0.1)
+        self.capture_frame()
+
+    def plot_vehicle_movement(self, path, vehicle_model):
+        """Plot the vehicle movement along the path"""
+        if not path:
+            return
+            
+        x = [p[0] for p in path]
+        y = [p[1] for p in path]
+        yaw = [p[2] for p in path]
+        steer = [p[3] for p in path]
+        
+        # First plot the entire path as a reference
+        plt.plot(x, y, "-", color='lightgray', linewidth=1)
+        self.capture_frame()
+
+        # Then animate the vehicle moving along the path
+        for i in range(len(x)):
+            # Clear previous vehicle drawing but keep the path
+            plt.clf()
+            self.plot_grid("Hybrid A* Vehicle Movement")
+            plt.plot(x, y, "-", color='lightgray', linewidth=1)
+            
+            # Plot the traveled path
+            if i > 0:
+                plt.plot(x[:i+1], y[:i+1], "-r", linewidth=2, label="Traveled Path")
+            
+            # Draw the vehicle at current position
+            corners = vehicle_model.vehicle_footprint(x[i], y[i], yaw[i])
+            
+            # Convert corners to matplotlib polygon
+            corners_x = [p[0] for p in corners]
+            corners_y = [p[1] for p in corners]
+            # Close the shape by adding first point again
+            corners_x.append(corners_x[0])
+            corners_y.append(corners_y[0])
+            plt.plot(corners_x, corners_y, '-k', linewidth=1.5)
+            
+            # Draw heading as an arrow
+            arrow_length = 1.0
+            plt.arrow(x[i], y[i], 
+                    arrow_length * np.cos(yaw[i]), 
+                    arrow_length * np.sin(yaw[i]),
+                    head_width=0.5, head_length=0.5, fc='b', ec='b')
+            
+            # Display steering angle
+            steer_text = f"Steering: {np.rad2deg(steer[i]):.1f}°"
+            plt.text(5, 28, steer_text, fontsize=10, bbox=dict(facecolor='white', alpha=0.5))
+            
+            # Display current position and heading
+            pos_text = f"Position: ({x[i]:.1f}, {y[i]:.1f}), Heading: {np.rad2deg(yaw[i]):.1f}°"
+            plt.text(5, 26, pos_text, fontsize=10, bbox=dict(facecolor='white', alpha=0.5))
+            
+            plt.title(f"Hybrid A* Vehicle Movement (Step {i+1}/{len(x)})")
+            plt.axis("equal")
+            plt.grid(True)
+            
+            # Adjust pause time - slower at the beginning and end
+            if i < 10 or i > len(x) - 10:
+                plt.pause(0.1)  # Slower at beginning and end
+            else:
+                plt.pause(0.05)  # Faster in the middle
+                
+            self.capture_frame()
+
+    def capture_frame(self):
+        """Capture the current figure as a frame with correct color handling"""
+        fig = plt.gcf()
+        fig.canvas.draw()
+        
+        # Get the RGBA buffer from the canvas
+        buf = fig.canvas.tostring_argb()
+        w, h = fig.canvas.get_width_height()
+        
+        # Convert to numpy array
+        data = np.frombuffer(buf, dtype=np.uint8)
+        
+        # Calculate the correct dimensions based on the data size
+        # Each pixel has 4 channels (ARGB), so total size = w * h * 4
+        # Therefore, each color channel has w * h elements
+        total_pixels = len(data) // 4
+        
+        # Calculate width and height that will work with the data size
+        # We can use the aspect ratio from get_width_height() but ensure total pixels match
+        aspect_ratio = w / h
+        calculated_h = int(np.sqrt(total_pixels / aspect_ratio))
+        calculated_w = int(total_pixels / calculated_h)
+        
+        # Extract color channels
+        r = data[1::4]  # Red channel
+        g = data[2::4]  # Green channel
+        b = data[3::4]  # Blue channel
+        
+        # Reshape using calculated dimensions
+        image = np.stack([r, g, b], axis=-1).reshape((calculated_h, calculated_w, 3))
+
+        # Add to frames
+        self.frames.append(image)
+
+    def save_animation_as_gif(self, name, fps=15):
+        """Save frames as a GIF animation with proper color handling"""
+        # Create directory for GIFs
+        gif_dir = "gif"
+        os.makedirs(gif_dir, exist_ok=True)
+        gif_path = os.path.join(gif_dir, f"{name}.gif")
+
+        print(f"Saving GIF animation to {gif_path}...")
+
+        # Check if frames list is not empty before saving
+        if self.frames:
+            # Convert NumPy arrays to PIL Images, then to GIF-compatible mode (P with palette)
+            frames_p = [Image.fromarray(frame).convert('P', palette=Image.ADAPTIVE, colors=256) for frame in self.frames]
+
+            # Save with proper disposal method to avoid artifacts
+            frames_p[0].save(
+                gif_path,
+                format='GIF',
+                append_images=frames_p[1:],
+                save_all=True,
+                duration=int(1000 / fps),
+                loop=0,
+                disposal=2  # Replace previous frame
+            )
+            print(f"GIF animation saved to {gif_path}")
+        else:
+            print("No frames to save!")
+
+        # Close the figure
+        plt.close()
 
 
 class VehicleModel:
@@ -515,19 +780,26 @@ class HybridAStar:
         """
         return int(round(x)), int(round(y))
     
-    def calc_grid_index(self, node):
+    def extract_path(self, final_node):
         """
-        Calculate grid index for a node (used for open/closed sets)
-        Discretizes continuous state space
+        Extract path from final node to start node
         """
-        # Discretize x, y, yaw
-        x_ind = round(node.x / self.xyreso)
-        y_ind = round(node.y / self.xyreso)
-        yaw_ind = round(node.yaw / self.yawreso)
+        path = []
+        node = final_node
         
-        # Create a unique index
-        return (x_ind, y_ind, yaw_ind)
-    
+        # Traverse from goal to start
+        while node.parent_index != -1:
+            path.append((node.x, node.y, node.yaw, node.steer, node.gear))
+            node = self.closed_set[node.parent_index]
+        
+        # Add start node
+        path.append((node.x, node.y, node.yaw, node.steer, node.gear))
+        
+        # Reverse to get path from start to goal
+        path.reverse()
+        
+        return path
+        
     def is_goal(self, node):
         """
         Check if node is close enough to the goal
@@ -548,38 +820,32 @@ class HybridAStar:
                 print(f"Goal criteria met! Position: {node.x:.2f}, {node.y:.2f}, Yaw: {np.rad2deg(node.yaw):.1f}°")
                 
         return dist < pos_tol and yaw_diff < yaw_tol
-    
-    def extract_path(self, final_node):
+        
+    def calc_grid_index(self, node):
         """
-        Extract path from final node to start node
+        Calculate grid index for a node (used for open/closed sets)
+        Discretizes continuous state space
         """
-        path = []
-        node = final_node
+        # Discretize x, y, yaw
+        x_ind = round(node.x / self.xyreso)
+        y_ind = round(node.y / self.xyreso)
+        yaw_ind = round(node.yaw / self.yawreso)
         
-        # Traverse from goal to start
-        while node.parent_index != -1:
-            path.append((node.x, node.y, node.yaw, node.steer, node.gear))
-            node = self.closed_set[node.parent_index]
-        
-        # Add start node
-        path.append((node.x, node.y, node.yaw, node.steer, node.gear))
-        
-        # Reverse to get path from start to goal
-        path.reverse()
-        
-        return path
+        # Create a unique index
+        return (x_ind, y_ind, yaw_ind)
 
 
 def main():
+    """Main function to run the Hybrid A* algorithm with GIF generation"""
     print("Hybrid A* Path Planning Start")
     
     # Start and goal positions [x, y, yaw]
     start = [5.0, 5.0, np.deg2rad(45.0)]  # Start with 45-degree angle heading toward goal
-    goal = [45.0, 25.0, np.deg2rad(0.0)]  # Goal position unchanged
+    goal = [45.0, 25.0, np.deg2rad(0.0)]  # Goal position
     
     # Initialize environment and vehicle model
-    env_instance = env.Env()
-    obstacles = env_instance.obs
+    env_instance = Env()
+    obstacles = env_instance.obs_map()
     vehicle_model = VehicleModel()
     
     # Print obstacle map size information
@@ -605,7 +871,7 @@ def main():
     planner = HybridAStar(start, goal, obstacles, vehicle_model)
     
     # Max iterations
-    max_iters = 100000  # Further increased maximum iterations for forward-only planning
+    max_iters = 50000
     print("Planning with max iterations:", max_iters)
     
     # Execute planning with progress tracking
@@ -614,109 +880,16 @@ def main():
     print(f"Search completed. Explored {len(visited)} states.")
     
     if path:
-        # Extract path elements
-        x = [p[0] for p in path]
-        y = [p[1] for p in path]
-        yaw = [p[2] for p in path]
-        steer = [p[3] for p in path]
+        # Create plotting object
+        plot = Plotting(start[:2], goal[:2])
         
-        # Visualize
-        plot = plotting.Plotting(start[:2], goal[:2])
+        # Create vehicle movement animation only
+        print("Creating vehicle movement animation...")
+        plot.animation_vehicle(path, visited, vehicle_model, "010_Hybrid_Astar", save_gif=True)
         
-        # Enable interactive mode for animation
-        plt.ion()
-        
-        # Create a figure for animation
-        fig = plt.figure()
-        
-        # First, demonstrate the search process
-        print("Animating search process...")
-        plt.clf()
-        plot.plot_grid("Hybrid A* Search Process")
-        
-        # Display visited states in batches for smoother animation
-        batch_size = max(1, len(visited) // 50)  # 50 frames for the search process
-        for i in range(0, len(visited), batch_size):
-            plt.clf()
-            plot.plot_grid("Hybrid A* Search Process")
-
-            # Plot visited nodes so far
-            vis_x = [v[0] for v in visited[:i+batch_size]]
-            vis_y = [v[1] for v in visited[:i+batch_size]]
-            plt.plot(vis_x, vis_y, ".c", markersize=1, label="Explored")
-
-            # Plot current exploration frontier
-            if i > 0:
-                frontier_x = [v[0] for v in visited[i:i+batch_size]]
-                frontier_y = [v[1] for v in visited[i:i+batch_size]]
-                if frontier_x:  # Check if there are any frontier points
-                    plt.plot(frontier_x, frontier_y, ".g", markersize=2, label="Frontier")
-
-            plt.axis("equal")
-            plt.grid(True)
-            if i == 0:
-                plt.legend()
-            plt.pause(0.01)
-        
-        # Wait for the user to see the search process
-        plt.pause(1)
-        
-        # Now, animate the vehicle moving along the path
-        print("Animating vehicle movement along the path...")
-        
-        for i in range(len(x)):
-            plt.clf()
-            plot.plot_grid("Hybrid A* Vehicle Movement")
-            
-            # Plot the complete path
-            plt.plot(x, y, "-", color='lightgray', linewidth=1)
-            
-            # Plot the traveled path
-            if i > 0:
-                plt.plot(x[:i+1], y[:i+1], "-r", linewidth=2, label="Traveled Path")
-            
-            # Draw the vehicle at current position
-            # Calculate the four corners of the vehicle for visualization
-            corners = vehicle_model.vehicle_footprint(x[i], y[i], yaw[i])
-            
-            # Convert corners to matplotlib polygon
-            corners_x = [p[0] for p in corners]
-            corners_y = [p[1] for p in corners]
-            # Close the shape by adding first point again
-            corners_x.append(corners_x[0])
-            corners_y.append(corners_y[0])
-            plt.plot(corners_x, corners_y, '-k', linewidth=1.5)
-            
-            # Draw heading as an arrow
-            arrow_length = 1.0
-            plt.arrow(x[i], y[i], 
-                    arrow_length * np.cos(yaw[i]), 
-                    arrow_length * np.sin(yaw[i]),
-                    head_width=0.5, head_length=0.5, fc='b', ec='b')
-            
-            # Display steering angle
-            steer_text = f"Steering: {np.rad2deg(steer[i]):.1f}°"
-            plt.text(5, 28, steer_text, fontsize=10, bbox=dict(facecolor='white', alpha=0.5))
-            
-            # Display current position and heading
-            pos_text = f"Position: ({x[i]:.1f}, {y[i]:.1f}), Heading: {np.rad2deg(yaw[i]):.1f}°"
-            plt.text(5, 26, pos_text, fontsize=10, bbox=dict(facecolor='white', alpha=0.5))
-            
-            plt.title(f"Hybrid A* Vehicle Movement (Step {i+1}/{len(x)})")
-            plt.axis("equal")
-            plt.grid(True)
-            if i == 0:
-                plt.legend()
-            
-            # Adjust pause time - slower at the beginning and end
-            if i < 10 or i > len(x) - 10:
-                plt.pause(0.1)  # Slower at beginning and end
-            else:
-                plt.pause(0.05)  # Faster in the middle
-                
-        # Keep the final frame visible
-        plt.ioff()
-        plt.show()
+        print("Animation complete and saved as GIF.")
+    else:
+        print("No path found. Cannot create animations.")
     
     print("Done")
 
