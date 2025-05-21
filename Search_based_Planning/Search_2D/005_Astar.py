@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 import numpy as np
 import heapq
-
+import io
 
 class Env:
     """Environment class for 2D grid world"""
@@ -153,9 +153,6 @@ class Plotting:
         self.capture_frame()
 
     def capture_frame(self):
-        """Capture the current figure as a frame with consistent size using a simpler approach"""
-        # Save figure to a temporary file and read it back with PIL
-        import io
         buf = io.BytesIO()
         
         # Get the current figure
