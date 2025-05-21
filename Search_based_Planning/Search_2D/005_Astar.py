@@ -2,14 +2,14 @@
 A_star 2D
 @author: huiming zhou
 """
-
+import io
 import math
 import os
 import matplotlib.pyplot as plt
 from PIL import Image
 import numpy as np
 import heapq
-import io
+
 
 class Env:
     """Environment class for 2D grid world"""
