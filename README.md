@@ -32,68 +32,69 @@ Manual review and inspection.
 -   **基础搜索 (Uninformed Search)**
     -   **广度优先搜索 (Breadth-First Searching - BFS)**
         -   Moore (1959), Lee (1961)
-        ![001_bfs](Search_based_Planning/Search_2D/gif/001_bfs.gif)
-        算法心得：
+        -   ![001_bfs](Search_based_Planning/Search_2D/gif/001_bfs.gif)
+        -   算法心得：
         逐层扩展的搜索策略，它从起始节点开始，逐层向外扩展，直到找到目标节点或遍历完整个搜索空间。
     -   **深度优先搜索 (Depth-First Search - DFS)**
         -   Trémaux (1882), Hopcroft & Tarjan (1973)
-        ![002_dfs](Search_based_Planning/Search_2D/gif/002_dfs.gif)
-        算法心得：
+        -   ![002_dfs](Search_based_Planning/Search_2D/gif/002_dfs.gif)
+        -   算法心得：
         从起始节点开始，沿着一条路径尽可能深入，直到无法继续前进，然后回溯到上一个节点，继续探索其他路径。
 -   **启发式搜索 (Informed/Heuristic Search)**
     -   **贪婪最佳优先搜索 (Greedy Best-First Search - GBFS)**
         -   Doran & Michie (1966), Pearl (1984)
-        ![003_GBFS](Search_based_Planning/Search_2D/gif/003_GBFS.gif)
-        算法心得：
+        -   ![003_GBFS](Search_based_Planning/Search_2D/gif/003_GBFS.gif)
+        -- 算法心得：
         从起始节点开始，每次选择与目标节点最近的节点进行扩展，直到找到目标节点或遍历完整个搜索空间。
-        贪婪最佳优先搜索是一种启发式搜索算法，它通过评估每个节点与目标节点之间的距离来指导搜索过程。
     -   **Dijkstra 算法**
         -   Dijkstra (1959)
-        ![004_Dijkstra](Search_based_Planning/Search_2D/gif/004_Dijkstra.gif)
-        算法心得：
+        -   ![004_Dijkstra](Search_based_Planning/Search_2D/gif/004_Dijkstra.gif)
+        -   算法心得：
         Dijkstra 算法是一种用于寻找最短路径的算法，它通过维护一个距离表来记录从起始节点到其他节点的最短距离。
         算法从起始节点开始，每次选择距离表中距离最小的节点进行扩展，更新其相邻节点的距离表，直到找到目标节点或遍历完整个搜索空间。
     -   **A\* 算法 (A\* Algorithm)**
         -   Hart, Nilsson, Raphael (1968)
-        ![005_Astar](Search_based_Planning/Search_2D/gif/005_Astar.gif)
-        算法心得：
+        -   ![005_Astar](Search_based_Planning/Search_2D/gif/005_Astar.gif)
+        -   算法心得：
         A\* 算法是一种启发式搜索算法，它结合了广度优先搜索和贪婪最佳优先搜索的优点。
         算法从起始节点开始，每次选择距离表中距离最小的节点进行扩展，更新其相邻节点的距离表，直到找到目标节点或遍历完整个搜索空间。
     -   **A\* 变体与扩展 (A\* Variants & Extensions)**
         -   **双向 A\* (Bidirectional A\*)**
             -   Pohl (1971)
-            ![006_Bidirectional_Astar](Search_based_Planning/Search_2D/gif/006_Bidirectional_a_star.gif)
-            算法心得：
+            -   ![006_Bidirectional_Astar](Search_based_Planning/Search_2D/gif/006_Bidirectional_a_star.gif)
+            -   算法心得：
             它从起始节点和目标节点同时开始进行搜索，直到两个搜索方向相遇。
         
         -   **加权 A\* (Weighted A\*)**
             -   Pohl (1970)
-           ![007_Weighted_Astar](Search_based_Planning/Search_2D/gif/007_Weighted_Astar.gif)
-            算法心得：
+            -   ![007_Weighted_Astar](Search_based_Planning/Search_2D/gif/007_Weighted_Astar_w2.0.gif)
+            -   算法心得：
             加权 A\* 算法是 A\* 算法的一种变体，它通过对每个节点的代价进行加权来调整搜索过程。
         -   **分层 A\* (Hierarchical A\* - HPA\*)**
             -   Botea, Müller, Schaeffer (2004)
-           ![008_Hierarchical_Astar](Search_based_Planning/Search_2D/gif/008_Hierarchical_Astar.gif)
-            算法心得：
+            -   ![008_Hierarchical_Astar](Search_based_Planning/Search_2D/gif/008_Hierarchical_Astar.gif)
+            -   算法心得：
             分层 A\* 算法是 A\* 算法的一种变体，它将搜索空间划分为多个层次，每个层次使用 A\* 算法进行搜索。这里展示两个层次。
         -   **并行 A\* (Parallel A\*)**
             -   Zhou & Zeng (2015)
-          ![009_Parallel_Astar](Search_based_Planning/Search_2D/gif/009_Parallel_Astar.gif)
-            算法心得：
-            它将搜索空间划分为多个子空间，每个子空间使用 A\* 算法进行搜索。
-            并行 A\* 算法的优点是可以利用多核处理器的并行计算能力，加快搜索速度。
-            这里展示多个终点复用查询路径的情况
+            -   ![009_Parallel_Astar](Search_based_Planning/Search_2D/gif/009_Parallel_Astar.gif)
+            -   算法心得：
+            并行 A\* 算法的优点是可以利用多核处理器的并行计算能力，加快搜索速度。这里难以展示这种并行改为展示多个终点复用查询路径的情况
         -   **Hybrid A\* **
             -   Dolgov, Thrun, Montemerlo, Diebel (2008)
-         ![010_Hybrid_Astar](Search_based_Planning/Search_2D/gif/010_Hybrid_Astar.gif)
-            算法心得：
+            -   ![010_Hybrid_Astar](Search_based_Planning/Search_2D/gif/010_Hybrid_Astar.gif)
+            -   算法心得：
             混合 A\* 算法有运动约束的寻路，比如汽车的运动约束，
     -   **实时/动态启发式搜索 (Real-time/Dynamic Heuristic Search)**
         -   **LRTA\* (Learning Real-time A\*)**
             -   Korf (1990)
+            -  ![011_LRTAstar](Search_based_Planning/Search_2D/gif/011_LRTAstar.gif)
+            -   算法心得：
+            学习式 A\* 算法是 A\* 算法的一种变体，它通过学习来调整搜索过程。
         -   **D\* 家族 (D\* Family)**
             -   **D\* (Dynamic A\*)**
                 -   Stentz (1994)
+                
             -   **Focused D\***
                 -   Stentz (1995)
             -   **D\* Lite**
