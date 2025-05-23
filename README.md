@@ -18,7 +18,7 @@ https://github.com/ai-winter/ros_motion_planning
 ## Warning
 AI assistance has been used in this article
 
-Claude 3.7, Doubao, ChatGPT for in-depth research and Manus.
+Claude 3.7/4, Doubao, ChatGPT for in-depth research and Manus.
 
 Manual review and inspection.
 
@@ -91,10 +91,20 @@ Manual review and inspection.
             -  ![011_LRTAstar](Search_based_Planning/Search_2D/gif/011_LRTAstar.gif)
             -   算法心得：
             学习式 A\* 算法是 A\* 算法的一种变体，它通过学习来调整搜索过程。
+        -   **Repairing A\***
+            -   None
+            -  ![012_Repairing_Astar](Search_based_Planning/Search_2D/gif/012_Repairing_Astar.gif)
+            -   算法心得：
+            修复 A\* 算法是 A\* 算法的一种变体，它通过修复搜索过程中的错误来提高搜索效率。
+        -   **LPA\* (Lifelong Planning A\*)**
+            -   Koenig, Likhachev, Furcy (2004)
+        -   **ARA\* (Anytime Repairing A\*)**
+            -   Likhachev, Gordon, Thrun (2003)
+        -   **RTAA\* (Real-time Adaptive A\*)**
+            -   Koenig & Likhachev (2006)
         -   **D\* 家族 (D\* Family)**
             -   **D\* (Dynamic A\*)**
                 -   Stentz (1994)
-                
             -   **Focused D\***
                 -   Stentz (1995)
             -   **D\* Lite**
@@ -103,12 +113,7 @@ Manual review and inspection.
                 -   Likhachev, Ferguson, Gordon, Stentz, Thrun (2005)
             -   **Field D\***
                 -   Ferguson & Stentz (2007)
-        -   **LPA\* (Lifelong Planning A\*)**
-            -   Koenig, Likhachev, Furcy (2004)
-        -   **ARA\* (Anytime Repairing A\*)**
-            -   Likhachev, Gordon, Thrun (2003)
-        -   **RTAA\* (Real-time Adaptive A\*)**
-            -   Koenig & Likhachev (2006)
+  
     -   **任意角度路径规划 (Any-Angle Path Planning)**
         -   **Theta\* 家族 (Theta\* Family)**
             -   **Theta\***
