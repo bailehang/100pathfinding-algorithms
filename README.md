@@ -98,6 +98,9 @@ Manual review and inspection.
             修复 A\* 算法是 A\* 算法的一种变体，它通过修复搜索过程中的错误来提高搜索效率。
         -   **LPA\* (Lifelong Planning A\*)**
             -   Koenig, Likhachev, Furcy (2004)
+            -   ![013_LPAstar](Search_based_Planning/Search_2D/gif/013_LPAstar.gif)
+            -     算法心得：
+            终身规划 A\* 算法是 A\* 算法的一种变体，它可以在不断变化的环境中进行搜索。
         -   **ARA\* (Anytime Repairing A\*)**
             -   Likhachev, Gordon, Thrun (2003)
         -   **RTAA\* (Real-time Adaptive A\*)**

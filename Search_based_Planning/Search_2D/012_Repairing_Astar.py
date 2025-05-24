@@ -1,6 +1,6 @@
 """
-Repairing_Astar 2D - Modified for GIF generation
-@author: clark bai, modified for automatic demonstration
+Repairing_Astar 2D 
+@author: clark bai
 """
 
 import os

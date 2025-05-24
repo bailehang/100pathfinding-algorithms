@@ -1,8 +1,6 @@
 """
 Hierarchical A* 2D
-Self-contained implementation with GIF generation capability
 @author: clark bai (original algorithm)
-Modified to be self-contained with GIF support
 """
 
 import io
