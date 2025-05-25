@@ -1,6 +1,7 @@
 """
 RTAAstar 2D (Real-time Adaptive A*)
 @author: huiming zhou
+@author: clark bai
 """
 
 import io

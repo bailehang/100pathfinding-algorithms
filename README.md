@@ -114,6 +114,11 @@ Manual review and inspection.
         -   **D\* 家族 (D\* Family)**
             -   **D\* (Dynamic A\*)**
                 -   Stentz (1994)
+                -  ![016_Dstar](Search_based_Planning/Search_2D/gif/016_D_star.gif)
+                -   算法心得：
+                也称动态 A\* 算法
+            -   **Lazy D\***
+                -   Koenig, Likhachev, Furcy (2004)
             -   **Focused D\***
                 -   Stentz (1995)
             -   **D\* Lite**
