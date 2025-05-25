@@ -32,89 +32,89 @@ Manual review and inspection.
 -   **基础搜索 (Uninformed Search)**
     -   **001 广度优先搜索 (Breadth-First Searching - BFS)**
         -   Moore (1959), Lee (1961)
-        -   ![001_bfs](Search_based_Planning/Search_2D/gif/001_bfs.gif)
+        -   ![001_bfs](Search_2D/gif/001_bfs.gif)
         -   算法心得：
         逐层扩展的搜索策略，它从起始节点开始，逐层向外扩展，直到找到目标节点或遍历完整个搜索空间。
     -   **002 深度优先搜索 (Depth-First Search - DFS)**
         -   Trémaux (1882), Hopcroft & Tarjan (1973)
-        -   ![002_dfs](Search_based_Planning/Search_2D/gif/002_dfs.gif)
+        -   ![002_dfs](Search_2D/gif/002_dfs.gif)
         -   算法心得：
         从起始节点开始，沿着一条路径尽可能深入，直到无法继续前进，然后回溯到上一个节点，继续探索其他路径。
 -   **启发式搜索 (Informed/Heuristic Search)**
     -   **003 贪婪最佳优先搜索 (Greedy Best-First Search - GBFS)**
         -   Doran & Michie (1966), Pearl (1984)
-        -   ![003_GBFS](Search_based_Planning/Search_2D/gif/003_GBFS.gif)
+        -   ![003_GBFS](Search_2D/gif/003_GBFS.gif)
         - 算法心得：
         从起始节点开始，每次选择与目标节点最近的节点进行扩展，直到找到目标节点或遍历完整个搜索空间。
     -   **004 Dijkstra 算法**
         -   Dijkstra (1959)
-        -   ![004_Dijkstra](Search_based_Planning/Search_2D/gif/004_Dijkstra.gif)
+        -   ![004_Dijkstra](Search_2D/gif/004_Dijkstra.gif)
         -   算法心得：
         Dijkstra 算法是一种用于寻找最短路径的算法，它通过维护一个距离表来记录从起始节点到其他节点的最短距离。
         算法从起始节点开始，每次选择距离表中距离最小的节点进行扩展，更新其相邻节点的距离表，直到找到目标节点或遍历完整个搜索空间。
     -   **005 A* 算法 (A* Algorithm)**
         -   Hart, Nilsson, Raphael (1968)
-        -   ![005_Astar](Search_based_Planning/Search_2D/gif/005_Astar.gif)
+        -   ![005_Astar](Search_2D/gif/005_Astar.gif)
         -   算法心得：
         A* 算法是一种启发式搜索算法，它结合了广度优先搜索和贪婪最佳优先搜索的优点。
         算法从起始节点开始，每次选择距离表中距离最小的节点进行扩展，更新其相邻节点的距离表，直到找到目标节点或遍历完整个搜索空间。
     -   **A* 变体与扩展 (A* Variants & Extensions)**
         -   **006 双向 A* (Bidirectional A*)**
             -   Pohl (1971)
-            -   ![006_Bidirectional_Astar](Search_based_Planning/Search_2D/gif/006_Bidirectional_a_star.gif)
+            -   ![006_Bidirectional_Astar](Search_2D/gif/006_Bidirectional_a_star.gif)
             -   算法心得：
             它从起始节点和目标节点同时开始进行搜索，直到两个搜索方向相遇。
         
         -   **007 加权 A* (Weighted A*)**
             -   Pohl (1970)
-            -   ![007_Weighted_Astar](Search_based_Planning/Search_2D/gif/007_Weighted_Astar_w2.0.gif)
+            -   ![007_Weighted_Astar](Search_2D/gif/007_Weighted_Astar_w2.0.gif)
             -   算法心得：
             加权 A* 算法是 A* 算法的一种变体，它通过对每个节点的代价进行加权来调整搜索过程。
         -   **008 分层 A* (Hierarchical A* - HPA*)**
             -   Botea, Müller, Schaeffer (2004)
-            -   ![008_Hierarchical_Astar](Search_based_Planning/Search_2D/gif/008_Hierarchical_Astar.gif)
+            -   ![008_Hierarchical_Astar](Search_2D/gif/008_Hierarchical_Astar.gif)
             -   算法心得：
             分层 A* 算法是 A* 算法的一种变体，它将搜索空间划分为多个层次，每个层次使用 A* 算法进行搜索。这里展示两个层次。
         -   **009 并行 A* (Parallel A*)**
             -   Zhou & Zeng (2015)
-            -   ![009_Parallel_Astar](Search_based_Planning/Search_2D/gif/009_Parallel_Astar.gif)
+            -   ![009_Parallel_Astar](Search_2D/gif/009_Parallel_Astar.gif)
             -   算法心得：
             并行 A* 算法的优点是可以利用多核处理器的并行计算能力，加快搜索速度。这里难以展示这种并行改为展示多个终点复用查询路径的情况
         -   **010 Hybrid A* **
             -   Dolgov, Thrun, Montemerlo, Diebel (2008)
-            -   ![010_Hybrid_Astar](Search_based_Planning/Search_2D/gif/010_Hybrid_Astar.gif)
+            -   ![010_Hybrid_Astar](Search_2D/gif/010_Hybrid_Astar.gif)
             -   算法心得：
             混合 A* 算法有运动约束的寻路，比如汽车的运动约束，
     -   **实时/动态启发式搜索 (Real-time/Dynamic Heuristic Search)**
         -   **011 LRTA* (Learning Real-time A*)**
             -   Korf (1990)
-            -  ![011_LRTAstar](Search_based_Planning/Search_2D/gif/011_LRTAstar.gif)
+            -  ![011_LRTAstar](Search_2D/gif/011_LRTAstar.gif)
             -   算法心得：
             学习式 A* 算法是 A* 算法的一种变体，它通过学习来调整搜索过程。
         -   **012 Repairing A* **
             -  Stentz (1994)
-            -  ![012_Repairing_Astar](Search_based_Planning/Search_2D/gif/012_Repairing_Astar.gif)
+            -  ![012_Repairing_Astar](Search_2D/gif/012_Repairing_Astar.gif)
             -   算法心得：
             修复 A* 算法是 A* 算法的一种变体，也是D*，动态环境下它通过修复搜索过程中的错误来提高搜索效率。
         -   **013 LPA* (Lifelong Planning A*)**
             -   Koenig, Likhachev, Furcy (2004)
-            -   ![013_LPAstar](Search_based_Planning/Search_2D/gif/013_LPAstar.gif)
+            -   ![013_LPAstar](Search_2D/gif/013_LPAstar.gif)
             -    算法心得：
             终身规划 A* 算法是 A* 算法的一种变体，它可以在不断变化的环境中进行搜索。
         -   **014 ARA* (Anytime Repairing A*)**
             -   Likhachev, Gordon, Thrun (2003)
-            -  ![014_ARAstar](Search_based_Planning/Search_2D/gif/014_ARAstar.gif)
+            -  ![014_ARAstar](Search_2D/gif/014_ARAstar.gif)
             -   算法心得：
              anytime Repairing A* 算法是 A* 算法的一种变体，初始权重较大，路径接近 “次优解”，算法的 “修复” 机制多次调整，self.e -= 0.5。
         -   **015 RTAA* (Real-time Adaptive A*)**
             -   Koenig & Likhachev (2006)
-            - ![015_RTAAstar](Search_based_Planning/Search_2D/gif/015_RTAAstar.gif)
+            - ![015_RTAAstar](Search_2D/gif/015_RTAAstar.gif)
             -   算法心得：
             实时自适应 A* 算法是 A* 算法的一种变体，它可以在不断变化的环境中进行搜索。
         -   **D* 家族 (D* Family)**
             -   **016 D* (Dynamic A*)**
                 -   Stentz (1994)
-                -  ![016_Dstar](Search_based_Planning/Search_2D/gif/016_D_star.gif)
+                -  ![016_Dstar](Search_2D/gif/016_D_star.gif)
                 -   算法心得：
                 也叫做动态 A* 算法
             -   **017 Lazy D* **
@@ -283,7 +283,7 @@ Manual review and inspection.
 ## 八、其他规划方法 (Other Planning Methods)
 -   **087 凸集图规划 (Graph of Convex Sets - GCS / GCS*)**
     -   Marcucci, Tedrake (2019), Chia, Jiang, Graesdal, Kaelbling, Tedrake (2024)
-    -   ![087_GCS](Search_based_Planning/Search_2D/gif/087_GCS.gif)
+    -   ![087_GCS](Search_2D/gif/087_Graph_of_Convex_Sets.gif)
 -   **088 多智能体凸集图规划 (Multi-Agent Graph of Convex Sets - MGCS / MGCS*)**
     -   Marcucci, Tedrake (2019), Chia, Jiang, Graesdal, Kaelbling, Tedrake (2024)
 -   **089 多智能体多目标规划 (Multi-Agent Multi-Objective Planning - MAMOP)**
