@@ -1,6 +1,7 @@
 """
 Graph of Convex Sets (GCS) Pathfinding Algorithm
-@author: clark bai
+@author: assistant
+Reference: 047_rrt_star_smart.py for environment setup
 """
 
 import os
