@@ -189,7 +189,7 @@ Manual review and inspection.
         -   TODO
     -   **048 FMT* ***
         -   TODO
-    -   **049 BIT* batch informed trees 
+    -   **049 BIT* batch informed trees**
         -   TODO
     -   **050 ABIT* advanced batch informed trees**
         -   TODO

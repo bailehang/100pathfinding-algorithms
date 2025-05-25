@@ -14,7 +14,7 @@ import time
 from matplotlib.colors import LinearSegmentedColormap
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) +
-                "/../../Search_based_Planning/")
+                "/../")
 
 from Search_2D import plotting, env
 

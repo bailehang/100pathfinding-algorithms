@@ -12,7 +12,7 @@ import numpy as np
 from matplotlib.patches import Rectangle
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) +
-                "/../../Search_based_Planning/")
+                "/../")
 
 from Search_2D import plotting, env
 

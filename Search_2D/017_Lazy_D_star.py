@@ -1,5 +1,5 @@
 """
-Focused D* 2D
+Lazy D*  2D
 @author: clark bai
 """
 
