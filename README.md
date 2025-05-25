@@ -92,17 +92,20 @@ Manual review and inspection.
             -   算法心得：
             学习式 A\* 算法是 A\* 算法的一种变体，它通过学习来调整搜索过程。
         -   **Repairing A\***
-            -   None
+            -  Stentz (1994)
             -  ![012_Repairing_Astar](Search_based_Planning/Search_2D/gif/012_Repairing_Astar.gif)
             -   算法心得：
-            修复 A\* 算法是 A\* 算法的一种变体，它通过修复搜索过程中的错误来提高搜索效率。
+            修复 A\* 算法是 A\* 算法的一种变体，类似D\*，动态环境下它通过修复搜索过程中的错误来提高搜索效率。
         -   **LPA\* (Lifelong Planning A\*)**
             -   Koenig, Likhachev, Furcy (2004)
             -   ![013_LPAstar](Search_based_Planning/Search_2D/gif/013_LPAstar.gif)
-            -     算法心得：
+            -    算法心得：
             终身规划 A\* 算法是 A\* 算法的一种变体，它可以在不断变化的环境中进行搜索。
         -   **ARA\* (Anytime Repairing A\*)**
             -   Likhachev, Gordon, Thrun (2003)
+            -  ![014_ARAstar](Search_based_Planning/Search_2D/gif/014_ARAstar.gif)
+            -   算法心得：
+             anytime Repairing A\* 算法是 A\* 算法的一种变体，初始权重较大，路径接近 “次优解”，算法的 “修复” 机制多次调整，self.e -= 0.5。
         -   **RTAA\* (Real-time Adaptive A\*)**
             -   Koenig & Likhachev (2006)
         -   **D\* 家族 (D\* Family)**

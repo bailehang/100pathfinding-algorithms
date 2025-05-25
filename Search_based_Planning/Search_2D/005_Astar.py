@@ -1,6 +1,7 @@
 """
 A_star 2D
 @author: huiming zhou
+@author: clark bai
 """
 import io
 import math
