@@ -10,8 +10,9 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) +
-                "/../../Search_based_Planning/")
+                "/../")
 
 from Search_2D import plotting, env
 

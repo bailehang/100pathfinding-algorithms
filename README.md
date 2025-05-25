@@ -125,6 +125,7 @@ Manual review and inspection.
                 -   Koenig & Likhachev (2002)
             -   **020 Anytime D* **
                 -   Likhachev, Ferguson, Gordon, Stentz, Thrun (2005)
+                - ![020_Anytime_Dstar](Search_2D/gif/020_Anytime_D_star.gif)
             -   **021 Field D* **
                 -   Ferguson & Stentz (2007)
   
