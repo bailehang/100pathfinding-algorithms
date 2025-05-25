@@ -150,6 +150,7 @@ Manual review and inspection.
         -   **JPS 家族 (Jump Point Search Family)**
             -   **028 JPS (Jump Point Search)**
                 -   Harabor & Grastien (2011)
+                -  ![028_JPS](Search_2D/gif/028_JPS.gif)
             -   **029 JPS+**
                 -   Harabor & Grastien (2012)
             -   **030 JPS++**
