@@ -95,7 +95,7 @@ Manual review and inspection.
             -  Stentz (1994)
             -  ![012_Repairing_Astar](Search_based_Planning/Search_2D/gif/012_Repairing_Astar.gif)
             -   算法心得：
-            修复 A\* 算法是 A\* 算法的一种变体，类似D\*，动态环境下它通过修复搜索过程中的错误来提高搜索效率。
+            修复 A\* 算法是 A\* 算法的一种变体，也是D\*，动态环境下它通过修复搜索过程中的错误来提高搜索效率。
         -   **LPA\* (Lifelong Planning A\*)**
             -   Koenig, Likhachev, Furcy (2004)
             -   ![013_LPAstar](Search_based_Planning/Search_2D/gif/013_LPAstar.gif)
@@ -108,6 +108,9 @@ Manual review and inspection.
              anytime Repairing A\* 算法是 A\* 算法的一种变体，初始权重较大，路径接近 “次优解”，算法的 “修复” 机制多次调整，self.e -= 0.5。
         -   **RTAA\* (Real-time Adaptive A\*)**
             -   Koenig & Likhachev (2006)
+            - ![015_RTAAstar](Search_based_Planning/Search_2D/gif/015_RTAAstar.gif)
+            -   算法心得：
+            实时自适应 A\* 算法是 A\* 算法的一种变体，它可以在不断变化的环境中进行搜索。
         -   **D\* 家族 (D\* Family)**
             -   **D\* (Dynamic A\*)**
                 -   Stentz (1994)
