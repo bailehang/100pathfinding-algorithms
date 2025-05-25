@@ -1,6 +1,7 @@
 """
 EXTENDED_RRT_2D - Consolidated Version
 @author: huiming zhou (original code)
+@author: clark bai
 """
 
 import math

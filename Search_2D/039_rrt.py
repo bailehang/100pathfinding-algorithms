@@ -1,6 +1,7 @@
 """
 RRT (Rapidly-exploring Random Tree) Algorithm Implementation
 @author: huiming zhou
+@author: clark bai
 """
 
 import os

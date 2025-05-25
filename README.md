@@ -133,12 +133,16 @@ Manual review and inspection.
         -   **Theta* 家族 (Theta* Family)**
             -   **022 Theta* **
                 -   Nash, Daniel, Koenig, Felner (2007)
+                -   ![022_Theta_star](Search_2D/gif/022_Theta_star.gif)
             -   **023 Lazy Theta* **
                 -   Nash, Koenig, Tovey (2010)
+                -  ![023_Lazy_Theta_star](Search_2D/gif/023_LazyTheta_star.gif)
             -   **024 S-Theta* **
                 -   Tang, Chen, Wu, Zhang, Chen (2021)
+                -  ![024_S_Theta_star](Search_2D/gif/024_STheta_star.gif)
             -   **025 Enhanced Theta* **
                 -   Li, Wen, Wang, Zhang (2020)
+                - ![025_Enhanced_Theta_star](Search_2D/gif/025_EnhancedTheta_star.gif)
             -   **026 Multi - Agent Theta **
                 -   Li, Zhang, Wang, Zhang (2022)
             -   **027 Adaptive Theta* **

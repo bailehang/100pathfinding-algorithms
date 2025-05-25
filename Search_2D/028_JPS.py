@@ -3,16 +3,222 @@ JPS
 @author: clark bai
 """
 
-import os
-import sys
+import io
 import math
+import os
 import heapq
 import time
 import matplotlib.pyplot as plt
+from PIL import Image
+import numpy as np
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) +
-                "/../")
-from Search_2D import plotting, env
+
+class Env:
+    """Environment class for 2D grid world"""
+    def __init__(self):
+        self.x_range = 51  # size of background
+        self.y_range = 31
+        self.motions = [(-1, 0), (-1, 1), (0, 1), (1, 1),
+                        (1, 0), (1, -1), (0, -1), (-1, -1)]
+        self.obs = self.obs_map()
+
+    def update_obs(self, obs):
+        self.obs = obs
+
+    def obs_map(self):
+        """
+        Initialize obstacles' positions
+        :return: map of obstacles
+        """
+        x = self.x_range
+        y = self.y_range
+        obs = set()
+
+        # Add boundary obstacles
+        for i in range(x):
+            obs.add((i, 0))
+        for i in range(x):
+            obs.add((i, y - 1))
+        for i in range(y):
+            obs.add((0, i))
+        for i in range(y):
+            obs.add((x - 1, i))
+
+        # Add additional obstacles
+        for i in range(10, 21):
+            obs.add((i, 15))
+        for i in range(15):
+            obs.add((20, i))
+        for i in range(15, 30):
+            obs.add((30, i))
+        for i in range(16):
+            obs.add((40, i))
+
+        return obs
+
+
+class Plotting:
+    """Plotting class for visualization with GIF support"""
+
+    def __init__(self, xI, xG):
+        self.xI, self.xG = xI, xG
+        self.env = Env()
+        self.obs = self.env.obs_map()
+        self.frames = []
+        self.fig_size = (6, 4)
+
+    def update_obs(self, obs):
+        self.obs = obs
+
+    def plot_grid(self, name):
+        """Plot the grid with obstacles, start and goal points"""
+        # Create figure with fixed size
+        plt.figure(figsize=self.fig_size, dpi=100, clear=True)
+        
+        obs_x = [x[0] for x in self.obs]
+        obs_y = [x[1] for x in self.obs]
+
+        plt.plot(self.xI[0], self.xI[1], "bs",  label='Start')
+        plt.plot(self.xG[0], self.xG[1], "gs",  label='Goal')
+        plt.plot(obs_x, obs_y, "sk")
+        plt.title(name, fontsize=14)
+        plt.axis("equal")
+        plt.grid(True, alpha=0.3)
+
+        # Capture the initial grid frame
+        self.capture_frame()
+
+    def plot_visited(self, visited, cl='gray'):
+        """Plot visited nodes during search"""
+        if self.xI in visited:
+            visited.remove(self.xI)
+        if self.xG in visited:
+            visited.remove(self.xG)
+
+        count = 0
+        for x in visited:
+            count += 1
+            plt.plot(x[0], x[1], color=cl, marker='o')
+            plt.gcf().canvas.mpl_connect('key_release_event',
+                                         lambda event: [exit(0) if event.key == 'escape' else None])
+
+            if count < len(visited) / 3:
+                length = 20
+            elif count < len(visited) * 2 / 3:
+                length = 30
+            else:
+                length = 40
+
+            if count % length == 0:
+                plt.pause(0.01)
+                self.capture_frame()
+
+        plt.pause(0.1)
+        self.capture_frame()
+
+    def plot_path(self, path, cl='r', flag=False):
+        """Plot the final path"""
+        path_x = [path[i][0] for i in range(len(path))]
+        path_y = [path[i][1] for i in range(len(path))]
+
+        if not flag:
+            plt.plot(path_x, path_y, linewidth='3', color='r', label='Final Path')
+        else:
+            plt.plot(path_x, path_y, linewidth='3', color=cl)
+
+        plt.plot(self.xI[0], self.xI[1], "bs")
+        plt.plot(self.xG[0], self.xG[1], "gs")
+
+        plt.pause(0.1)
+        self.capture_frame()
+
+    def capture_frame(self):
+        """Capture current frame for GIF animation"""
+        buf = io.BytesIO()
+        
+        # Get the current figure
+        fig = plt.gcf()
+        fig.canvas.draw()
+        
+        # Save the figure to a buffer with a standard DPI
+        fig.savefig(buf, format='png', dpi=100, bbox_inches='tight')
+        buf.seek(0)
+        
+        # Open the image using PIL and convert to RGB
+        img = Image.open(buf)
+        img_rgb = img.convert('RGB')
+        
+        # Convert to numpy array
+        image = np.array(img_rgb)
+        
+        # Add to frames
+        self.frames.append(image)
+        
+        # Close the buffer
+        buf.close()
+
+    def save_animation_as_gif(self, name, fps=10):
+        """Save frames as a GIF animation with consistent size"""
+        # Create directory for GIFs
+        gif_dir = "gif"
+        os.makedirs(gif_dir, exist_ok=True)
+        gif_path = os.path.join(gif_dir, f"{name}.gif")
+
+        print(f"Saving GIF animation to {gif_path}...")
+        print(f"Number of frames captured: {len(self.frames)}")
+        
+        # Verify all frames have the same dimensions
+        if self.frames:
+            first_frame_shape = self.frames[0].shape
+            for i, frame in enumerate(self.frames):
+                if frame.shape != first_frame_shape:
+                    print(f"WARNING: Frame {i} has inconsistent shape: {frame.shape} vs {first_frame_shape}")
+                    # Resize inconsistent frames to match the first frame
+                    resized_frame = np.array(Image.fromarray(frame).resize(
+                        (first_frame_shape[1], first_frame_shape[0]), 
+                        Image.LANCZOS))
+                    self.frames[i] = resized_frame
+        
+        # Check if frames list is not empty before saving
+        if self.frames:
+            try:
+                # Convert NumPy arrays to PIL Images
+                print("Converting frames to PIL Images...")
+                frames_p = []
+                for i, frame in enumerate(self.frames):
+                    try:
+                        img = Image.fromarray(frame)
+                        img_p = img.convert('P', palette=Image.ADAPTIVE, colors=256)
+                        frames_p.append(img_p)
+                        if i % 10 == 0:
+                            print(f"Converted frame {i+1}/{len(self.frames)}")
+                    except Exception as e:
+                        print(f"Error converting frame {i}: {e}")
+                
+                print(f"Successfully converted {len(frames_p)} frames")
+
+                # Save with proper disposal method to avoid artifacts
+                print("Saving GIF file...")
+                frames_p[0].save(
+                    gif_path,
+                    format='GIF',
+                    append_images=frames_p[1:],
+                    save_all=True,
+                    duration=int(1000 / fps),
+                    loop=0,
+                    disposal=2  # Replace previous frame
+                )
+                print(f"GIF animation saved to {gif_path}")
+                
+                # Verify file was created
+                if os.path.exists(gif_path):
+                    print(f"File exists with size: {os.path.getsize(gif_path) / 1024:.2f} KB")
+                else:
+                    print("WARNING: File does not exist after saving!")
+            except Exception as e:
+                print(f"Error during GIF creation: {e}")
+        else:
+            print("No frames to save!")
 
 
 class JPS:
@@ -27,7 +233,7 @@ class JPS:
         self.s_goal = s_goal
         self.heuristic_type = heuristic_type
 
-        self.Env = env.Env()  # class Env
+        self.Env = Env()  # class Env
 
         self.u_set = self.Env.motions  # feasible input set
         self.obs = self.Env.obs  # position of obstacles
@@ -40,16 +246,12 @@ class JPS:
         # Record jump points
         self.jump_points = []
 
-    def searching(self):
+    def searching(self, plot):
         """
         Jump Point Search - Simplified
+        :param plot: Plotting object for visualization
         :return: path, visited order
         """
-        # Create figure and axes for dynamic plotting
-        fig, ax = plt.subplots()
-        plot = plotting.Plotting(self.s_start, self.s_goal)
-        plot.plot_grid("Jump Point Search (JPS) - Live Demo")
-        
         # Initialize start node
         self.PARENT[self.s_start] = self.s_start
         self.g[self.s_start] = 0
@@ -79,10 +281,6 @@ class JPS:
             # Check if goal reached
             if current == self.s_goal:
                 print(f"Goal reached after processing {nodes_processed} nodes!")
-                # Plot final path
-                path = self.extract_path(self.PARENT)
-                plot.plot_path(path)
-                plt.pause(0.5)
                 break
             
             # Debug - print current position periodically
@@ -93,20 +291,21 @@ class JPS:
             neighbors = self.get_neighbors(current)
             
             # Dynamic plotting - plot current node and visited nodes
-            plt.plot(current[0], current[1], 'ro', markersize=6) # Current node
+            plt.plot(current[0], current[1], 'ro') # Current node
             
             # Plot visited nodes
-            for node_v in visited: # Renamed 'node' to 'node_v' to avoid conflict
+            for node_v in visited[-50:]: # Only plot recent visited nodes for performance
                 if node_v != self.s_start and node_v != self.s_goal and node_v != current:
-                    plt.plot(node_v[0], node_v[1], 'gray', marker='.', markersize=2)
+                    plt.plot(node_v[0], node_v[1], 'gray', marker='.')
             
             # Plot currently considered neighbors
-            for neighbor_n in neighbors: # Renamed 'neighbor' to 'neighbor_n'
+            for neighbor_n in neighbors:
                 if not self.is_obstacle(neighbor_n):
-                    plt.plot(neighbor_n[0], neighbor_n[1], 'yo', markersize=4, alpha=0.5) # Neighbor nodes
+                    plt.plot(neighbor_n[0], neighbor_n[1], 'yo', alpha=0.5) # Neighbor nodes
             
-            # Update display
+            # Update display and capture frame
             plt.pause(0.01)
+            plot.capture_frame()
             
             for neighbor in neighbors:
                 # Check if neighbor is valid
@@ -121,9 +320,10 @@ class JPS:
                     self.jump_points.append((current, jp))
                     
                     # Plot jump point and connection line
-                    plt.plot(jp[0], jp[1], 'bo', markersize=7) # Jump point
+                    plt.plot(jp[0], jp[1], 'bo') # Jump point
                     plt.plot([current[0], jp[0]], [current[1], jp[1]], 'g-', linewidth=1.5, alpha=0.7) # Connection to jump point
                     plt.pause(0.05)  # Pause longer when a jump point is found
+                    plot.capture_frame()
                     
                     # Calculate cost to this jump point
                     new_cost = self.g[current] + self.cost(current, jp)
@@ -133,21 +333,6 @@ class JPS:
                         self.g[jp] = new_cost
                         self.PARENT[jp] = current
                         heapq.heappush(self.OPEN, (self.f_value(jp), jp))
-                        
-                        # Plot temporary path
-                        temp_path = self.extract_temp_path(jp)
-                        # Clear previous path lines
-                        # Be careful with line removal, ensure it targets the correct lines
-                        # This part might need adjustment based on how lines are stored or identified
-                        lines_to_remove = [line for line in ax.get_lines() if line.get_color() == 'blue' and line.get_linestyle() == '-']
-                        for line in lines_to_remove:
-                            line.remove()
-                        # Plot new temporary path
-                        if temp_path:
-                            xs = [x_coord for x_coord, y_coord in temp_path] # Renamed x, y to x_coord, y_coord
-                            ys = [y_coord for x_coord, y_coord in temp_path]
-                            plt.plot(xs, ys, 'b-', linewidth=2) # Temporary path
-                            plt.pause(0.5)
         
         # Extract path
         path = self.extract_path(self.PARENT)
@@ -162,48 +347,49 @@ class JPS:
             plot.plot_grid("Jump Point Search (JPS) - Final Result")
             
             # Plot visited nodes
-            for node_v in visited: # Renamed 'node' to 'node_v'
+            for node_v in visited:
                 if node_v != self.s_start and node_v != self.s_goal:
-                    plt.plot(node_v[0], node_v[1], 'gray', marker='.', markersize=2)
+                    plt.plot(node_v[0], node_v[1], 'gray', marker='.')
             
             # Plot jump points
-            jump_points_only = list(set([jp_node for _, jp_node in self.jump_points])) # Renamed jp[1] to jp_node
-            for jp_node_item in jump_points_only: # Renamed jp to jp_node_item
+            jump_points_only = list(set([jp_node for _, jp_node in self.jump_points]))
+            for jp_node_item in jump_points_only:
                 if jp_node_item != self.s_start and jp_node_item != self.s_goal:
-                    plt.plot(jp_node_item[0], jp_node_item[1], 'bo', markersize=7)
+                    plt.plot(jp_node_item[0], jp_node_item[1], 'bo')
             
             # Plot jump point connection lines
-            for start_node, end_node in self.jump_points: # Renamed start, end
+            for start_node, end_node in self.jump_points:
                 plt.plot([start_node[0], end_node[0]], [start_node[1], end_node[1]], 'g-', linewidth=1.5, alpha=0.7)
             
             # Plot the final path
             plot.plot_path(path)
+            
             # Add legend
             handles = [
-                plt.Line2D([0], [0], marker='o', color='r', label='Start Point', markersize=6, linestyle='None'),
-                plt.Line2D([0], [0], marker='o', color='g', label='Goal Point', markersize=6, linestyle='None'),
-                plt.Line2D([0], [0], marker='.', color='gray', label='Visited Node', markersize=2, linestyle='None'),
-                plt.Line2D([0], [0], marker='o', color='b', label='Jump Point', markersize=7, linestyle='None'),
+                plt.Line2D([0], [0], marker='o', color='b', label='Start Point', linestyle='None'),
+                plt.Line2D([0], [0], marker='o', color='g', label='Goal Point', linestyle='None'),
+                plt.Line2D([0], [0], marker='.', color='gray', label='Visited Node', linestyle='None'),
+                plt.Line2D([0], [0], marker='o', color='b', label='Jump Point', linestyle='None'),
                 plt.Line2D([0], [0], color='g', label='Jump Connection', linewidth=1.5, alpha=0.7),
                 plt.Line2D([0], [0], color='r', label='Final Path', linewidth=2)
             ]
-            plt.legend(handles=handles)
+            plt.legend(handles=handles, loc='upper right')
   
             plt.pause(1) # Pause for 1 second to view final result
+            plot.capture_frame()
         else:
             print(f"No path found after processing {nodes_processed} nodes")
             
-        plt.show()
         return path, visited
 
-    def extract_temp_path(self, current_node): # Renamed current to current_node
+    def extract_temp_path(self, current_node):
         """
         Extract temporary path from start to current node
         :param current_node: Current node
         :return: Temporary path
         """
         path = [current_node]
-        s_node = current_node # Renamed s to s_node
+        s_node = current_node
         
         while s_node != self.s_start:
             if s_node not in self.PARENT:
@@ -213,14 +399,14 @@ class JPS:
         
         return list(reversed(path))
 
-    def get_neighbors(self, s_node): # Renamed s to s_node
+    def get_neighbors(self, s_node):
         """
         Find neighbors of state s_node that are not in obstacles
         :param s_node: State
         :return: Neighbors
         """
         nei_list = []
-        for u_motion in self.u_set: # Renamed u to u_motion
+        for u_motion in self.u_set:
             s_next = (s_node[0] + u_motion[0], s_node[1] + u_motion[1])
             # Check boundary constraints
             if (0 <= s_next[0] < self.Env.x_range and 
@@ -230,7 +416,7 @@ class JPS:
                 
         return nei_list
     
-    def find_jump_point(self, current_node, neighbor_node): # Renamed current, neighbor
+    def find_jump_point(self, current_node, neighbor_node):
         """
         Detect jump point - Iterative implementation
         :param current_node: Current node
@@ -256,13 +442,13 @@ class JPS:
             return neighbor_node
             
         # Start iterative check
-        node_to_check = neighbor_node # Renamed node to node_to_check
+        node_to_check = neighbor_node
         steps = 0
         max_steps = 1000  # Increase the maximum number of steps to prevent early return
         
         while steps < max_steps:
             steps += 1
-            x_coord, y_coord = node_to_check # Renamed x, y
+            x_coord, y_coord = node_to_check
             
             # Diagonal movement
             if dx != 0 and dy != 0:
@@ -272,10 +458,6 @@ class JPS:
                     return node_to_check
                     
                 # Recursively check horizontal and vertical directions
-                # Note: Recursive calls within an iterative function can be complex.
-                # This part of JPS is crucial and often involves careful state management.
-                # For simplicity in this translation, the recursive calls are kept,
-                # but a fully iterative JPS might handle this differently.
                 h_jp = self.find_jump_point(node_to_check, (x_coord + dx, y_coord))
                 if h_jp:
                     return node_to_check # If a jump point is found horizontally, current node_to_check is a jump point
@@ -313,24 +495,18 @@ class JPS:
             # Move to the next position
             node_to_check = next_pos
             
-        # If max_steps reached or no jump point condition met along the straight line,
-        # this implies no jump point was found by forced neighbor or goal conditions.
-        # The original JPS might return None here if only straight line check fails without forced neighbor.
-        # The provided code returns 'node_to_check' (the last valid node in the line).
-        # This behavior might differ from a strict JPS implementation.
-        # For a strict JPS, if no jump point is found by the rules, it should return None.
-        # However, the previous logic was "return node", so keeping it consistent.
-        return node_to_check # Or return None if strict JPS behavior is desired here.
+        # If max_steps reached or no jump point condition met along the straight line
+        return node_to_check
     
-    def is_forced_neighbor(self, node_to_check, direction_vec): # Renamed node, direction
+    def is_forced_neighbor(self, node_to_check, direction_vec):
         """
         Check if the node_to_check has a forced neighbor
         :param node_to_check: Current node
         :param direction_vec: Movement direction (dx, dy)
         :return: Boolean, True if there is a forced neighbor
         """
-        x_coord, y_coord = node_to_check # Renamed x, y
-        dx_dir, dy_dir = direction_vec # Renamed dx, dy
+        x_coord, y_coord = node_to_check
+        dx_dir, dy_dir = direction_vec
         
         # Horizontal movement
         if dy_dir == 0: # Moving horizontally
@@ -351,13 +527,13 @@ class JPS:
         # No forced neighbor found for straight moves based on these rules
         return False
     
-    def is_obstacle(self, node_to_check): # Renamed node
+    def is_obstacle(self, node_to_check):
         """
         Check if a node_to_check is an obstacle or out of bounds
         :param node_to_check: Node to check
         :return: True if obstacle or out of bounds, False otherwise
         """
-        x_coord, y_coord = node_to_check # Renamed x, y
+        x_coord, y_coord = node_to_check
         
         # Check if out of bounds
         if not (0 <= x_coord < self.Env.x_range and 0 <= y_coord < self.Env.y_range):
@@ -369,7 +545,7 @@ class JPS:
             
         return False
 
-    def cost(self, s_start_node, s_goal_node): # Renamed s_start, s_goal
+    def cost(self, s_start_node, s_goal_node):
         """
         Calculate cost between two nodes (Euclidean distance)
         :param s_start_node: starting node
@@ -382,7 +558,7 @@ class JPS:
 
         return math.hypot(s_goal_node[0] - s_start_node[0], s_goal_node[1] - s_start_node[1])
 
-    def f_value(self, s_node): # Renamed s
+    def f_value(self, s_node):
         """
         Calculate f value (f = g + h)
         :param s_node: current state/node
@@ -390,7 +566,7 @@ class JPS:
         """
         return self.g[s_node] + self.heuristic(s_node)
 
-    def extract_path(self, parent_map): # Renamed PARENT
+    def extract_path(self, parent_map):
         """
         Extract the path based on the parent_map set
         :param parent_map: Dictionary storing parent of each node
@@ -402,7 +578,7 @@ class JPS:
             
         # Reconstruct path from goal to start
         path = [self.s_goal]
-        current_s = self.s_goal # Renamed s to current_s
+        current_s = self.s_goal
 
         while current_s != self.s_start:
             current_s = parent_map[current_s]
@@ -414,13 +590,13 @@ class JPS:
         path.reverse() # Reverse the path to be from start to goal
         return path
 
-    def heuristic(self, s_node): # Renamed s
+    def heuristic(self, s_node):
         """
         Calculate heuristic (estimated cost from s_node to goal)
         :param s_node: current node
         :return: heuristic value
         """
-        goal_node = self.s_goal # Renamed goal to goal_node for clarity
+        goal_node = self.s_goal
         
         if self.heuristic_type == "manhattan":
             return abs(goal_node[0] - s_node[0]) + abs(goal_node[1] - s_node[1])
@@ -428,30 +604,35 @@ class JPS:
             return math.hypot(goal_node[0] - s_node[0], goal_node[1] - s_node[1])
 
 
-def run_jps(s_start_coord, s_goal_coord, run_title=""): # Renamed s_start, s_goal, title
+def run_jps(s_start_coord, s_goal_coord, run_title="", save_gif=False):
     """
     Run Jump Point Search (JPS)
     :param s_start_coord: Start point coordinates
     :param s_goal_coord: Goal point coordinates
     :param run_title: Title for the JPS run
+    :param save_gif: Whether to save GIF animation
     """
     if run_title:
         print(f"\n===== {run_title} =====")
     
-    # Create JPS object
-    jps_solver = JPS(s_start_coord, s_goal_coord, "euclidean") # Renamed jps to jps_solver
+    # Create JPS and plotting objects
+    jps_solver = JPS(s_start_coord, s_goal_coord, "euclidean")
+    plot = Plotting(s_start_coord, s_goal_coord)
     
     # Display environment info
     print(f"Grid size: {jps_solver.Env.x_range} × {jps_solver.Env.y_range}")
     print(f"Start: {s_start_coord}, Goal: {s_goal_coord}")
     print(f"Number of obstacles: {len(jps_solver.Env.obs)}")
     
+    # Plot initial grid
+    plot.plot_grid("Jump Point Search (JPS) - Live Demo")
+    
     # Run JPS
     print("\nRunning Jump Point Search (JPS)...")
     start_time = time.time()
-    jps_path, jps_visited_nodes = jps_solver.searching() # Renamed jps_visited
+    jps_path, jps_visited_nodes = jps_solver.searching(plot)
     end_time = time.time()
-    jps_run_time = end_time - start_time # Renamed jps_time
+    jps_run_time = end_time - start_time
     
     print(f"JPS Runtime: {jps_run_time:.4f} seconds")
     print(f"JPS Nodes explored: {len(jps_visited_nodes)}")
@@ -460,6 +641,13 @@ def run_jps(s_start_coord, s_goal_coord, run_title=""): # Renamed s_start, s_goa
         print(f"JPS found a path with {len(jps_path)} nodes")
     else:
         print("JPS could not find a path.")
+    
+    # Show the plot
+    plt.show()
+    
+    # Save GIF if requested
+    if save_gif:
+        plot.save_animation_as_gif("028_JPS", fps=10)
 
 
 def main():
@@ -469,9 +657,9 @@ def main():
     print("Jump Point Search (JPS) Implementation")
     print("--------------------------------------")
 
-    s_start_main = (5, 5) # Renamed s_start
-    s_goal_main = (45, 25) # Renamed s_goal
-    run_jps(s_start_main, s_goal_main, "Test Case JPS") # Changed title slightly
+    s_start_main = (5, 5)
+    s_goal_main = (45, 25)
+    run_jps(s_start_main, s_goal_main, "Test Case JPS", save_gif=True)
 
 
 if __name__ == '__main__':
