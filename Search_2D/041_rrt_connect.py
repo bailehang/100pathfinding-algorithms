@@ -3,12 +3,14 @@ RRT-Connect Algorithm Implementation
 @author: huiming zhou
 """
 
+import io
 import os
 import sys
 import math
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+from PIL import Image
 
 
 class Node:
@@ -93,14 +95,18 @@ class Plotting:
         self.obs_bound = self.env.obs_boundary
         self.obs_circle = self.env.obs_circle
         self.obs_rectangle = self.env.obs_rectangle
+        self.frames = []
+        self.fig_size = (6, 4)
 
-    def animation_connect(self, V1, V2, path, name):
+    def animation_connect(self, V1, V2, path, name, save_gif=False):
         self.plot_grid(name)
         self.plot_visited_connect(V1, V2)
         self.plot_path(path)
+        if save_gif:
+            self.save_animation_as_gif(name)
 
     def plot_grid(self, name):
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=self.fig_size, dpi=100)
 
         for (ox, oy, w, h) in self.obs_bound:
             ax.add_patch(
@@ -137,9 +143,11 @@ class Plotting:
 
         plt.title(name)
         plt.axis("equal")
+        
+        # Capture the initial grid frame
+        self.capture_frame()
 
-    @staticmethod
-    def plot_visited_connect(V1, V2):
+    def plot_visited_connect(self, V1, V2):
         len1, len2 = len(V1), len(V2)
 
         for k in range(max(len1, len2)):
@@ -155,15 +163,108 @@ class Plotting:
 
             if k % 2 == 0:
                 plt.pause(0.001)
+                self.capture_frame()
 
         plt.pause(0.01)
+        self.capture_frame()
 
-    @staticmethod
-    def plot_path(path):
+    def plot_path(self, path):
         if len(path) != 0:
             plt.plot([x[0] for x in path], [x[1] for x in path], '-r', linewidth=2)
             plt.pause(0.01)
+            self.capture_frame()
         plt.show()
+
+    def capture_frame(self):
+        """Capture current plot as frame for GIF"""
+        buf = io.BytesIO()
+        
+        # Get the current figure
+        fig = plt.gcf()
+        fig.canvas.draw()
+        
+        # Save the figure to a buffer with a standard DPI
+        fig.savefig(buf, format='png', dpi=100, bbox_inches='tight')
+        buf.seek(0)
+        
+        # Open the image using PIL and convert to RGB
+        img = Image.open(buf)
+        img_rgb = img.convert('RGB')
+        
+        # Convert to numpy array
+        image = np.array(img_rgb)
+        
+        # Add to frames
+        self.frames.append(image)
+        
+        # Close the buffer
+        buf.close()
+
+    def save_animation_as_gif(self, name, fps=10):
+        """Save frames as a GIF animation with consistent size"""
+        # Create directory for GIFs
+        gif_dir = "gif"
+        os.makedirs(gif_dir, exist_ok=True)
+        gif_path = os.path.join(gif_dir, f"{name}.gif")
+
+        print(f"Saving GIF animation to {gif_path}...")
+        print(f"Number of frames captured: {len(self.frames)}")
+        
+        # Verify all frames have the same dimensions
+        if self.frames:
+            first_frame_shape = self.frames[0].shape
+            for i, frame in enumerate(self.frames):
+                if frame.shape != first_frame_shape:
+                    print(f"WARNING: Frame {i} has inconsistent shape: {frame.shape} vs {first_frame_shape}")
+                    # Resize inconsistent frames to match the first frame
+                    resized_frame = np.array(Image.fromarray(frame).resize(
+                        (first_frame_shape[1], first_frame_shape[0]), 
+                        Image.LANCZOS))
+                    self.frames[i] = resized_frame
+        
+        # Check if frames list is not empty before saving
+        if self.frames:
+            try:
+                # Convert NumPy arrays to PIL Images
+                print("Converting frames to PIL Images...")
+                frames_p = []
+                for i, frame in enumerate(self.frames):
+                    try:
+                        img = Image.fromarray(frame)
+                        img_p = img.convert('P', palette=Image.ADAPTIVE, colors=256)
+                        frames_p.append(img_p)
+                        if i % 10 == 0:
+                            print(f"Converted frame {i+1}/{len(self.frames)}")
+                    except Exception as e:
+                        print(f"Error converting frame {i}: {e}")
+                
+                print(f"Successfully converted {len(frames_p)} frames")
+
+                # Save with proper disposal method to avoid artifacts
+                print("Saving GIF file...")
+                frames_p[0].save(
+                    gif_path,
+                    format='GIF',
+                    append_images=frames_p[1:],
+                    save_all=True,
+                    duration=int(1000 / fps),
+                    loop=0,
+                    disposal=2  # Replace previous frame
+                )
+                print(f"GIF animation saved to {gif_path}")
+                
+                # Verify file was created
+                if os.path.exists(gif_path):
+                    print(f"File exists with size: {os.path.getsize(gif_path) / 1024:.2f} KB")
+                else:
+                    print("WARNING: File does not exist after saving!")
+            except Exception as e:
+                print(f"Error during GIF creation: {e}")
+        else:
+            print("No frames to save!")
+
+        # Close the figure
+        plt.close()
 
 
 class Utils:
@@ -449,7 +550,7 @@ def main():
     path = rrt_conn.planning()
 
     if path:
-        rrt_conn.plotting.animation_connect(rrt_conn.V1, rrt_conn.V2, path, "RRT-Connect")
+        rrt_conn.plotting.animation_connect(rrt_conn.V1, rrt_conn.V2, path, "041_rrt_connect", save_gif=True)
     else:
         print("No Path Found!")
 

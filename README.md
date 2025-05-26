@@ -3,8 +3,9 @@
 I am very interested in further summarizing all the pathfinding algorithms.
 
 ## Quick Start  
-pip install matplotlib   #python3.12
-
+python3.12 or 3.13
+pip install matplotlib   
+pip install scipy
 ## Thanks
 
 ZJU Prof. FeiGao
@@ -176,10 +177,13 @@ Manual review and inspection.
 -   **快速扩展随机树 (Rapidly-Exploring Random Trees - RRT)**
     -   **039 基础 RRT (Basic RRT)**
         -   LaValle (1998)
+        -   ![039_rrt](Search_2D/gif/039_rrt.gif)
     -   **040 目标偏向 RRT (Goal-bias RRT)**
         -   LaValle & Kuffner (2001) 
+        -   ![040_extended_rrt](Search_2D/gif/040_extended_rrt.gif)
     -   **041 RRT-Connect**
         -   Kuffner & LaValle (2000)
+        -   ![041_rrt_connect](Search_2D/gif/041_rrt_connect.gif)
     -   **042 动态 RRT (Dynamic RRT)**
         -   Ferguson, Howard, Likhachev (2008)
     -   **043 RRT-Dubins (考虑运动学约束)**
