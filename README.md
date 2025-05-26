@@ -186,29 +186,29 @@ Manual review and inspection.
         -   LaValle & Kuffner (2001) (Dubins with RRT)
 -   **最优快速扩展随机树 (Optimal RRTs)**
     -   **044 rrt star**
-        -  TODO
+        -   Karaman & Frazzoli (2011)
     -   **045 rrt start smart**
-        -  TODO
+        -  Nasir, K., et al. (2013)
     -   **046 rrt sharp**
-        -  TODO
+        -  Otte & Frazzoli (2014)
     -   **047 Informed RRT* ***
-        -   TODO
+        -  Gammell, Srinivasa & Barfoot (2014)
     -   **048 FMT* ***
-        -   TODO
+        -  Janson, Schmerling, Clark & Pavone (2015)
     -   **049 BIT* batch informed trees**
-        -   TODO
+        -  Gammell, Srinivasa & Barfoot (2015)
     -   **050 ABIT* advanced batch informed trees**
-        -   TODO
-    -   **051 Adaptively Informed Trees (AIT*)**
-        -   TODO
+        -  Strub & Gammell (2020)
+    -   **051 AIT* (Adaptively Informed Trees)**
+        -  Strub & Gammell (2020)
     -   **052 Anytime-RRT***
-        -   TODO
+        -   Karaman, Walter, Perez, Frazzoli & Teller (2011)
     -   **053 Closed-loop RRT* (CL-RRT*)**
-        -   TODO
+        -   Luders, Kothari & How (2010)
     -   **054 Spline-RRT***
-        -   TODO
+        -   Lee, Song & Shim (2014)
     -   **055 LQR-RRT****
-        -   TODO
+        -   Perez, Platt, Konidaris, Kaelbling & Lozano-Perez (2012)
 
 ## 三、智能优化算法 (Intelligent Optimization Algorithms)
 -   **056 蚁群优化 (Ant Colony Optimization - ACO)**
