@@ -232,6 +232,7 @@ Manual review and inspection.
 -   **Voronoi 图方法 (Voronoi Diagram Methods)**
     -   **062 基础 Voronoi 图 (Basic Voronoi Diagram)**
         -   Voronoi (1908), Shamos & Hoey (1975) 
+        -   ![062_voronoi](Search_2D/gif/062_voronoi.gif)
     -   **063 Voronoi 场 (Voronoi Field)**
         -   Okabe, Boots, Sugihara, Chiu (2000) 
     -   **064 加权 Voronoi 图 (Weighted Voronoi Diagram)**
