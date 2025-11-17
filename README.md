@@ -53,100 +53,100 @@ Manual review and inspection.
         -   算法心得：
         Dijkstra 算法是一种用于寻找最短路径的算法，它通过维护一个距离表来记录从起始节点到其他节点的最短距离。
         算法从起始节点开始，每次选择距离表中距离最小的节点进行扩展，更新其相邻节点的距离表，直到找到目标节点或遍历完整个搜索空间。
-    -   **005 A* 算法 (A* Algorithm)**
+    -   **005 A\* 算法 (A\* Algorithm)**
         -   Hart, Nilsson, Raphael (1968)
         -   ![005_Astar](Search_2D/gif/005_Astar.gif)
         -   算法心得：
-        A* 算法是一种启发式搜索算法，它结合了广度优先搜索和贪婪最佳优先搜索的优点。
+        A\* 算法是一种启发式搜索算法，它结合了广度优先搜索和贪婪最佳优先搜索的优点。
         算法从起始节点开始，每次选择距离表中距离最小的节点进行扩展，更新其相邻节点的距离表，直到找到目标节点或遍历完整个搜索空间。
-    -   **A* 变体与扩展 (A* Variants & Extensions)**
-        -   **006 双向 A* (Bidirectional A*)**
+    -   **A\* 变体与扩展 (A\* Variants & Extensions)**
+        -   **006 双向 A\* (Bidirectional A\*)**
             -   Pohl (1971)
             -   ![006_Bidirectional_Astar](Search_2D/gif/006_Bidirectional_a_star.gif)
             -   算法心得：
             它从起始节点和目标节点同时开始进行搜索，直到两个搜索方向相遇。
         
-        -   **007 加权 A* (Weighted A*)**
+        -   **007 加权 A\* (Weighted A\*)**
             -   Pohl (1970)
             -   ![007_Weighted_Astar](Search_2D/gif/007_Weighted_Astar_w2.0.gif)
             -   算法心得：
-            加权 A* 算法是 A* 算法的一种变体，它通过对每个节点的代价进行加权来调整搜索过程。
-        -   **008 分层 A* (Hierarchical A* - HPA*)**
+            加权 A\* 算法是 A\* 算法的一种变体，它通过对每个节点的代价进行加权来调整搜索过程。
+        -   **008 分层 A\* (Hierarchical A\* - HPA\*)**
             -   Botea, Müller, Schaeffer (2004)
             -   ![008_Hierarchical_Astar](Search_2D/gif/008_Hierarchical_Astar.gif)
             -   算法心得：
-            分层 A* 算法是 A* 算法的一种变体，它将搜索空间划分为多个层次，每个层次使用 A* 算法进行搜索。这里展示两个层次。
-        -   **009 并行 A* (Parallel A*)**
+            分层 A\* 算法是 A\* 算法的一种变体，它将搜索空间划分为多个层次，每个层次使用 A\* 算法进行搜索。这里展示两个层次。
+        -   **009 并行 A\* (Parallel A\*)**
             -   Zhou & Zeng (2015)
             -   ![009_Parallel_Astar](Search_2D/gif/009_Parallel_Astar.gif)
             -   算法心得：
-            并行 A* 算法的优点是可以利用多核处理器的并行计算能力，加快搜索速度。这里难以展示这种并行改为展示多个终点复用查询路径的情况
-        -   **010 Hybrid A* **
+            并行 A\* 算法的优点是可以利用多核处理器的并行计算能力，加快搜索速度。这里难以展示这种并行改为展示多个终点复用查询路径的情况
+        -   **010 Hybrid A\***
             -   Dolgov, Thrun, Montemerlo, Diebel (2008)
             -   ![010_Hybrid_Astar](Search_2D/gif/010_Hybrid_Astar.gif)
             -   算法心得：
-            混合 A* 算法有运动约束的寻路，比如汽车的运动约束，
+            混合 A\* 算法有运动约束的寻路，比如汽车的运动约束，
     -   **实时/动态启发式搜索 (Real-time/Dynamic Heuristic Search)**
-        -   **011 LRTA* (Learning Real-time A*)**
+        -   **011 LRTA\* (Learning Real-time A\*)**
             -   Korf (1990)
             -  ![011_LRTAstar](Search_2D/gif/011_LRTAstar.gif)
             -   算法心得：
-            学习式 A* 算法是 A* 算法的一种变体，它通过学习来调整搜索过程。
-        -   **012 Repairing A* **
+            学习式 A\* 算法是 A\* 算法的一种变体，它通过学习来调整搜索过程。
+        -   **012 Repairing A\***
             -  Stentz (1994)
             -  ![012_Repairing_Astar](Search_2D/gif/012_Repairing_Astar.gif)
             -   算法心得：
-            修复 A* 算法是 A* 算法的一种变体，也是D*，动态环境下它通过修复搜索过程中的错误来提高搜索效率。
-        -   **013 LPA* (Lifelong Planning A*)**
+            修复 A\* 算法是 A\* 算法的一种变体，也是D\*，动态环境下它通过修复搜索过程中的错误来提高搜索效率。
+        -   **013 LPA\* (Lifelong Planning A\*)**
             -   Koenig, Likhachev, Furcy (2004)
             -   ![013_LPAstar](Search_2D/gif/013_LPAstar.gif)
             -    算法心得：
-            终身规划 A* 算法是 A* 算法的一种变体，它可以在不断变化的环境中进行搜索。
-        -   **014 ARA* (Anytime Repairing A*)**
+            终身规划 A\* 算法是 A\* 算法的一种变体，它可以在不断变化的环境中进行搜索。
+        -   **014 ARA\* (Anytime Repairing A\*)**
             -   Likhachev, Gordon, Thrun (2003)
             -  ![014_ARAstar](Search_2D/gif/014_ARAstar.gif)
             -   算法心得：
-             anytime Repairing A* 算法是 A* 算法的一种变体，初始权重较大，路径接近 “次优解”，算法的 “修复” 机制多次调整，self.e -= 0.5。
-        -   **015 RTAA* (Real-time Adaptive A*)**
+             anytime Repairing A\* 算法是 A\* 算法的一种变体，初始权重较大，路径接近 “次优解”，算法的 “修复” 机制多次调整，self.e -= 0.5。
+        -   **015 RTAA\* (Real-time Adaptive A\*)**
             -   Koenig & Likhachev (2006)
             - ![015_RTAAstar](Search_2D/gif/015_RTAAstar.gif)
             -   算法心得：
-            实时自适应 A* 算法是 A* 算法的一种变体，它可以在不断变化的环境中进行搜索。
-        -   **D* 家族 (D* Family)**
-            -   **016 D* (Dynamic A*)**
+            实时自适应 A\* 算法是 A\* 算法的一种变体，它可以在不断变化的环境中进行搜索。
+        -   **D\* 家族 (D\* Family)**
+            -   **016 D\* (Dynamic A\*)**
                 -   Stentz (1994)
                 -  ![016_Dstar](Search_2D/gif/016_D_star.gif)
                 -   算法心得：
-                也叫做动态 A* 算法
-            -   **017 Lazy D* **
+                也叫做动态 A\* 算法
+            -   **017 Lazy D\***
                 -   Koenig, Likhachev, Furcy (2004)
-            -   **018 Focused D* **
+            -   **018 Focused D\***
                 -   Stentz (1995)
-            -   **019 D* Lite**
+            -   **019 D\* Lite**
                 -   Koenig & Likhachev (2002)
-            -   **020 Anytime D* **
+            -   **020 Anytime D\***
                 -   Likhachev, Ferguson, Gordon, Stentz, Thrun (2005)
                 - ![020_Anytime_Dstar](Search_2D/gif/020_Anytime_D_star.gif)
-            -   **021 Field D* **
+            -   **021 Field D\***
                 -   Ferguson & Stentz (2007)
   
     -   **任意角度路径规划 (Any-Angle Path Planning)**
-        -   **Theta* 家族 (Theta* Family)**
-            -   **022 Theta* **
+        -   **ThetA\* 家族 (ThetA\* Family)**
+            -   **022 ThetA\***
                 -   Nash, Daniel, Koenig, Felner (2007)
                 -   ![022_Theta_star](Search_2D/gif/022_Theta_star.gif)
-            -   **023 Lazy Theta* **
+            -   **023 Lazy ThetA\***
                 -   Nash, Koenig, Tovey (2010)
                 -  ![023_Lazy_Theta_star](Search_2D/gif/023_LazyTheta_star.gif)
-            -   **024 S-Theta* **
+            -   **024 S-ThetA\***
                 -   Tang, Chen, Wu, Zhang, Chen (2021)
                 -  ![024_S_Theta_star](Search_2D/gif/024_STheta_star.gif)
-            -   **025 Enhanced Theta* **
+            -   **025 Enhanced ThetA\***
                 -   Li, Wen, Wang, Zhang (2020)
                 - ![025_Enhanced_Theta_star](Search_2D/gif/025_EnhancedTheta_star.gif)
-            -   **026 Multi - Agent Theta **
+            -   **026 Multi - Agent Theta**
                 -   Li, Zhang, Wang, Zhang (2022)
-            -   **027 Adaptive Theta* **
+            -   **027 Adaptive ThetA\***
                 -   Ferguson & Stentz (2006)
         -   **JPS 家族 (Jump Point Search Family)**
             -   **028 JPS (Jump Point Search)**
@@ -164,7 +164,7 @@ Manual review and inspection.
                 -   Papadakis (2013)
             -   **034 JPS-Lite**
                 -   Gong, Zhang, Wang, Wang (2019)
-            -   **035 Multi - Agent Theta**
+            -   **035 Multi - Agent ThetA\**
                 -   Li, Zhang, Wang, Zhang (2022)
             -   **036 自适应 JPS (Adaptive JPS)**
                 -   Su, Hsueh (2016)
@@ -195,23 +195,23 @@ Manual review and inspection.
         -  Nasir, K., et al. (2013)
     -   **046 rrt sharp**
         -  Otte & Frazzoli (2014)
-    -   **047 Informed RRT* ***
+    -   **047 Informed RRT\***
         -  Gammell, Srinivasa & Barfoot (2014)
-    -   **048 FMT* ***
+    -   **048 FMT\***
         -  Janson, Schmerling, Clark & Pavone (2015)
-    -   **049 BIT* batch informed trees**
+    -   **049 BIT\* batch informed trees**
         -  Gammell, Srinivasa & Barfoot (2015)
-    -   **050 ABIT* advanced batch informed trees**
+    -   **050 ABIT\* advanced batch informed trees**
         -  Strub & Gammell (2020)
-    -   **051 AIT* (Adaptively Informed Trees)**
+    -   **051 AIT\* (Adaptively Informed Trees)**
         -  Strub & Gammell (2020)
-    -   **052 Anytime-RRT***
+    -   **052 Anytime-RRT\***
         -   Karaman, Walter, Perez, Frazzoli & Teller (2011)
-    -   **053 Closed-loop RRT* (CL-RRT*)**
+    -   **053 Closed-loop RRT\* (CL-RRT\*)**
         -   Luders, Kothari & How (2010)
-    -   **054 Spline-RRT***
+    -   **054 Spline-RRT\***
         -   Lee, Song & Shim (2014)
-    -   **055 LQR-RRT****
+    -   **055 LQR-RRT\****
         -   Perez, Platt, Konidaris, Kaelbling & Lozano-Perez (2012)
 
 ## 三、智能优化算法 (Intelligent Optimization Algorithms)
@@ -286,17 +286,19 @@ Manual review and inspection.
 -   **基于搜索的冲突解决 (Search-Based Conflict Resolution)**
     -   **084 冲突驱动搜索 (Conflict-Based Search - CBS)**
         -   Sharon, Stern, Felner, Sturtevant (2012, 2015)
-    -   **085 分层协作 A* (Hierarchical Cooperative A* - HCA*)**
+    -   **085 分层协作 A\* (Hierarchical Cooperative A\* - HCA\*)**
         -   Silver (2005)
-    -   **086 窗口化分层协作 A* (Windowed HCA* - WHCA*)**
+    -   **086 窗口化分层协作 A\* (Windowed HCA\* - WHCA\*)**
         -   Silver (2005)
-
+-   **基于社会力模型 (Social Force) 的方法**
+    -   **087 UE5 AI Avoidance**
+        -   UE5 MassAI MassAvoidanceProcessors (2023)
 ## 八、其他规划方法 (Other Planning Methods)
--   **087 凸集图规划 (Graph of Convex Sets - GCS / GCS*)**
+-   **088 凸集图规划 (Graph of Convex Sets - GCS / GCS\*)**
     -   Marcucci, Tedrake (2019), Chia, Jiang, Graesdal, Kaelbling, Tedrake (2024)
-    -   ![087_GCS](Search_2D/gif/087_Graph_of_Convex_Sets.gif)
--   **088 多智能体凸集图规划 (Multi-Agent Graph of Convex Sets - MGCS / MGCS*)**
+    -   ![088_GCS](Search_2D/gif/088_Graph_of_Convex_Sets.gif)
+-   **089 多智能体凸集图规划 (Multi-Agent Graph of Convex Sets - MGCS / MGCS\*)**
     -   Marcucci, Tedrake (2019), Chia, Jiang, Graesdal, Kaelbling, Tedrake (2024)
--   **089 多智能体多目标规划 (Multi-Agent Multi-Objective Planning - MAMOP)**
+-   **090 多智能体多目标规划 (Multi-Agent Multi-Objective Planning - MAMOP)**
     -   Chia, Jiang, Graesdal, Kaelbling, Tedrake (2024)
 
