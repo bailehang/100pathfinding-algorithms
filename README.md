@@ -29,6 +29,176 @@ Manual review and inspection.
 
 ![Contents](images/Contents.png)
 
+<details>
+<summary><strong>一、图搜索算法 (Graph Search Algorithms)</strong></summary>
+
+<details>
+<summary>基础搜索 (Uninformed Search)</summary>
+
+- 广度优先搜索 (Breadth-First Searching - BFS)
+- 深度优先搜索 (Depth-First Search - DFS)
+</details>
+
+<details>
+<summary>启发式搜索 (Informed/Heuristic Search)</summary>
+
+- 最佳优先搜索 (Greedy Best-First Search - GBFS)
+- Dijkstra 算法
+- A* 算法 (A* Algorithm)
+  - 传统 A*
+  - A* 变体与扩展
+    - 加权 A* (Weighted A*)
+    - 双向 A* (Bidirectional A*)
+    - 分层 A* (Hierarchical A* - HPA*)
+    - 并行 A* (Parallel A*)
+</details>
+
+<details>
+<summary>实时/动态启发式搜索</summary>
+
+- LRTA* (Learning Real-time A*)
+- D* 家族
+  - D* (Dynamic A*)
+  - Focused D*
+  - D* Lite
+  - Anytime D*
+- LPA* (Lifelong Planning A*)
+- ARA* (Anytime Repairing A*)
+- RTAA* (Real-time Adaptive A*)
+</details>
+
+<details>
+<summary>任意角度路径规划</summary>
+
+- Theta* 家族
+  - Theta*
+  - Lazy Theta*
+  - S-Theta*
+  - Enhanced Theta*
+  - Adaptive Theta*
+- Field D*
+- JPS 家族
+  - JPS (Jump Point Search)
+  - JPS+
+  - JPS++
+  - 欧几里得 JPS (Euclidean JPS - EJPS)
+  - 分层 JPS (Hierarchical JPS - HJPS)
+  - 动态 JPS (Dynamic JPS)
+  - JPS-Lite
+  - 自适应 JPS (Adaptive JPS)
+</details>
+
+- 格网规划 (Lattice Planning)
+
+</details>
+
+<details>
+<summary><strong>二、基于采样的路径规划 (Sampling-Based Path Planning)</strong></summary>
+
+- 随机路径规划 (Random Path Planning - RPP)
+- 快速扩展随机树 (Rapidly-Exploring Random Trees - RRT)
+  - 基础 RRT (Basic RRT)
+  - 目标偏向 RRT (Goal-bias RRT)
+  - RRT-Connect
+  - 动态 RRT (Dynamic RRT)
+  - RRT-Dubins (考虑运动学约束)
+- 最优快速扩展随机树 (Optimal RRTs)
+  - RRT*
+  - Informed RRT*
+
+</details>
+
+<details>
+<summary><strong>三、智能优化算法 (Intelligent Optimization Algorithms)</strong></summary>
+
+- 蚁群优化 (Ant Colony Optimization - ACO)
+- 遗传算法 (Genetic Algorithm - GA)
+- 粒子群优化 (Particle Swarm Optimization - PSO)
+
+</details>
+
+
+<details>
+<summary><strong>四、反应式与几何规划 (Reactive & Geometric Planning)</strong></summary>
+
+- 人工势场法 (Artificial Potential Field - APF)
+- 动态窗口法 (Dynamic Window Approach - DWA)
+- 向量场直方图 (Vector Field Histogram - VFH)
+- Voronoi 图方法
+  - 基础 Voronoi 图 (Basic Voronoi Diagram)
+  - Voronoi 场 (Voronoi Field)
+  - 加权 Voronoi 图 (Weighted Voronoi Diagram)
+  - 模糊 Voronoi 图 (Fuzzy Voronoi Diagram)
+  - 自适应 Voronoi 场 (Adaptive Voronoi Field)
+
+</details>
+
+
+<details>
+<summary><strong>五、基于曲线与运动学的规划 (Curve-Based & Kinematic Planning)</strong></summary>
+
+- 多项式曲线 (Polynomial Curves)
+- 贝塞尔曲线 (Bezier Curves)
+- 样条曲线 (Spline Curves)
+  - 三次样条曲线 (Cubic Spline)
+  - B样条曲线 (B-Spline)
+- 时间弹性带 (Timed Elastic Band - TEB)
+- Dubins 曲线 (Dubins Curves)
+- Reeds-Shepp 曲线 (Reeds-Shepp Curves)
+- 特定应用优化
+  - Hybrid A*
+- 车辆路径问题 (Vehicle Routing Problem - VRP)
+
+</details>
+
+
+<details>
+<summary><strong>六、基于模型的控制与规划 (Model-Based Control & Planning)</strong></summary>
+
+- PID 控制器 (PID Controller - for path following)
+- 线性二次型调节器 (Linear Quadratic Regulator - LQR)
+- 模型预测控制 (Model Predictive Control - MPC)
+
+</details>
+
+
+
+<details>
+<summary><strong>七、多智能体路径规划 (Multi-Agent Path Finding - MAPF)</strong></summary>
+
+<details>
+<summary>基于速度障碍 (VO) 的方法</summary>
+
+- 速度障碍 (VO)
+- 相互速度障碍 (Reciprocal Velocity Obstacles - RVO)
+- 混合相互速度障碍 (Hybrid Reciprocal Velocity Obstacles - HRVO)
+- 最优相互碰撞避免 (Optimal Reciprocal Collision Avoidance - ORCA)
+- 行人最优相互碰撞避免 (Pedestrian ORCA - PORCA)
+- 椭圆相互速度障碍 (Elliptical Reciprocal Velocity Obstacles - ERVO / EORCA)
+</details>
+
+<details>
+<summary>基于搜索的冲突解决</summary>
+
+- 冲突驱动搜索 (Conflict-Based Search - CBS)
+- 分层协作 A* (Hierarchical Cooperative A* - HCA*)
+- 窗口化分层协作 A* (Windowed HCA* - WHCA*)
+</details>
+
+</details>
+
+
+
+<details>
+<summary><strong>八、其他规划方法 (Other Planning Methods)</strong></summary>
+
+- 凸集图规划 (Graph of Convex Sets - GCS / GCS*)
+
+</details>
+
+---
+
+
 ## 一、图搜索算法 (Graph Search Algorithms)
 -   **基础搜索 (Uninformed Search)**
     -   **001 广度优先搜索 (Breadth-First Searching - BFS)**
