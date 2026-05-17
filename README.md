@@ -21,7 +21,19 @@ AI assistance has been used in this article
 
 Claude 3.7/4, Doubao, ChatGPT for in-depth research and Manus.
 
+2026-05-17 iteration: updated with Codex and ChatGPT 5.5.
+
 Manual review and inspection.
+
+## License
+
+This project is licensed under the Apache License, Version 2.0.
+
+When redistributing this project or substantial portions of it, you must keep
+the copyright notice, the `LICENSE` file, and the `NOTICE` attribution file as
+required by Apache-2.0.
+
+Required attribution: `100pathfinding-algorithms by bailehang`.
 
 -------------------
 
