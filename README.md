@@ -4,8 +4,7 @@ I am very interested in further summarizing all the pathfinding algorithms.
 
 ## Quick Start  
 python3.12 or 3.13
-pip install matplotlib   
-pip install scipy
+pip install -r requirements.txt
 
 ## Thanks
 
