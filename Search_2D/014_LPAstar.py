@@ -244,7 +244,7 @@ class LPAStar:
         
         # Generate GIF after window is closed
         print("Generating GIF from captured frames...")
-        self.Plot.save_animation_as_gif("013_LPAstar", fps=1.5)
+        self.Plot.save_animation_as_gif("014_LPAstar", fps=1.5)
         print("GIF generation completed!")
 
     def on_press(self, event):

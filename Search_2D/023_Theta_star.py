@@ -337,7 +337,7 @@ class ThetaStar:
         
         # 生成GIF
         print("Generating GIF animation...")
-        self.plot.save_animation_as_gif("022_Theta_star")
+        self.plot.save_animation_as_gif("023_Theta_star")
         
         return path, self.CLOSED
 

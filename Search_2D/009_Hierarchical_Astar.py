@@ -917,7 +917,7 @@ def main():
     
     # Animate and save as GIF
     plot.animation_hierarchical_astar(fine_path, coarse_path_fine, visited_fine, grid_lines, 
-                                     "008_Hierarchical_Astar", save_gif=True)
+                                     "009_Hierarchical_Astar", save_gif=True)
 
 
 if __name__ == '__main__':

@@ -919,7 +919,7 @@ def main():
     
     # Initialize plotting and visualize results
     plot = ParallelAStarPlotting(s_start, s_goals)
-    plot.animation_parallel_astar(goal_paths, visited, region_lines, "009_Parallel_Astar", save_gif=True)
+    plot.animation_parallel_astar(goal_paths, visited, region_lines, "010_Parallel_Astar", save_gif=True)
     
     print("Search completed successfully!")
 

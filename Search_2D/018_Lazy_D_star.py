@@ -633,7 +633,7 @@ class FocusedDStar:
         self.Plot.capture_frame()
         
         # Save the complete GIF
-        self.Plot.save_animation_as_gif("017_Focused_D_star", fps=2)
+        self.Plot.save_animation_as_gif("018_Focused_D_star", fps=2)
         
         print(f"Focused D* complete demonstration finished!")
         print(f"Path improvement: {improvement:.1f}%")

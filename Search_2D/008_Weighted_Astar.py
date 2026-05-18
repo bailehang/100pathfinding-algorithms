@@ -1,12 +1,14 @@
 """
-ARA_star 2D (Anytime Repairing A*)
-@author: huiming zhou
-@author: clark bai
+Weighted A* 2D
+Self-contained implementation with GIF generation capability
+@author: clark bai (original algorithm)
+Modified to be self-contained with GIF support
 """
 
 import io
-import math
 import os
+import math
+import heapq
 import matplotlib.pyplot as plt
 from PIL import Image
 import numpy as np
@@ -78,20 +80,30 @@ class Plotting:
         if save_gif:
             self.save_animation_as_gif(name)
 
-    def animation_ara_star(self, path, visited, name, save_gif=False):
-        """Animation for ARA* algorithm"""
-        self.plot_grid(name)
-        cl_v, cl_p = self.color_list()
-
-        for k in range(len(path)):
-            self.plot_visited(visited[k], cl_v[k])
-            self.plot_path(path[k], cl_p[k], True)
-            plt.pause(0.5)
+    def animation_multi_path(self, paths, visiteds, names, save_gif=False):
+        """Animate multiple paths for comparison"""
+        self.plot_grid("Path Comparison")
+        
+        # Use different colors for different algorithms
+        colors = ['blue', 'green', 'purple', 'orange']
+        
+        for i, visited in enumerate(visiteds):
+            color = colors[i % len(colors)]
+            self.plot_visited(visited, cl=color)
+        
+        for i, path in enumerate(paths):
+            color = colors[i % len(colors)]
+            self.plot_path(path, cl=color, flag=True)
             
-        if save_gif:
-            self.save_animation_as_gif(name)
+        # Add legend
+        for i, name in enumerate(names):
+            color = colors[i % len(colors)]
+            plt.plot([], [], color=color, label=name)
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), ncol=2)
         
         plt.show()
+        if save_gif:
+            self.save_animation_as_gif("path_comparison")
 
     def plot_grid(self, name):
         """Plot the grid with obstacles, start and goal points"""
@@ -133,8 +145,10 @@ class Plotting:
 
             if count % length == 0:
                 plt.pause(0.01)
+                self.capture_frame()
 
-        plt.pause(0.01)
+        plt.pause(0.1)
+        self.capture_frame()
 
     def plot_path(self, path, cl='r', flag=False):
         """Plot the final path"""
@@ -149,7 +163,7 @@ class Plotting:
         plt.plot(self.xI[0], self.xI[1], "bs")
         plt.plot(self.xG[0], self.xG[1], "gs")
 
-        plt.pause(0.5)
+        plt.pause(0.1)
         self.capture_frame()
 
     def capture_frame(self):
@@ -176,7 +190,7 @@ class Plotting:
         # Close the buffer
         buf.close()
 
-    def save_animation_as_gif(self, name, fps=1.5):
+    def save_animation_as_gif(self, name, fps=15):
         """Save frames as a GIF animation with consistent size"""
         # Create directory for GIFs
         gif_dir = "gif"
@@ -209,7 +223,7 @@ class Plotting:
                         img = Image.fromarray(frame)
                         img_p = img.convert('P', palette=Image.ADAPTIVE, colors=256)
                         frames_p.append(img_p)
-                        if i % 5 == 0:
+                        if i % 10 == 0:
                             print(f"Converted frame {i+1}/{len(self.frames)}")
                     except Exception as e:
                         print(f"Error converting frame {i}: {e}")
@@ -242,171 +256,66 @@ class Plotting:
         # Close the figure
         plt.close()
 
-    @staticmethod
-    def color_list():
-        cl_v = ['silver',
-                'wheat',
-                'lightskyblue',
-                'royalblue',
-                'slategray']
-        cl_p = ['gray',
-                'orange',
-                'deepskyblue',
-                'red',
-                'm']
-        return cl_v, cl_p
 
-
-class AraStar:
-    def __init__(self, s_start, s_goal, e, heuristic_type):
-        self.s_start, self.s_goal = s_start, s_goal
+class WeightedAStar:
+    """Weighted A* sets the cost + weighted heuristics as the priority
+    """
+    def __init__(self, s_start, s_goal, heuristic_type, weight=1.0):
+        self.s_start = s_start
+        self.s_goal = s_goal
         self.heuristic_type = heuristic_type
+        self.weight = weight  # weight for heuristic
 
-        self.Env = Env()                                                # class Env
+        self.Env = Env()  # class Env
 
-        self.u_set = self.Env.motions                                       # feasible input set
-        self.obs = self.Env.obs                                             # position of obstacles
-        self.e = e                                                          # weight
+        self.u_set = self.Env.motions  # feasible input set
+        self.obs = self.Env.obs  # position of obstacles
 
-        self.g = dict()                                                     # Cost to come
-        self.OPEN = dict()                                                  # priority queue / OPEN set
-        self.CLOSED = set()                                                 # CLOSED set
-        self.INCONS = {}                                                    # INCONSISTENT set
-        self.PARENT = dict()                                                # relations
-        self.path = []                                                      # planning path
-        self.visited = []                                                   # order of visited nodes
-
-    def init(self):
-        """
-        initialize each set.
-        """
-
-        self.g[self.s_start] = 0.0
-        self.g[self.s_goal] = math.inf
-        self.OPEN[self.s_start] = self.f_value(self.s_start)
-        self.PARENT[self.s_start] = self.s_start
+        self.OPEN = []  # priority queue / OPEN set
+        self.CLOSED = []  # CLOSED set / VISITED order
+        self.PARENT = dict()  # recorded parent
+        self.g = dict()  # cost to come
 
     def searching(self):
-        self.init()
-        self.ImprovePath()
-        self.path.append(self.extract_path())
-
-        while self.update_e() > 1:                                          # continue condition
-            self.e -= 0.5                                                   # increase weight
-            self.OPEN.update(self.INCONS)
-            self.OPEN = {s: self.f_value(s) for s in self.OPEN}             # update f_value of OPEN set
-
-            self.INCONS = dict()
-            self.CLOSED = set()
-            self.ImprovePath()                                              # improve path
-            self.path.append(self.extract_path())
-
-        return self.path, self.visited
-
-    def ImprovePath(self):
         """
-        :return: a e'-suboptimal path
+        Weighted A* Searching.
+        :return: path, visited order
         """
 
-        visited_each = []
+        self.PARENT[self.s_start] = self.s_start
+        self.g[self.s_start] = 0
+        self.g[self.s_goal] = math.inf
+        heapq.heappush(self.OPEN,
+                       (self.f_value(self.s_start), self.s_start))
 
-        while True:
-            s, f_small = self.calc_smallest_f()
+        while self.OPEN:
+            _, s = heapq.heappop(self.OPEN)
+            self.CLOSED.append(s)
 
-            if self.f_value(self.s_goal) <= f_small:
+            if s == self.s_goal:  # stop condition
                 break
 
-            self.OPEN.pop(s)
-            self.CLOSED.add(s)
-
             for s_n in self.get_neighbor(s):
-                if s_n in self.obs:
-                    continue
-
                 new_cost = self.g[s] + self.cost(s, s_n)
 
-                if s_n not in self.g or new_cost < self.g[s_n]:
+                if s_n not in self.g:
+                    self.g[s_n] = math.inf
+
+                if new_cost < self.g[s_n]:  # conditions for updating Cost
                     self.g[s_n] = new_cost
                     self.PARENT[s_n] = s
-                    visited_each.append(s_n)
+                    heapq.heappush(self.OPEN, (self.f_value(s_n), s_n))
 
-                    if s_n not in self.CLOSED:
-                        self.OPEN[s_n] = self.f_value(s_n)
-                    else:
-                        self.INCONS[s_n] = 0.0
-
-        self.visited.append(visited_each)
-
-    def calc_smallest_f(self):
-        """
-        :return: node with smallest f_value in OPEN set.
-        """
-
-        s_small = min(self.OPEN, key=self.OPEN.get)
-
-        return s_small, self.OPEN[s_small]
+        return self.extract_path(self.PARENT), self.CLOSED
 
     def get_neighbor(self, s):
         """
-        find neighbors of state s that not in obstacles.
+        Find neighbors of state s that are not in obstacles.
         :param s: state
         :return: neighbors
         """
 
-        return {(s[0] + u[0], s[1] + u[1]) for u in self.u_set}
-
-    def update_e(self):
-        v = float("inf")
-
-        if self.OPEN:
-            v = min(self.g[s] + self.h(s) for s in self.OPEN)
-        if self.INCONS:
-            v = min(v, min(self.g[s] + self.h(s) for s in self.INCONS))
-
-        return min(self.e, self.g[self.s_goal] / v)
-
-    def f_value(self, x):
-        """
-        f = g + e * h
-        f = cost-to-come + weight * cost-to-go
-        :param x: current state
-        :return: f_value
-        """
-
-        return self.g[x] + self.e * self.h(x)
-
-    def extract_path(self):
-        """
-        Extract the path based on the PARENT set.
-        :return: The planning path
-        """
-
-        path = [self.s_goal]
-        s = self.s_goal
-
-        while True:
-            s = self.PARENT[s]
-            path.append(s)
-
-            if s == self.s_start:
-                break
-
-        return list(path)
-
-    def h(self, s):
-        """
-        Calculate heuristic.
-        :param s: current node (state)
-        :return: heuristic function value
-        """
-
-        heuristic_type = self.heuristic_type                                # heuristic type
-        goal = self.s_goal                                                  # goal node
-
-        if heuristic_type == "manhattan":
-            return abs(goal[0] - s[0]) + abs(goal[1] - s[1])
-        else:
-            return math.hypot(goal[0] - s[0], goal[1] - s[1])
+        return [(s[0] + u[0], s[1] + u[1]) for u in self.u_set]
 
     def cost(self, s_start, s_goal):
         """
@@ -424,10 +333,10 @@ class AraStar:
 
     def is_collision(self, s_start, s_end):
         """
-        check if the line segment (s_start, s_end) is collision.
+        Check if the line segment (s_start, s_end) collides with obstacles.
         :param s_start: start node
         :param s_end: end node
-        :return: True: is collision / False: not collision
+        :return: True: collision / False: no collision
         """
 
         if s_start in self.obs or s_end in self.obs:
@@ -446,22 +355,84 @@ class AraStar:
 
         return False
 
+    def f_value(self, s):
+        """
+        Calculate f value: f = g + weight * h
+        :param s: current state
+        :return: f value
+        """
+
+        return self.g[s] + self.weight * self.heuristic(s)
+
+    def extract_path(self, PARENT):
+        """
+        Extract the path based on the PARENT set.
+        :return: The planning path
+        """
+
+        path = [self.s_goal]
+        s = self.s_goal
+
+        while True:
+            s = PARENT[s]
+            path.append(s)
+
+            if s == self.s_start:
+                break
+
+        return list(reversed(path))
+
+    def heuristic(self, s):
+        """
+        Calculate heuristic.
+        :param s: current node (state)
+        :return: heuristic function value
+        """
+
+        heuristic_type = self.heuristic_type  # heuristic type
+        goal = self.s_goal  # goal node
+
+        if heuristic_type == "manhattan":
+            return abs(goal[0] - s[0]) + abs(goal[1] - s[1])
+        else:
+            return math.hypot(goal[0] - s[0], goal[1] - s[1])
+
+    def compare_with_standard_astar(self):
+        """
+        Compare with standard A* by running both algorithms and returning both paths
+        :return: weighted_path, standard_path, weighted_visited, standard_visited
+        """
+        # Run Weighted A*
+        weighted_path, weighted_visited = self.searching()
+        
+        # Run standard A* (weight = 1.0)
+        standard_astar = WeightedAStar(self.s_start, self.s_goal, self.heuristic_type, 1.0)
+        standard_path, standard_visited = standard_astar.searching()
+        
+        return weighted_path, standard_path, weighted_visited, standard_visited
+
 
 def main():
+    """Main function to run the Weighted A* algorithm"""
     s_start = (5, 5)
     s_goal = (45, 25)
+    weight = 2.0  # Example weight, can be adjusted
 
-    print("Starting ARA* algorithm")
-    arastar = AraStar(s_start, s_goal, 2.5, "euclidean")
+    weighted_astar = WeightedAStar(s_start, s_goal, "euclidean", weight)
     plot = Plotting(s_start, s_goal)
 
-    print("Searching for path...")
-    path, visited = arastar.searching()
-    print(f"Found {len(path)} paths with different weights")
+    # Option 1: Just run weighted A*
+    path, visited = weighted_astar.searching()
+    plot.animation(path, visited, f"008_Weighted_Astar_w{weight}", save_gif=True)
     
-    print("Starting animation and GIF creation...")
-    plot.animation_ara_star(path, visited, "014_ARAstar", save_gif=True)
-    print("Animation and GIF creation completed")
+    # Option 2: Run comparison with standard A*
+    # weighted_path, standard_path, weighted_visited, standard_visited = weighted_astar.compare_with_standard_astar()
+    # plot.animation_multi_path(
+    #     [weighted_path, standard_path], 
+    #     [weighted_visited, standard_visited], 
+    #     [f"Weighted A* (w={weight})", "Standard A*"],
+    #     save_gif=True
+    # )
 
 
 if __name__ == '__main__':

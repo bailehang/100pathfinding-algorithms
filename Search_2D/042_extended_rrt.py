@@ -229,7 +229,7 @@ class ExtendedRrt:
                     self.fig.canvas.mpl_connect('button_press_event', self.on_press)
                     
                     # Save GIF animation
-                    self.save_animation_as_gif("040_extended_rrt")
+                    self.save_animation_as_gif("042_extended_rrt")
                     
                     plt.show()
 

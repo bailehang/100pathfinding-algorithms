@@ -433,7 +433,7 @@ class PlottingGCS:
         self.animate_final_result()
         
         if save_gif:
-            self.save_animation_as_gif("087_Graph_of_Convex_Sets")
+            self.save_animation_as_gif("090_Graph_of_Convex_Sets")
         
         print("Animation completed!")
 

@@ -361,7 +361,7 @@ class SThetaStar:
         
         # Generate GIF
         print("Generating GIF animation...")
-        self.plot.save_animation_as_gif("024_STheta_star")
+        self.plot.save_animation_as_gif("025_STheta_star")
         
         return path, self.CLOSED
 

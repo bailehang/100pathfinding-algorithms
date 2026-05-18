@@ -272,7 +272,7 @@ class RepairingAStar:
                 print(f"  Obstacle already exists at ({x}, {y})")
         
         # Save the GIF
-        self.Plot.save_animation_as_gif("012_Repairing_Astar_Modified", fps=2)
+        self.Plot.save_animation_as_gif("013_Repairing_Astar_Modified", fps=2)
         
         # Show final result
         plt.show()
@@ -390,7 +390,7 @@ class RepairingAStar:
             print(f"Improvement: {improvement:.1f}%")
         
         # Save the GIF
-        self.Plot.save_animation_as_gif("012_Repairing_Astar_Obstacle_Removal", fps=2)
+        self.Plot.save_animation_as_gif("013_Repairing_Astar_Obstacle_Removal", fps=2)
         
         # Show final result
         plt.show()
@@ -533,7 +533,7 @@ class RepairingAStar:
         self.Plot.capture_frame()
         
         # Save the complete GIF
-        self.Plot.save_animation_as_gif("012_Repairing_Astar_Complete", fps=2)
+        self.Plot.save_animation_as_gif("013_Repairing_Astar_Complete", fps=2)
         
         # Show final result
         plt.show()

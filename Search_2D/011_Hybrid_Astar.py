@@ -918,7 +918,7 @@ def main():
         
         # Create vehicle movement animation only
         print("Creating vehicle movement animation...")
-        plot.animation_vehicle(path, visited, vehicle_model, "010_Hybrid_Astar", save_gif=True)
+        plot.animation_vehicle(path, visited, vehicle_model, "011_Hybrid_Astar", save_gif=True)
         
         print("Animation complete and saved as GIF.")
     else:

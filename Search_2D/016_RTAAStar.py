@@ -1,15 +1,16 @@
 """
-A_star 2D
+RTAAstar 2D (Real-time Adaptive A*)
 @author: huiming zhou
 @author: clark bai
 """
+
 import io
 import math
 import os
 import matplotlib.pyplot as plt
 from PIL import Image
 import numpy as np
-import heapq
+import copy
 
 
 class Env:
@@ -78,15 +79,25 @@ class Plotting:
         if save_gif:
             self.save_animation_as_gif(name)
 
-    def animation_ara_star(self, path, visited, name, save_gif=False):
-        """Animation for ARA* algorithm"""
-        for i in range(len(path)):
-            plt.cla()
-            self.plot_grid(name)
-            self.plot_visited(visited[i], cl='gray')
-            self.plot_path(path[i])
-            plt.pause(1)
+    def animation_lrta(self, path, visited, name, save_gif=False):
+        """Animation for LRTA* and RTAA* algorithms"""
+        self.plot_grid(name)
+        cl = self.color_list_2()
+        path_combine = []
         
+        for k in range(len(path)):
+            if k < len(visited):
+                color_index = k % len(cl)  # Cycle through colors if more iterations than colors
+                self.plot_visited(visited[k], cl[color_index])
+                plt.pause(0.2)
+            self.plot_path(path[k])
+            path_combine += path[k]
+            plt.pause(0.2)
+            
+        if self.xI in path_combine:
+            path_combine.remove(self.xI)
+        self.plot_path(path_combine)
+            
         if save_gif:
             self.save_animation_as_gif(name)
         
@@ -132,13 +143,14 @@ class Plotting:
 
             if count % length == 0:
                 plt.pause(0.01)
-                self.capture_frame()
 
-        plt.pause(0.1)
-        self.capture_frame()
+        plt.pause(0.01)
 
     def plot_path(self, path, cl='r', flag=False):
         """Plot the final path"""
+        if not path:
+            return
+            
         path_x = [path[i][0] for i in range(len(path))]
         path_y = [path[i][1] for i in range(len(path))]
 
@@ -150,7 +162,7 @@ class Plotting:
         plt.plot(self.xI[0], self.xI[1], "bs")
         plt.plot(self.xG[0], self.xG[1], "gs")
 
-        plt.pause(0.1)
+        plt.pause(0.5)
         self.capture_frame()
 
     def capture_frame(self):
@@ -177,7 +189,7 @@ class Plotting:
         # Close the buffer
         buf.close()
 
-    def save_animation_as_gif(self, name, fps=15):
+    def save_animation_as_gif(self, name, fps=1.5):
         """Save frames as a GIF animation with consistent size"""
         # Create directory for GIFs
         gif_dir = "gif"
@@ -210,7 +222,7 @@ class Plotting:
                         img = Image.fromarray(frame)
                         img_p = img.convert('P', palette=Image.ADAPTIVE, colors=256)
                         frames_p.append(img_p)
-                        if i % 10 == 0:
+                        if i % 5 == 0:
                             print(f"Converted frame {i+1}/{len(self.frames)}")
                     except Exception as e:
                         print(f"Error converting frame {i}: {e}")
@@ -243,109 +255,154 @@ class Plotting:
         # Close the figure
         plt.close()
 
+    @staticmethod
+    def color_list_2():
+        cl = ['silver',
+              'steelblue',
+              'dimgray',
+              'cornflowerblue',
+              'dodgerblue',
+              'royalblue',
+              'plum',
+              'mediumslateblue',
+              'mediumpurple',
+              'blueviolet',
+              ]
+        return cl
 
-class AStar:
-    """AStar set the cost + heuristics as the priority
+
+class QueuePrior:
     """
-    def __init__(self, s_start, s_goal, heuristic_type):
-        self.s_start = s_start
-        self.s_goal = s_goal
+    Class: Priority Queue
+    """
+
+    def __init__(self):
+        self.queue = []
+
+    def empty(self):
+        return len(self.queue) == 0
+
+    def put(self, item, priority):
+        self.queue.append((priority, item))
+
+    def get(self):
+        self.queue.sort(reverse=True)
+        return self.queue.pop()[1]
+
+    def enumerate(self):
+        return self.queue
+
+
+class RTAAStar:
+    def __init__(self, s_start, s_goal, N, heuristic_type):
+        self.s_start, self.s_goal = s_start, s_goal
         self.heuristic_type = heuristic_type
 
-        self.env = Env()  # class Env
+        self.Env = Env()
 
-        self.u_set = self.env.motions  # feasible input set
-        self.obs = self.env.obs  # position of obstacles
+        self.u_set = self.Env.motions  # feasible input set
+        self.obs = self.Env.obs  # position of obstacles
 
-        self.OPEN = []  # priority queue / OPEN set
-        self.CLOSED = []  # CLOSED set / VISITED order
-        self.PARENT = dict()  # recorded parent
-        self.g = dict()  # cost to come
+        self.N = N  # number of expand nodes each iteration
+        self.visited = []  # order of visited nodes in planning
+        self.path = []  # path of each iteration
+        self.h_table = {}  # h_value table
+
+    def init(self):
+        """
+        initialize the h_value of all nodes in the environment.
+        it is a global table.
+        """
+
+        for i in range(self.Env.x_range):
+            for j in range(self.Env.y_range):
+                self.h_table[(i, j)] = self.h((i, j))
 
     def searching(self):
-        """
-        A_star Searching.
-        :return: path, visited order
-        """
+        self.init()
+        s_start = self.s_start  # initialize start node
 
-        self.PARENT[self.s_start] = self.s_start
-        self.g[self.s_start] = 0
-        self.g[self.s_goal] = math.inf
-        heapq.heappush(self.OPEN,
-                       (self.f_value(self.s_start), self.s_start))
+        while True:
+            OPEN, CLOSED, g_table, PARENT = \
+                self.Astar(s_start, self.N)
 
-        while self.OPEN:
-            _, s = heapq.heappop(self.OPEN)
-            self.CLOSED.append(s)
-
-            if s == self.s_goal:  # stop condition
+            if OPEN == "FOUND":  # reach the goal node
+                self.path.append(CLOSED)
                 break
 
-            for s_n in self.get_neighbor(s):
-                new_cost = self.g[s] + self.cost(s, s_n)
+            s_next, h_value = self.cal_h_value(OPEN, CLOSED, g_table, PARENT)
 
-                if s_n not in self.g:
-                    self.g[s_n] = math.inf
+            for x in h_value:
+                self.h_table[x] = h_value[x]
 
-                if new_cost < self.g[s_n]:  # conditions for updating Cost
-                    self.g[s_n] = new_cost
-                    self.PARENT[s_n] = s
-                    heapq.heappush(self.OPEN, (self.f_value(s_n), s_n))
+            s_start, path_k = self.extract_path_in_CLOSE(s_start, s_next, h_value)
+            self.path.append(path_k)
 
-        return self.extract_path(self.PARENT), self.CLOSED
+    def cal_h_value(self, OPEN, CLOSED, g_table, PARENT):
+        v_open = {}
+        h_value = {}
+        for (_, x) in OPEN.enumerate():
+            v_open[x] = g_table[PARENT[x]] + 1 + self.h_table[x]
+        s_open = min(v_open, key=v_open.get)
+        f_min = v_open[s_open]
+        for x in CLOSED:
+            h_value[x] = f_min - g_table[x]
 
-    def searching_repeated_astar(self, e):
-        """
-        repeated A*.
-        :param e: weight of A*
-        :return: path and visited order
-        """
+        return s_open, h_value
 
-        path, visited = [], []
+    def iteration(self, CLOSED):
+        h_value = {}
 
-        while e >= 1:
-            p_k, v_k = self.repeated_searching(self.s_start, self.s_goal, e)
-            path.append(p_k)
-            visited.append(v_k)
-            e -= 0.5
+        for s in CLOSED:
+            h_value[s] = float("inf")  # initialize h_value of CLOSED nodes
 
-        return path, visited
+        while True:
+            h_value_rec = copy.deepcopy(h_value)
+            for s in CLOSED:
+                h_list = []
+                for s_n in self.get_neighbor(s):
+                    if s_n not in CLOSED:
+                        h_list.append(self.cost(s, s_n) + self.h_table[s_n])
+                    else:
+                        h_list.append(self.cost(s, s_n) + h_value[s_n])
+                h_value[s] = min(h_list)  # update h_value of current node
 
-    def repeated_searching(self, s_start, s_goal, e):
-        """
-        run A* with weight e.
-        :param s_start: starting state
-        :param s_goal: goal state
-        :param e: weight of a*
-        :return: path and visited order.
-        """
+            if h_value == h_value_rec:  # h_value table converged
+                return h_value
 
-        g = {s_start: 0, s_goal: float("inf")}
-        PARENT = {s_start: s_start}
-        OPEN = []
-        CLOSED = []
-        heapq.heappush(OPEN,
-                       (g[s_start] + e * self.heuristic(s_start), s_start))
+    def Astar(self, x_start, N):
+        OPEN = QueuePrior()  # OPEN set
+        OPEN.put(x_start, self.h_table[x_start])
+        CLOSED = []  # CLOSED set
+        g_table = {x_start: 0, self.s_goal: float("inf")}  # Cost to come
+        PARENT = {x_start: x_start}  # relations
+        count = 0  # counter
 
-        while OPEN:
-            _, s = heapq.heappop(OPEN)
+        while not OPEN.empty():
+            count += 1
+            s = OPEN.get()
             CLOSED.append(s)
 
-            if s == s_goal:
-                break
+            if s == self.s_goal:  # reach the goal node
+                self.visited.append(CLOSED)
+                return "FOUND", self.extract_path(x_start, PARENT), [], []
 
             for s_n in self.get_neighbor(s):
-                new_cost = g[s] + self.cost(s, s_n)
+                if s_n not in CLOSED:
+                    new_cost = g_table[s] + self.cost(s, s_n)
+                    if s_n not in g_table:
+                        g_table[s_n] = float("inf")
+                    if new_cost < g_table[s_n]:  # conditions for updating Cost
+                        g_table[s_n] = new_cost
+                        PARENT[s_n] = s
+                        OPEN.put(s_n, g_table[s_n] + self.h_table[s_n])
 
-                if s_n not in g:
-                    g[s_n] = math.inf
+            if count == N:  # expand needed CLOSED nodes
+                break
 
-                if new_cost < g[s_n]:  # conditions for updating Cost
-                    g[s_n] = new_cost
-                    PARENT[s_n] = s
-                    heapq.heappush(OPEN, (g[s_n] + e * self.heuristic(s_n), s_n))
+        self.visited.append(CLOSED)  # visited nodes in each iteration
 
-        return self.extract_path(PARENT), CLOSED
+        return OPEN, CLOSED, g_table, PARENT
 
     def get_neighbor(self, s):
         """
@@ -354,7 +411,62 @@ class AStar:
         :return: neighbors
         """
 
-        return [(s[0] + u[0], s[1] + u[1]) for u in self.u_set]
+        s_list = set()
+
+        for u in self.u_set:
+            s_next = tuple([s[i] + u[i] for i in range(2)])
+            if s_next not in self.obs:
+                s_list.add(s_next)
+
+        return s_list
+
+    def extract_path_in_CLOSE(self, s_end, s_start, h_value):
+        path = [s_start]
+        s = s_start
+
+        while True:
+            h_list = {}
+            for s_n in self.get_neighbor(s):
+                if s_n in h_value:
+                    h_list[s_n] = h_value[s_n]
+            s_key = max(h_list, key=h_list.get)  # move to the smallest node with min h_value
+            path.append(s_key)  # generate path
+            s = s_key  # use end of this iteration as the start of next
+
+            if s_key == s_end:  # reach the expected node in OPEN set
+                return s_start, list(reversed(path))
+
+    def extract_path(self, x_start, parent):
+        """
+        Extract the path based on the relationship of nodes.
+        :return: The planning path
+        """
+
+        path = [self.s_goal]
+        s = self.s_goal
+
+        while True:
+            s = parent[s]
+            path.append(s)
+            if s == x_start:
+                break
+
+        return list(reversed(path))
+
+    def h(self, s):
+        """
+        Calculate heuristic.
+        :param s: current node (state)
+        :return: heuristic function value
+        """
+
+        heuristic_type = self.heuristic_type  # heuristic type
+        goal = self.s_goal  # goal node
+
+        if heuristic_type == "manhattan":
+            return abs(goal[0] - s[0]) + abs(goal[1] - s[1])
+        else:
+            return math.hypot(goal[0] - s[0], goal[1] - s[1])
 
     def cost(self, s_start, s_goal):
         """
@@ -366,18 +478,11 @@ class AStar:
         """
 
         if self.is_collision(s_start, s_goal):
-            return math.inf
+            return float("inf")
 
         return math.hypot(s_goal[0] - s_start[0], s_goal[1] - s_start[1])
 
     def is_collision(self, s_start, s_end):
-        """
-        check if the line segment (s_start, s_end) is collision.
-        :param s_start: start node
-        :param s_end: end node
-        :return: True: is collision / False: not collision
-        """
-
         if s_start in self.obs or s_end in self.obs:
             return True
 
@@ -394,63 +499,21 @@ class AStar:
 
         return False
 
-    def f_value(self, s):
-        """
-        f = g + h. (g: Cost to come, h: heuristic value)
-        :param s: current state
-        :return: f
-        """
-
-        return self.g[s] + self.heuristic(s)
-
-    def extract_path(self, PARENT):
-        """
-        Extract the path based on the PARENT set.
-        :return: The planning path
-        """
-
-        path = [self.s_goal]
-        s = self.s_goal
-
-        while True:
-            s = PARENT[s]
-            path.append(s)
-
-            if s == self.s_start:
-                break
-
-        return list(path)
-
-    def heuristic(self, s):
-        """
-        Calculate heuristic.
-        :param s: current node (state)
-        :return: heuristic function value
-        """
-
-        heuristic_type = self.heuristic_type  # heuristic type
-        goal = self.s_goal  # goal node
-
-        if heuristic_type == "manhattan":
-            return abs(goal[0] - s[0]) + abs(goal[1] - s[1])
-        else:
-            return math.hypot(goal[0] - s[0], goal[1] - s[1])
-
 
 def main():
-    s_start = (5, 5)
+    s_start = (10, 5)
     s_goal = (45, 25)
 
-    print("Starting A* algorithm")
-    astar = AStar(s_start, s_goal, "euclidean")
+    print("Starting RTAA* algorithm")
+    rtaa = RTAAStar(s_start, s_goal, 240, "euclidean")
     plot = Plotting(s_start, s_goal)
 
     print("Searching for path...")
-    path, visited = astar.searching()
-    print(f"Path found with {len(path)} nodes, visited {len(visited)} nodes")
+    rtaa.searching()
+    print(f"Found {len(rtaa.path)} path segments")
     
     print("Starting animation and GIF creation...")
-    plot.animation(path, visited, "005_Astar", save_gif=True)  # Save animation as gif
+    plot.animation_lrta(rtaa.path, rtaa.visited, "016_RTAAStar", save_gif=True)
     print("Animation and GIF creation completed")
 
 

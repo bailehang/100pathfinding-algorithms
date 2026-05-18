@@ -647,7 +647,7 @@ def run_jps(s_start_coord, s_goal_coord, run_title="", save_gif=False):
     
     # Save GIF if requested
     if save_gif:
-        plot.save_animation_as_gif("028_JPS", fps=10)
+        plot.save_animation_as_gif("030_JPS", fps=10)
 
 
 def main():

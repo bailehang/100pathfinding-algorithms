@@ -1,16 +1,17 @@
 """
-RTAAstar 2D (Real-time Adaptive A*)
-@author: huiming zhou
-@author: clark bai
+Bidirectional A* 2D
+Self-contained implementation with GIF generation capability
+@author: huiming zhou (original algorithm)
+Modified to be self-contained with GIF support
 """
 
 import io
 import math
 import os
+import heapq
 import matplotlib.pyplot as plt
 from PIL import Image
 import numpy as np
-import copy
 
 
 class Env:
@@ -79,29 +80,15 @@ class Plotting:
         if save_gif:
             self.save_animation_as_gif(name)
 
-    def animation_lrta(self, path, visited, name, save_gif=False):
-        """Animation for LRTA* and RTAA* algorithms"""
+    def animation_bi_astar(self, path, visited_fore, visited_back, name, save_gif=False):
+        """Animate the bidirectional search process and final path"""
         self.plot_grid(name)
-        cl = self.color_list_2()
-        path_combine = []
-        
-        for k in range(len(path)):
-            if k < len(visited):
-                color_index = k % len(cl)  # Cycle through colors if more iterations than colors
-                self.plot_visited(visited[k], cl[color_index])
-                plt.pause(0.2)
-            self.plot_path(path[k])
-            path_combine += path[k]
-            plt.pause(0.2)
-            
-        if self.xI in path_combine:
-            path_combine.remove(self.xI)
-        self.plot_path(path_combine)
-            
+        self.plot_visited(visited_fore, cl='green')  # Forward search in green
+        self.plot_visited(visited_back, cl='blue')   # Backward search in blue
+        self.plot_path(path)
+        plt.show()
         if save_gif:
             self.save_animation_as_gif(name)
-        
-        plt.show()
 
     def plot_grid(self, name):
         """Plot the grid with obstacles, start and goal points"""
@@ -143,14 +130,13 @@ class Plotting:
 
             if count % length == 0:
                 plt.pause(0.01)
+                self.capture_frame()
 
-        plt.pause(0.01)
+        plt.pause(0.1)
+        self.capture_frame()
 
     def plot_path(self, path, cl='r', flag=False):
         """Plot the final path"""
-        if not path:
-            return
-            
         path_x = [path[i][0] for i in range(len(path))]
         path_y = [path[i][1] for i in range(len(path))]
 
@@ -162,7 +148,7 @@ class Plotting:
         plt.plot(self.xI[0], self.xI[1], "bs")
         plt.plot(self.xG[0], self.xG[1], "gs")
 
-        plt.pause(0.5)
+        plt.pause(0.1)
         self.capture_frame()
 
     def capture_frame(self):
@@ -189,7 +175,7 @@ class Plotting:
         # Close the buffer
         buf.close()
 
-    def save_animation_as_gif(self, name, fps=1.5):
+    def save_animation_as_gif(self, name, fps=15):
         """Save frames as a GIF animation with consistent size"""
         # Create directory for GIFs
         gif_dir = "gif"
@@ -222,7 +208,7 @@ class Plotting:
                         img = Image.fromarray(frame)
                         img_p = img.convert('P', palette=Image.ADAPTIVE, colors=256)
                         frames_p.append(img_p)
-                        if i % 5 == 0:
+                        if i % 10 == 0:
                             print(f"Converted frame {i+1}/{len(self.frames)}")
                     except Exception as e:
                         print(f"Error converting frame {i}: {e}")
@@ -255,154 +241,96 @@ class Plotting:
         # Close the figure
         plt.close()
 
-    @staticmethod
-    def color_list_2():
-        cl = ['silver',
-              'steelblue',
-              'dimgray',
-              'cornflowerblue',
-              'dodgerblue',
-              'royalblue',
-              'plum',
-              'mediumslateblue',
-              'mediumpurple',
-              'blueviolet',
-              ]
-        return cl
 
-
-class QueuePrior:
-    """
-    Class: Priority Queue
-    """
-
-    def __init__(self):
-        self.queue = []
-
-    def empty(self):
-        return len(self.queue) == 0
-
-    def put(self, item, priority):
-        self.queue.append((priority, item))
-
-    def get(self):
-        self.queue.sort(reverse=True)
-        return self.queue.pop()[1]
-
-    def enumerate(self):
-        return self.queue
-
-
-class RTAAStar:
-    def __init__(self, s_start, s_goal, N, heuristic_type):
-        self.s_start, self.s_goal = s_start, s_goal
+class BidirectionalAStar:
+    def __init__(self, s_start, s_goal, heuristic_type):
+        self.s_start = s_start
+        self.s_goal = s_goal
         self.heuristic_type = heuristic_type
 
-        self.Env = Env()
+        self.Env = Env()  # class Env
 
         self.u_set = self.Env.motions  # feasible input set
         self.obs = self.Env.obs  # position of obstacles
 
-        self.N = N  # number of expand nodes each iteration
-        self.visited = []  # order of visited nodes in planning
-        self.path = []  # path of each iteration
-        self.h_table = {}  # h_value table
+        self.OPEN_fore = []  # OPEN set for forward searching
+        self.OPEN_back = []  # OPEN set for backward searching
+        self.CLOSED_fore = []  # CLOSED set for forward
+        self.CLOSED_back = []  # CLOSED set for backward
+        self.PARENT_fore = dict()  # recorded parent for forward
+        self.PARENT_back = dict()  # recorded parent for backward
+        self.g_fore = dict()  # cost to come for forward
+        self.g_back = dict()  # cost to come for backward
 
     def init(self):
         """
-        initialize the h_value of all nodes in the environment.
-        it is a global table.
+        initialize parameters
         """
 
-        for i in range(self.Env.x_range):
-            for j in range(self.Env.y_range):
-                self.h_table[(i, j)] = self.h((i, j))
+        self.g_fore[self.s_start] = 0.0
+        self.g_fore[self.s_goal] = math.inf
+        self.g_back[self.s_goal] = 0.0
+        self.g_back[self.s_start] = math.inf
+        self.PARENT_fore[self.s_start] = self.s_start
+        self.PARENT_back[self.s_goal] = self.s_goal
+        heapq.heappush(self.OPEN_fore,
+                       (self.f_value_fore(self.s_start), self.s_start))
+        heapq.heappush(self.OPEN_back,
+                       (self.f_value_back(self.s_goal), self.s_goal))
 
     def searching(self):
+        """
+        Bidirectional A*
+        :return: connected path, visited order of forward, visited order of backward
+        """
+
         self.init()
-        s_start = self.s_start  # initialize start node
+        s_meet = self.s_start
 
-        while True:
-            OPEN, CLOSED, g_table, PARENT = \
-                self.Astar(s_start, self.N)
+        while self.OPEN_fore and self.OPEN_back:
+            # solve foreward-search
+            _, s_fore = heapq.heappop(self.OPEN_fore)
 
-            if OPEN == "FOUND":  # reach the goal node
-                self.path.append(CLOSED)
+            if s_fore in self.PARENT_back:
+                s_meet = s_fore
                 break
 
-            s_next, h_value = self.cal_h_value(OPEN, CLOSED, g_table, PARENT)
+            self.CLOSED_fore.append(s_fore)
 
-            for x in h_value:
-                self.h_table[x] = h_value[x]
+            for s_n in self.get_neighbor(s_fore):
+                new_cost = self.g_fore[s_fore] + self.cost(s_fore, s_n)
 
-            s_start, path_k = self.extract_path_in_CLOSE(s_start, s_next, h_value)
-            self.path.append(path_k)
+                if s_n not in self.g_fore:
+                    self.g_fore[s_n] = math.inf
 
-    def cal_h_value(self, OPEN, CLOSED, g_table, PARENT):
-        v_open = {}
-        h_value = {}
-        for (_, x) in OPEN.enumerate():
-            v_open[x] = g_table[PARENT[x]] + 1 + self.h_table[x]
-        s_open = min(v_open, key=v_open.get)
-        f_min = v_open[s_open]
-        for x in CLOSED:
-            h_value[x] = f_min - g_table[x]
+                if new_cost < self.g_fore[s_n]:
+                    self.g_fore[s_n] = new_cost
+                    self.PARENT_fore[s_n] = s_fore
+                    heapq.heappush(self.OPEN_fore,
+                                   (self.f_value_fore(s_n), s_n))
 
-        return s_open, h_value
+            # solve backward-search
+            _, s_back = heapq.heappop(self.OPEN_back)
 
-    def iteration(self, CLOSED):
-        h_value = {}
-
-        for s in CLOSED:
-            h_value[s] = float("inf")  # initialize h_value of CLOSED nodes
-
-        while True:
-            h_value_rec = copy.deepcopy(h_value)
-            for s in CLOSED:
-                h_list = []
-                for s_n in self.get_neighbor(s):
-                    if s_n not in CLOSED:
-                        h_list.append(self.cost(s, s_n) + self.h_table[s_n])
-                    else:
-                        h_list.append(self.cost(s, s_n) + h_value[s_n])
-                h_value[s] = min(h_list)  # update h_value of current node
-
-            if h_value == h_value_rec:  # h_value table converged
-                return h_value
-
-    def Astar(self, x_start, N):
-        OPEN = QueuePrior()  # OPEN set
-        OPEN.put(x_start, self.h_table[x_start])
-        CLOSED = []  # CLOSED set
-        g_table = {x_start: 0, self.s_goal: float("inf")}  # Cost to come
-        PARENT = {x_start: x_start}  # relations
-        count = 0  # counter
-
-        while not OPEN.empty():
-            count += 1
-            s = OPEN.get()
-            CLOSED.append(s)
-
-            if s == self.s_goal:  # reach the goal node
-                self.visited.append(CLOSED)
-                return "FOUND", self.extract_path(x_start, PARENT), [], []
-
-            for s_n in self.get_neighbor(s):
-                if s_n not in CLOSED:
-                    new_cost = g_table[s] + self.cost(s, s_n)
-                    if s_n not in g_table:
-                        g_table[s_n] = float("inf")
-                    if new_cost < g_table[s_n]:  # conditions for updating Cost
-                        g_table[s_n] = new_cost
-                        PARENT[s_n] = s
-                        OPEN.put(s_n, g_table[s_n] + self.h_table[s_n])
-
-            if count == N:  # expand needed CLOSED nodes
+            if s_back in self.PARENT_fore:
+                s_meet = s_back
                 break
 
-        self.visited.append(CLOSED)  # visited nodes in each iteration
+            self.CLOSED_back.append(s_back)
 
-        return OPEN, CLOSED, g_table, PARENT
+            for s_n in self.get_neighbor(s_back):
+                new_cost = self.g_back[s_back] + self.cost(s_back, s_n)
+
+                if s_n not in self.g_back:
+                    self.g_back[s_n] = math.inf
+
+                if new_cost < self.g_back[s_n]:
+                    self.g_back[s_n] = new_cost
+                    self.PARENT_back[s_n] = s_back
+                    heapq.heappush(self.OPEN_back,
+                                   (self.f_value_back(s_n), s_n))
+
+        return self.extract_path(s_meet), self.CLOSED_fore, self.CLOSED_back
 
     def get_neighbor(self, s):
         """
@@ -411,57 +339,64 @@ class RTAAStar:
         :return: neighbors
         """
 
-        s_list = set()
+        return [(s[0] + u[0], s[1] + u[1]) for u in self.u_set]
 
-        for u in self.u_set:
-            s_next = tuple([s[i] + u[i] for i in range(2)])
-            if s_next not in self.obs:
-                s_list.add(s_next)
-
-        return s_list
-
-    def extract_path_in_CLOSE(self, s_end, s_start, h_value):
-        path = [s_start]
-        s = s_start
-
-        while True:
-            h_list = {}
-            for s_n in self.get_neighbor(s):
-                if s_n in h_value:
-                    h_list[s_n] = h_value[s_n]
-            s_key = max(h_list, key=h_list.get)  # move to the smallest node with min h_value
-            path.append(s_key)  # generate path
-            s = s_key  # use end of this iteration as the start of next
-
-            if s_key == s_end:  # reach the expected node in OPEN set
-                return s_start, list(reversed(path))
-
-    def extract_path(self, x_start, parent):
+    def extract_path(self, s_meet):
         """
-        Extract the path based on the relationship of nodes.
-        :return: The planning path
+        extract path from start and goal
+        :param s_meet: meet point of bi-direction a*
+        :return: path
         """
 
-        path = [self.s_goal]
-        s = self.s_goal
+        # extract path for foreward part
+        path_fore = [s_meet]
+        s = s_meet
 
         while True:
-            s = parent[s]
-            path.append(s)
-            if s == x_start:
+            s = self.PARENT_fore[s]
+            path_fore.append(s)
+            if s == self.s_start:
                 break
 
-        return list(reversed(path))
+        # extract path for backward part
+        path_back = []
+        s = s_meet
 
-    def h(self, s):
+        while True:
+            s = self.PARENT_back[s]
+            path_back.append(s)
+            if s == self.s_goal:
+                break
+
+        return list(reversed(path_fore)) + list(path_back)
+
+    def f_value_fore(self, s):
         """
-        Calculate heuristic.
+        forward searching: f = g + h. (g: Cost to come, h: heuristic value)
+        :param s: current state
+        :return: f
+        """
+
+        return self.g_fore[s] + self.h(s, self.s_goal)
+
+    def f_value_back(self, s):
+        """
+        backward searching: f = g + h. (g: Cost to come, h: heuristic value)
+        :param s: current state
+        :return: f
+        """
+
+        return self.g_back[s] + self.h(s, self.s_start)
+
+    def h(self, s, goal):
+        """
+        Calculate heuristic value.
         :param s: current node (state)
-        :return: heuristic function value
+        :param goal: goal node (state)
+        :return: heuristic value
         """
 
-        heuristic_type = self.heuristic_type  # heuristic type
-        goal = self.s_goal  # goal node
+        heuristic_type = self.heuristic_type
 
         if heuristic_type == "manhattan":
             return abs(goal[0] - s[0]) + abs(goal[1] - s[1])
@@ -478,11 +413,18 @@ class RTAAStar:
         """
 
         if self.is_collision(s_start, s_goal):
-            return float("inf")
+            return math.inf
 
         return math.hypot(s_goal[0] - s_start[0], s_goal[1] - s_start[1])
 
     def is_collision(self, s_start, s_end):
+        """
+        check if the line segment (s_start, s_end) is collision.
+        :param s_start: start node
+        :param s_end: end node
+        :return: True: is collision / False: not collision
+        """
+
         if s_start in self.obs or s_end in self.obs:
             return True
 
@@ -501,20 +443,15 @@ class RTAAStar:
 
 
 def main():
-    s_start = (10, 5)
+    """Main function to run the Bidirectional A* algorithm"""
+    s_start = (5, 5)
     s_goal = (45, 25)
 
-    print("Starting RTAA* algorithm")
-    rtaa = RTAAStar(s_start, s_goal, 240, "euclidean")
+    bastar = BidirectionalAStar(s_start, s_goal, "euclidean")
     plot = Plotting(s_start, s_goal)
 
-    print("Searching for path...")
-    rtaa.searching()
-    print(f"Found {len(rtaa.path)} path segments")
-    
-    print("Starting animation and GIF creation...")
-    plot.animation_lrta(rtaa.path, rtaa.visited, "015_RTAAStar", save_gif=True)
-    print("Animation and GIF creation completed")
+    path, visited_fore, visited_back = bastar.searching()
+    plot.animation_bi_astar(path, visited_fore, visited_back, "007_Bidirectional_a_star", save_gif=True)
 
 
 if __name__ == '__main__':

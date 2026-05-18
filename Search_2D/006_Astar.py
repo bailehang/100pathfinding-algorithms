@@ -1,17 +1,15 @@
 """
-Weighted A* 2D
-Self-contained implementation with GIF generation capability
-@author: clark bai (original algorithm)
-Modified to be self-contained with GIF support
+A_star 2D
+@author: huiming zhou
+@author: clark bai
 """
-
 import io
-import os
 import math
-import heapq
+import os
 import matplotlib.pyplot as plt
 from PIL import Image
 import numpy as np
+import heapq
 
 
 class Env:
@@ -80,30 +78,19 @@ class Plotting:
         if save_gif:
             self.save_animation_as_gif(name)
 
-    def animation_multi_path(self, paths, visiteds, names, save_gif=False):
-        """Animate multiple paths for comparison"""
-        self.plot_grid("Path Comparison")
+    def animation_ara_star(self, path, visited, name, save_gif=False):
+        """Animation for ARA* algorithm"""
+        for i in range(len(path)):
+            plt.cla()
+            self.plot_grid(name)
+            self.plot_visited(visited[i], cl='gray')
+            self.plot_path(path[i])
+            plt.pause(1)
         
-        # Use different colors for different algorithms
-        colors = ['blue', 'green', 'purple', 'orange']
-        
-        for i, visited in enumerate(visiteds):
-            color = colors[i % len(colors)]
-            self.plot_visited(visited, cl=color)
-        
-        for i, path in enumerate(paths):
-            color = colors[i % len(colors)]
-            self.plot_path(path, cl=color, flag=True)
-            
-        # Add legend
-        for i, name in enumerate(names):
-            color = colors[i % len(colors)]
-            plt.plot([], [], color=color, label=name)
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), ncol=2)
+        if save_gif:
+            self.save_animation_as_gif(name)
         
         plt.show()
-        if save_gif:
-            self.save_animation_as_gif("path_comparison")
 
     def plot_grid(self, name):
         """Plot the grid with obstacles, start and goal points"""
@@ -257,19 +244,18 @@ class Plotting:
         plt.close()
 
 
-class WeightedAStar:
-    """Weighted A* sets the cost + weighted heuristics as the priority
+class AStar:
+    """AStar set the cost + heuristics as the priority
     """
-    def __init__(self, s_start, s_goal, heuristic_type, weight=1.0):
+    def __init__(self, s_start, s_goal, heuristic_type):
         self.s_start = s_start
         self.s_goal = s_goal
         self.heuristic_type = heuristic_type
-        self.weight = weight  # weight for heuristic
 
-        self.Env = Env()  # class Env
+        self.env = Env()  # class Env
 
-        self.u_set = self.Env.motions  # feasible input set
-        self.obs = self.Env.obs  # position of obstacles
+        self.u_set = self.env.motions  # feasible input set
+        self.obs = self.env.obs  # position of obstacles
 
         self.OPEN = []  # priority queue / OPEN set
         self.CLOSED = []  # CLOSED set / VISITED order
@@ -278,7 +264,7 @@ class WeightedAStar:
 
     def searching(self):
         """
-        Weighted A* Searching.
+        A_star Searching.
         :return: path, visited order
         """
 
@@ -308,9 +294,62 @@ class WeightedAStar:
 
         return self.extract_path(self.PARENT), self.CLOSED
 
+    def searching_repeated_astar(self, e):
+        """
+        repeated A*.
+        :param e: weight of A*
+        :return: path and visited order
+        """
+
+        path, visited = [], []
+
+        while e >= 1:
+            p_k, v_k = self.repeated_searching(self.s_start, self.s_goal, e)
+            path.append(p_k)
+            visited.append(v_k)
+            e -= 0.5
+
+        return path, visited
+
+    def repeated_searching(self, s_start, s_goal, e):
+        """
+        run A* with weight e.
+        :param s_start: starting state
+        :param s_goal: goal state
+        :param e: weight of a*
+        :return: path and visited order.
+        """
+
+        g = {s_start: 0, s_goal: float("inf")}
+        PARENT = {s_start: s_start}
+        OPEN = []
+        CLOSED = []
+        heapq.heappush(OPEN,
+                       (g[s_start] + e * self.heuristic(s_start), s_start))
+
+        while OPEN:
+            _, s = heapq.heappop(OPEN)
+            CLOSED.append(s)
+
+            if s == s_goal:
+                break
+
+            for s_n in self.get_neighbor(s):
+                new_cost = g[s] + self.cost(s, s_n)
+
+                if s_n not in g:
+                    g[s_n] = math.inf
+
+                if new_cost < g[s_n]:  # conditions for updating Cost
+                    g[s_n] = new_cost
+                    PARENT[s_n] = s
+                    heapq.heappush(OPEN, (g[s_n] + e * self.heuristic(s_n), s_n))
+
+        return self.extract_path(PARENT), CLOSED
+
     def get_neighbor(self, s):
         """
-        Find neighbors of state s that are not in obstacles.
+        find neighbors of state s that not in obstacles.
         :param s: state
         :return: neighbors
         """
@@ -333,10 +372,10 @@ class WeightedAStar:
 
     def is_collision(self, s_start, s_end):
         """
-        Check if the line segment (s_start, s_end) collides with obstacles.
+        check if the line segment (s_start, s_end) is collision.
         :param s_start: start node
         :param s_end: end node
-        :return: True: collision / False: no collision
+        :return: True: is collision / False: not collision
         """
 
         if s_start in self.obs or s_end in self.obs:
@@ -357,12 +396,12 @@ class WeightedAStar:
 
     def f_value(self, s):
         """
-        Calculate f value: f = g + weight * h
+        f = g + h. (g: Cost to come, h: heuristic value)
         :param s: current state
-        :return: f value
+        :return: f
         """
 
-        return self.g[s] + self.weight * self.heuristic(s)
+        return self.g[s] + self.heuristic(s)
 
     def extract_path(self, PARENT):
         """
@@ -380,7 +419,7 @@ class WeightedAStar:
             if s == self.s_start:
                 break
 
-        return list(reversed(path))
+        return list(path)
 
     def heuristic(self, s):
         """
@@ -397,42 +436,22 @@ class WeightedAStar:
         else:
             return math.hypot(goal[0] - s[0], goal[1] - s[1])
 
-    def compare_with_standard_astar(self):
-        """
-        Compare with standard A* by running both algorithms and returning both paths
-        :return: weighted_path, standard_path, weighted_visited, standard_visited
-        """
-        # Run Weighted A*
-        weighted_path, weighted_visited = self.searching()
-        
-        # Run standard A* (weight = 1.0)
-        standard_astar = WeightedAStar(self.s_start, self.s_goal, self.heuristic_type, 1.0)
-        standard_path, standard_visited = standard_astar.searching()
-        
-        return weighted_path, standard_path, weighted_visited, standard_visited
-
 
 def main():
-    """Main function to run the Weighted A* algorithm"""
     s_start = (5, 5)
     s_goal = (45, 25)
-    weight = 2.0  # Example weight, can be adjusted
 
-    weighted_astar = WeightedAStar(s_start, s_goal, "euclidean", weight)
+    print("Starting A* algorithm")
+    astar = AStar(s_start, s_goal, "euclidean")
     plot = Plotting(s_start, s_goal)
 
-    # Option 1: Just run weighted A*
-    path, visited = weighted_astar.searching()
-    plot.animation(path, visited, f"007_Weighted_Astar_w{weight}", save_gif=True)
+    print("Searching for path...")
+    path, visited = astar.searching()
+    print(f"Path found with {len(path)} nodes, visited {len(visited)} nodes")
     
-    # Option 2: Run comparison with standard A*
-    # weighted_path, standard_path, weighted_visited, standard_visited = weighted_astar.compare_with_standard_astar()
-    # plot.animation_multi_path(
-    #     [weighted_path, standard_path], 
-    #     [weighted_visited, standard_visited], 
-    #     [f"Weighted A* (w={weight})", "Standard A*"],
-    #     save_gif=True
-    # )
+    print("Starting animation and GIF creation...")
+    plot.animation(path, visited, "006_Astar", save_gif=True)  # Save animation as gif
+    print("Animation and GIF creation completed")
 
 
 if __name__ == '__main__':

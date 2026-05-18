@@ -489,7 +489,7 @@ def main():
     print(f"Path found with {len(lrta.path)} iterations")
     
     print("Starting animation and GIF creation...")
-    plot.animation_lrta(lrta.path, lrta.visited, "011_LRTAstar", save_gif=True)  # Save animation as GIF
+    plot.animation_lrta(lrta.path, lrta.visited, "012_LRTAstar", save_gif=True)  # Save animation as GIF
     print("Animation and GIF creation completed")
 
 

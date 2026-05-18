@@ -544,7 +544,7 @@ class HCA:
         
         # Animation
         self.animate_solution(solution)
-        self.save_animation_as_gif("085_hierarchical_cooperative_astar")
+        self.save_animation_as_gif("087_hierarchical_cooperative_astar")
         # plt.show()  # Disable interactive display
         
         # Validate solution

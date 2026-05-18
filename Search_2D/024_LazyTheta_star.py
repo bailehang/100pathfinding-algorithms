@@ -359,7 +359,7 @@ class LazyThetaStar:
         
         # 生成GIF
         print("Generating GIF animation...")
-        self.plot.save_animation_as_gif("023_LazyTheta_star")
+        self.plot.save_animation_as_gif("024_LazyTheta_star")
         
         return path, self.CLOSED, self.los_checks
     

@@ -377,7 +377,7 @@ class DStar:
         self.Plot.capture_frame()
         
         # Save the complete GIF
-        self.Plot.save_animation_as_gif("016_D_star", fps=2)
+        self.Plot.save_animation_as_gif("017_D_star", fps=2)
         
         # Show final result
         plt.show()

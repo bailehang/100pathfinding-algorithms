@@ -573,7 +573,7 @@ def main():
     plot = Plotting(s_start, s_goal)
     
     path, visited, voronoi_map = voronoi_planner.searching()
-    plot.animation(path, visited, voronoi_map, "062_voronoi", save_gif=True)
+    plot.animation(path, visited, voronoi_map, "064_voronoi", save_gif=True)
 
 
 if __name__ == '__main__':

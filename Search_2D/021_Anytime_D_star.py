@@ -230,7 +230,7 @@ class ADStar:
             plt.pause(0.5)
 
         # Save GIF after the algorithm completes
-        self.Plot.save_animation_as_gif("020_Anytime_D_star")
+        self.Plot.save_animation_as_gif("021_Anytime_D_star")
         print("GIF generation completed!")
         
         self.fig.canvas.mpl_connect('button_press_event', self.on_press)

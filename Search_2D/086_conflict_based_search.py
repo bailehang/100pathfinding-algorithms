@@ -297,7 +297,7 @@ class CBS:
                 self.plot_paths(current.solution)
                 self.capture_frame()
                 self.animate_solution(current.solution)
-                self.save_animation_as_gif("084_conflict_based_search")
+                self.save_animation_as_gif("086_conflict_based_search")
                 plt.show()
                 return current.solution
             

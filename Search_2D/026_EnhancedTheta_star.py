@@ -309,7 +309,7 @@ class EnhancedThetaStar:
         print("Starting Enhanced Theta* algorithm")
         
         # Initialize plot
-        self.plot.plot_grid("025_EnhancedTheta_star")
+        self.plot.plot_grid("026_EnhancedTheta_star")
         
         # Step 1: High-level planning on abstract grid
         self.high_level_planning()
@@ -406,7 +406,7 @@ class EnhancedThetaStar:
         
         # Generate and save GIF
         print("Starting GIF creation...")
-        self.plot.save_animation_as_gif("025_EnhancedTheta_star")
+        self.plot.save_animation_as_gif("026_EnhancedTheta_star")
         print("GIF creation completed")
         
         plt.show()
@@ -634,7 +634,7 @@ class EnhancedThetaStar:
         plt.plot(self.s_start[0], self.s_start[1], "bs")
         plt.plot(self.s_goal[0], self.s_goal[1], "gs")
         plt.plot(obs_x, obs_y, "sk")
-        plt.title("025_EnhancedTheta_star")
+        plt.title("026_EnhancedTheta_star")
         plt.axis("equal")
         
         # Draw corridors if available
