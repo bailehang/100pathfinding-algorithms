@@ -3,6 +3,9 @@ Original author: huiming zhou
 Edited by: clark bai
 """
 
+from metrics import install_metrics
+install_metrics()
+
 import os
 import sys
 import math

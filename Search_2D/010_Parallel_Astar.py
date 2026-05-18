@@ -3,6 +3,9 @@ Parallel A* Pathfinding Algorithm
 @author: Modified by Cline from original code
 """
 
+from metrics import install_metrics
+install_metrics()
+
 import io
 import os
 import math

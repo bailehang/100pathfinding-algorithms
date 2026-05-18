@@ -2,6 +2,10 @@
 Depth-first Searching_2D (DFS)
 @author: clark bai
 """
+
+from metrics import install_metrics
+install_metrics()
+
 import io
 import math
 import os

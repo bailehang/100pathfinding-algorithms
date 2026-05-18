@@ -4,6 +4,9 @@ Consolidated from multiple files in the PathPlanning repository
 Original author: huiming zhou
 """
 
+from metrics import install_metrics
+install_metrics()
+
 import math
 import random
 import numpy as np

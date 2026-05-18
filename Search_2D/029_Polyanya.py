@@ -9,6 +9,9 @@ search state follows Polyanya's core idea: a root point plus an interval on a
 mesh edge that is visible from that root.
 """
 
+from metrics import install_metrics, latest_metrics_line
+install_metrics()
+
 import heapq
 import io
 import math
@@ -634,6 +637,9 @@ class PlottingPolyanya:
             draw.rectangle([x - 6, y - 6, x + 6, y + 6], fill=color)
 
         draw.text((margin, 6), getattr(self, "name", "029_Polyanya"), fill=(0, 0, 0, 255))
+        metric_text = latest_metrics_line()
+        if metric_text:
+            draw.text((margin, 20), metric_text, fill=(0, 0, 0, 255))
         return img
 
     def save_animation_as_gif(self, name, fps=10):

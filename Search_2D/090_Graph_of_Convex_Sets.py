@@ -4,6 +4,9 @@ Graph of Convex Sets (GCS) Pathfinding Algorithm
 Reference: 047_rrt_star_smart.py for environment setup
 """
 
+from metrics import install_metrics
+install_metrics()
+
 import os
 import sys
 import math

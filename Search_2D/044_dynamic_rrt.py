@@ -3,6 +3,9 @@ DYNAMIC_RRT_2D (Consolidated)
 @author: huiming zhou
 """
 
+from metrics import install_metrics
+install_metrics()
+
 import math
 import copy
 import numpy as np

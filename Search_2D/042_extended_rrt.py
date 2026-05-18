@@ -4,6 +4,9 @@ EXTENDED_RRT_2D - Consolidated Version
 @author: clark bai
 """
 
+from metrics import install_metrics
+install_metrics()
+
 import io
 import os
 import math

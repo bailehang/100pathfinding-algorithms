@@ -49,6 +49,9 @@ IMPLEMENTATION FEATURES:
 - GIF export for analysis and presentation
 """
 
+from metrics import install_metrics
+install_metrics()
+
 import io
 import os
 import math

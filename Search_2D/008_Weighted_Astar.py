@@ -5,6 +5,9 @@ Self-contained implementation with GIF generation capability
 Modified to be self-contained with GIF support
 """
 
+from metrics import install_metrics
+install_metrics()
+
 import io
 import os
 import math

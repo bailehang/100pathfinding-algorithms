@@ -3,6 +3,9 @@ Dijkstra 2D
 @author: huiming zhou
 """
 
+from metrics import install_metrics
+install_metrics()
+
 import io
 import math
 import os

@@ -3,6 +3,9 @@ RRT-Connect Algorithm Implementation
 @author: huiming zhou
 """
 
+from metrics import install_metrics
+install_metrics()
+
 import io
 import os
 import sys

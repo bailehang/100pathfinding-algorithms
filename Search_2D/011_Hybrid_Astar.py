@@ -5,6 +5,9 @@ Reference: "Practical Search Techniques in Path Planning for Autonomous Driving"
           by Dolgov, D., Thrun, S., Montemerlo, M., & Diebel, J. (2008)
 """
 
+from metrics import install_metrics
+install_metrics()
+
 import io
 import os
 import math

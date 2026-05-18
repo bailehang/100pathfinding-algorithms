@@ -3,6 +3,9 @@ Bidirectional JPS++ (Jump Point Search Plus)
 @author: Cline (based on JPS+ by Trae AI and JPS by clark bai)
 """
 
+from metrics import install_metrics
+install_metrics()
+
 import os
 import sys
 import math

@@ -3,6 +3,9 @@ Focused D* 2D
 @author: clark bai
 """
 
+from metrics import install_metrics
+install_metrics()
+
 import os
 import sys
 import math

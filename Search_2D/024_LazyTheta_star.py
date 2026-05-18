@@ -3,6 +3,9 @@ Lazy Theta* 2D with Visualization
 @author: clark bai
 """
 
+from metrics import install_metrics
+install_metrics()
+
 import io
 import os
 import sys

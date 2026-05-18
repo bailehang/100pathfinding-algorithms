@@ -2,6 +2,10 @@
 Voronoi Pathfinding Algorithm
 @author: clark bai
 """
+
+from metrics import install_metrics
+install_metrics()
+
 import io
 import os
 import math

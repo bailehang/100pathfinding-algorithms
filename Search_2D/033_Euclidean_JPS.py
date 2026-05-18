@@ -3,6 +3,9 @@ Euclidean JPS (Jump Point Search)
 @author: clark bai
 """
 
+from metrics import install_metrics
+install_metrics()
+
 import os
 import sys
 import math

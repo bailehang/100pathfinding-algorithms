@@ -3,6 +3,9 @@ Hierarchical A* 2D
 @author: clark bai (original algorithm)
 """
 
+from metrics import install_metrics
+install_metrics()
+
 import io
 import os
 import math

@@ -3,6 +3,9 @@ Enhanced Theta* 2D: Improved any-angle path planning algorithm
 @author: clark bai
 """
 
+from metrics import install_metrics
+install_metrics()
+
 import io
 import os
 import sys

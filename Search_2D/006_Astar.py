@@ -3,6 +3,10 @@ A_star 2D
 @author: huiming zhou
 @author: clark bai
 """
+
+from metrics import install_metrics
+install_metrics()
+
 import io
 import math
 import os

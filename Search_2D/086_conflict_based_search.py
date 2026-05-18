@@ -5,6 +5,9 @@ CONFLICT_BASED_SEARCH_2D (CBS)
 Based on: Sharon, Stern, Felner, Sturtevant (2012, 2015)
 """
 
+from metrics import install_metrics
+install_metrics()
+
 import io
 import os
 import math

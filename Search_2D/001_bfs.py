@@ -2,6 +2,10 @@
 Breadth-first Searching_2D (BFS)
 @author: clark bai
 """
+
+from metrics import install_metrics
+install_metrics()
+
 import io
 import math
 import os

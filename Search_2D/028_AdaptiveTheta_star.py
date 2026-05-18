@@ -3,6 +3,9 @@ Adaptive Theta* 2D: Self-adapting any-angle path planning algorithm
 @author: clark bai
 """
 
+from metrics import install_metrics
+install_metrics()
+
 import os
 import sys
 import math

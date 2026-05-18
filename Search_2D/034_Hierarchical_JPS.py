@@ -3,6 +3,9 @@ Hierarchical JPS (Jump Point Search)
 @author: Trae AI (based on JPS+ and Hierarchical A* implementations)
 """
 
+from metrics import install_metrics
+install_metrics()
+
 import os
 import sys
 import math

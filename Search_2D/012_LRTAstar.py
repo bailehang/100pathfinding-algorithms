@@ -3,6 +3,9 @@ LRTA_star 2D (Learning Real-time A*)
 @author: huiming zhou
 """
 
+from metrics import install_metrics
+install_metrics()
+
 import math
 import os
 import matplotlib.pyplot as plt

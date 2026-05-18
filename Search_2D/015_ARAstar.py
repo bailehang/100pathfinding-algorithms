@@ -4,6 +4,9 @@ ARA_star 2D (Anytime Repairing A*)
 @author: clark bai
 """
 
+from metrics import install_metrics
+install_metrics()
+
 import io
 import math
 import os

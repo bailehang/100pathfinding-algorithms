@@ -3,6 +3,9 @@ JPS+ (Jump Point Search Plus)
 @author: Trae AI (based on JPS by clark bai)
 """
 
+from metrics import install_metrics
+install_metrics()
+
 import os
 import sys
 import math

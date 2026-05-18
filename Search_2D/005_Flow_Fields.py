@@ -8,6 +8,9 @@ stores, for every free cell, the best local direction to move toward that goal.
 It is especially useful when many agents share the same destination.
 """
 
+from metrics import install_metrics, latest_metrics_line
+install_metrics()
+
 import heapq
 import math
 import os
@@ -254,6 +257,9 @@ class PlottingFlowFields:
         self.draw_paths(draw, visible_paths)
         self.draw_points(draw)
         draw.text((self.margin, 6), name, fill=(0, 0, 0, 255))
+        metric_text = latest_metrics_line()
+        if metric_text:
+            draw.text((self.margin, 20), metric_text, fill=(0, 0, 0, 255))
         self.frames.append(img)
 
     def draw_grid(self, draw):

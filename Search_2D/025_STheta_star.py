@@ -3,6 +3,9 @@ S-Theta* 2D: Low steering path-planning algorithm
 @author: clark bai
 """
 
+from metrics import install_metrics
+install_metrics()
+
 import io
 import os
 import sys

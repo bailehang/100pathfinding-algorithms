@@ -3,6 +3,9 @@ D_star_Lite 2D
 @author: huiming zhou
 """
 
+from metrics import install_metrics
+install_metrics()
+
 import os
 import sys
 import math

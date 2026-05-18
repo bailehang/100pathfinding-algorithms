@@ -4,6 +4,9 @@ Field D* algorithm for 2D path planning
 Based on the work by Dave Ferguson and Anthony Stentz
 """
 
+from metrics import install_metrics
+install_metrics()
+
 import os
 import sys
 import math
