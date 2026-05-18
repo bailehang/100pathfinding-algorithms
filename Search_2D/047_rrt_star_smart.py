@@ -453,8 +453,8 @@ class RrtStarSmart:
 
 
 def main():
-    x_start = (18, 8)  # 起始节点
-    x_goal = (37, 18)  # 目标节点
+    x_start = (18, 8)  # Start node
+    x_goal = (37, 18)  # Goal node
 
     rrt_star_smart = RrtStarSmart(x_start, x_goal, 1, 0.10, 20, 2000)
     rrt_star_smart.planning()

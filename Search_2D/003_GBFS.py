@@ -3,7 +3,7 @@ Greedy Best-First Searching (GBFS)
 @author: clark bai
 """
 
-from metrics import install_metrics
+from metrics import install_metrics, print_latest_metrics
 install_metrics()
 
 import io
@@ -369,6 +369,7 @@ def main():
     plot = Plotting(s_start, s_goal)
 
     path, visited = bf.searching()
+    print_latest_metrics()
     plot.animation(path, visited, "003_GBFS", save_gif=True)  # Save animation as gif
 
 

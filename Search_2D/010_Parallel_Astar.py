@@ -3,7 +3,7 @@ Parallel A* Pathfinding Algorithm
 @author: Modified by Cline from original code
 """
 
-from metrics import install_metrics
+from metrics import elapsed_ms, install_metrics, now_ms, print_metrics_for
 install_metrics()
 
 import io
@@ -883,6 +883,7 @@ def main():
     
     # Try parallel A* first
     parallel_astar = EnhancedParallelAStar(s_start, s_goals, "euclidean", num_regions)
+    algorithm_start = now_ms()
     goal_paths, visited = parallel_astar.searching()
     
     # Print statistics
@@ -916,6 +917,8 @@ def main():
             goal_paths = all_paths
             visited = all_visited
             print(f"Using A* paths: found {len(goal_paths)}/{len(s_goals)} paths")
+
+    print_metrics_for(goal_paths, elapsed_ms(algorithm_start))
     
     # Get region lines for visualization
     region_lines = parallel_astar.visualize_regions()

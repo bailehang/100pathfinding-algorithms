@@ -121,7 +121,7 @@ class FieldDStar:
         """
         while True:
             s, v = self.top_key()
-            # print(f"Current state: {s}, Key value: {v}")  # 添加打印语句
+            # print(f"Current state: {s}, Key value: {v}")  # Debug logging
             # If we've reached the start node or no path exists
             if v >= self.calculate_key(self.s_start) and \
                self.rhs[self.s_start] == self.g[self.s_start]:

@@ -3,7 +3,7 @@ Hierarchical A* 2D
 @author: clark bai (original algorithm)
 """
 
-from metrics import install_metrics
+from metrics import install_metrics, print_latest_metrics
 install_metrics()
 
 import io
@@ -911,6 +911,7 @@ def main():
     plot = Plotting(s_start, s_goal)
 
     fine_path, coarse_path, visited_coarse, visited_fine = hierarchical_astar.searching()
+    print_latest_metrics()
     
     # Convert coarse path to fine coordinates for visualization
     coarse_path_fine = [hierarchical_astar.to_fine_coords(cell) for cell in coarse_path]

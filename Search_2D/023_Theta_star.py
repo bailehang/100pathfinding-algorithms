@@ -255,13 +255,13 @@ class ThetaStar:
         self.PARENT = dict()  # recorded parent
         self.g = dict()  # cost to come
         
-        # 用于可视化的视线检查记录
+        # Line-of-sight checks recorded for visualization
         self.los_checks = []
         
-        # 使用内置的Plotting类
+        # Built-in Plotting helper
         self.plot = Plotting(s_start, s_goal)
         
-        # 当前搜索状态
+        # Current search state
         self.current_path = []
         self.current_visited = []
         self.current_los_checks = []
@@ -273,7 +273,7 @@ class ThetaStar:
         """
         print("Starting Theta* algorithm with GIF generation...")
         
-        # 初始化绘图
+        # Initialize plot
         self.plot.plot_grid("Theta*")
 
         self.PARENT[self.s_start] = self.s_start
@@ -287,15 +287,15 @@ class ThetaStar:
             self.CLOSED.append(s)
             self.current_visited.append(s)
 
-            # 更新当前路径和可视化
+            # Update current path and visualization
             if s == self.s_goal:
                 self.current_path = self.extract_path(self.PARENT)
             else:
-                # 显示从起点到当前节点的路径
+                # Show the path from the start to the current node
                 temp_path = self.extract_temp_path(s)
                 self.current_path = temp_path
             
-            # 每隔一定数量的节点更新一次可视化
+            # Refresh the visualization every few expanded nodes
             if len(self.CLOSED) % 5 == 0 or s == self.s_goal:
                 self.update_plot()
 
@@ -303,7 +303,7 @@ class ThetaStar:
                 break
 
             for s_n in self.get_neighbor(s):
-                # 可视化当前正在检查的视线
+                # Visualize the current line-of-sight check
                 los_result = self.line_of_sight(self.PARENT[s], s_n)
                 self.los_checks.append((self.PARENT[s], s_n, los_result))
                 self.current_los_checks.append((self.PARENT[s], s_n, los_result))
@@ -332,13 +332,13 @@ class ThetaStar:
                         self.PARENT[s_n] = s
                         heapq.heappush(self.OPEN, (self.f_value(s_n), s_n))
 
-        # 最终更新并生成GIF
+        # Final update and GIF generation
         self.update_plot(final=True)
         
         path = self.extract_path(self.PARENT)
         print(f"Path found with {len(path)} nodes, visited {len(self.CLOSED)} nodes")
         
-        # 生成GIF
+        # Generate GIF
         print("Generating GIF animation...")
         self.plot.save_animation_as_gif("023_Theta_star")
         
@@ -346,12 +346,12 @@ class ThetaStar:
 
     def update_plot(self, final=False):
         """
-        更新绘图，显示当前搜索状态
+        Update the plot with the current search state.
         """
-        # 清除当前图形
+        # Clear the current figure
         plt.cla()
         
-        # 重新绘制网格
+        # Redraw grid
         obs_x = [x[0] for x in self.obs]
         obs_y = [x[1] for x in self.obs]
 
@@ -361,36 +361,36 @@ class ThetaStar:
         plt.title("Theta*")
         plt.axis("equal")
         
-        # 绘制已访问节点
+        # Draw visited nodes
         if self.current_visited:
             for node in self.current_visited:
                 if node != self.s_start and node != self.s_goal:
                     plt.plot(node[0], node[1], color='gray', marker='o')
         
-        # 绘制视线检查
+        # Draw line-of-sight checks
         if self.current_los_checks:
             for start, end, result in self.current_los_checks:
                 color = 'g' if result else 'r'
                 plt.plot([start[0], end[0]], [start[1], end[1]], color=color, alpha=0.3)
         
-        # 绘制当前路径
+        # Draw current path
         if self.current_path:
             path_x = [self.current_path[i][0] for i in range(len(self.current_path))]
             path_y = [self.current_path[i][1] for i in range(len(self.current_path))]
             plt.plot(path_x, path_y, linewidth='3', color='r')
         
-        # 重新绘制起点和终点以确保它们在最上层
+        # Redraw start and goal so they stay on top
         plt.plot(self.s_start[0], self.s_start[1], "bs")
         plt.plot(self.s_goal[0], self.s_goal[1], "gs")
         
-        # 捕获帧
+        # Capture frame
         self.plot.capture_frame()
         
-        # 更新图形
+        # Refresh figure
         plt.gcf().canvas.draw()
         plt.gcf().canvas.flush_events()
         
-        # 最终结果时暂停更长时间
+        # Pause longer for the final result
         if final:
             plt.pause(0.5)
         else:
@@ -398,7 +398,7 @@ class ThetaStar:
     
     def extract_temp_path(self, current):
         """
-        提取从起点到当前节点的临时路径
+        Extract a temporary path from the start to the current node.
         """
         path = [current]
         s = current

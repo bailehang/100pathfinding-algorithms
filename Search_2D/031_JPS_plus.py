@@ -295,7 +295,7 @@ class JPSPlus:
             print(f"Online path found with {len(path)} nodes (segments between JPs).")
 
             plt.title("JPS+ - Final Path Result")
-            # 明确设置图例中各个元素的颜色
+            # Explicitly set colors for each legend element
             start_marker = plt.Line2D([], [], marker='s', color='b', label='Start Point', markerfacecolor='b', markersize=8)
             goal_marker = plt.Line2D([], [], marker='s', color='g', label='Goal Point', markerfacecolor='g', markersize=8)
             jp_marker = plt.Line2D([], [], marker='o', color='m', label='Jump Point (Precomputed)', markerfacecolor='m', markersize=5)

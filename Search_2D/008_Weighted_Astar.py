@@ -5,7 +5,7 @@ Self-contained implementation with GIF generation capability
 Modified to be self-contained with GIF support
 """
 
-from metrics import install_metrics
+from metrics import install_metrics, print_latest_metrics
 install_metrics()
 
 import io
@@ -426,6 +426,7 @@ def main():
 
     # Option 1: Just run weighted A*
     path, visited = weighted_astar.searching()
+    print_latest_metrics()
     plot.animation(path, visited, f"008_Weighted_Astar_w{weight}", save_gif=True)
     
     # Option 2: Run comparison with standard A*

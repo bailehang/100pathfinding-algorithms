@@ -3,7 +3,7 @@ Dijkstra 2D
 @author: huiming zhou
 """
 
-from metrics import install_metrics
+from metrics import install_metrics, print_latest_metrics
 install_metrics()
 
 import io
@@ -365,6 +365,7 @@ def main():
 
     print("Searching for path...")
     path, visited = dijkstra.searching()
+    print_latest_metrics()
     print(f"Path found with {len(path)} nodes, visited {len(visited)} nodes")
     
     print("Starting animation and GIF creation...")

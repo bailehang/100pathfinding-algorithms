@@ -240,47 +240,47 @@ class Plotting:
 class LazyThetaStar:
     """
     Lazy Theta*: Any-Angle Path Planning on Grids
-    Lazy Theta*是Theta*的优化版本，推迟视线检查以减少计算开销
+    Lazy Theta* is an optimized Theta* variant that delays line-of-sight checks.
     """
     def __init__(self, s_start, s_goal, heuristic_type):
         self.s_start = s_start
         self.s_goal = s_goal
         self.heuristic_type = heuristic_type
 
-        # 使用内置的Env类
-        self.Env = Env()  # 环境类
+        # Built-in Env helper
+        self.Env = Env()  # Environment helper
 
-        self.u_set = self.Env.motions  # 可行输入集
-        self.obs = self.Env.obs  # 障碍物位置
+        self.u_set = self.Env.motions  # Feasible motion set
+        self.obs = self.Env.obs  # Obstacle positions
 
-        self.OPEN = []  # 优先队列 / OPEN集
-        self.CLOSED = []  # CLOSED集 / 访问顺序
-        self.PARENT = dict()  # 记录父节点
-        self.g = dict()  # 到达代价
+        self.OPEN = []  # Priority queue / OPEN set
+        self.CLOSED = []  # CLOSED set / visit order
+        self.PARENT = dict()  # Parent map
+        self.g = dict()  # Cost to come
         
-        # 用于可视化的视线检查记录
+        # Line-of-sight checks recorded for visualization
         self.los_checks = []
         
-        # 用于动态可视化 - 创建图形对象
+        # Dynamic visualization figure
         self.fig = plt.figure()
         self.ax = self.fig.add_subplot(111)
         
-        # 使用内置的Plotting类
+        # Built-in Plotting helper
         self.plot = Plotting(s_start, s_goal)
         
-        # 当前搜索状态
+        # Current search state
         self.current_path = []
         self.current_visited = []
         self.current_los_checks = []
 
     def searching(self):
         """
-        Lazy Theta*路径搜索 with gif generation
-        :return: 路径, 访问顺序
+        Lazy Theta* path search with GIF generation.
+        :return: path, visit order, line-of-sight checks
         """
         print("Starting Lazy Theta* algorithm with GIF generation...")
         
-        # 初始化绘图
+        # Initialize plot
         self.plot.plot_grid("Lazy Theta*")
         
         self.PARENT[self.s_start] = self.s_start
@@ -292,13 +292,12 @@ class LazyThetaStar:
         while self.OPEN:
             _, s = heapq.heappop(self.OPEN)
             
-            # 延迟视线检查
-            # 仅在扩展节点时检查视线，而不是在生成节点时
+            # Delay line-of-sight checks until node expansion
             if s != self.s_start:
-                # 验证父节点和当前节点之间是否确实存在视线
+                # Verify that the parent can really see the current node
                 parent = self.PARENT[s]
                 
-                # 可视化当前正在检查的视线
+                # Visualize the current line-of-sight check
                 self.plot_current_check(parent, s)
                 
                 los_result = self.line_of_sight(parent, s)
@@ -306,61 +305,60 @@ class LazyThetaStar:
                 self.current_los_checks.append((parent, s, los_result))
                 
                 if not los_result:
-                    # 如果没有视线，更新父节点为最佳邻居(路径1)
+                    # If line of sight fails, update the parent through the best neighbor
                     self.update_parent(s)
 
             self.CLOSED.append(s)
             self.current_visited.append(s)
             
-            # 更新当前路径和可视化
+            # Update current path and visualization
             if s == self.s_goal:
                 self.current_path = self.extract_path(self.PARENT)
             else:
-                # 显示从起点到当前节点的路径
+                # Show the path from the start to the current node
                 temp_path = self.extract_temp_path(s)
                 self.current_path = temp_path
             
-            # 每隔一定数量的节点更新一次可视化
+            # Refresh the visualization every few expanded nodes
             if len(self.CLOSED) % 5 == 0 or s == self.s_goal:
                 self.update_plot()
 
-            if s == self.s_goal:  # 停止条件
+            if s == self.s_goal:  # Stop condition
                 break
 
             for s_n in self.get_neighbor(s):
                 new_g = math.inf
 
-                # 在Lazy Theta*中，我们乐观地假设存在视线
-                # 我们假设路径2有效(从祖父节点存在视线)
+                # Lazy Theta* optimistically assumes line of sight exists
                 if s != self.s_start:
-                    # 路径2(乐观地假设存在视线)
+                    # Path 2: optimistic line-of-sight path from the grandparent
                     new_g = self.g[self.PARENT[s]] + self.cost(self.PARENT[s], s_n)
                     
-                # 路径1(通过当前节点的传统A*路径)
+                # Path 1: regular A* path through the current node
                 new_g_traditional = self.g[s] + self.cost(s, s_n)
                 
-                # 使用更好的路径(更低的代价)
+                # Use the lower-cost path
                 if new_g_traditional < new_g:
                     new_g = new_g_traditional
-                    # 设置当前节点为父节点(路径1)
+                    # Set the current node as parent for Path 1
                     if s_n not in self.g or new_g < self.g[s_n]:
                         self.g[s_n] = new_g
                         self.PARENT[s_n] = s
                         heapq.heappush(self.OPEN, (self.f_value(s_n), s_n))
                 else:
-                    # 设置祖父节点为父节点(路径2) - 乐观地假设存在视线
+                    # Set the grandparent as parent for Path 2
                     if s_n not in self.g or new_g < self.g[s_n]:
                         self.g[s_n] = new_g
-                        self.PARENT[s_n] = self.PARENT[s]  # 跳过路径中的一步
+                        self.PARENT[s_n] = self.PARENT[s]  # Skip one step in the path
                         heapq.heappush(self.OPEN, (self.f_value(s_n), s_n))
 
-        # 最终更新并生成GIF
+        # Final update and GIF generation
         self.update_plot(final=True)
         
         path = self.extract_path(self.PARENT)
         print(f"Path found with {len(path)} nodes, visited {len(self.CLOSED)} nodes")
         
-        # 生成GIF
+        # Generate GIF
         print("Generating GIF animation...")
         self.plot.save_animation_as_gif("024_LazyTheta_star")
         
@@ -368,30 +366,30 @@ class LazyThetaStar:
     
     def plot_current_check(self, start, end):
         """
-        可视化当前正在检查的视线
+        Visualize the current line-of-sight check.
         """
-        # 清除之前的临时线
+        # Clear previous temporary lines
         for artist in self.ax.get_children():
             if hasattr(artist, '_temp_line') and artist._temp_line:
                 artist.remove()
         
-        # 绘制当前检查的线
+        # Draw current check line
         line = self.ax.plot([start[0], end[0]], [start[1], end[1]], 'y-', linewidth=2, alpha=0.8)[0]
         line._temp_line = True
         
-        # 更新图形
+        # Refresh figure
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
-        #plt.pause(0.1)  # 短暂暂停以显示检查过程
+        #plt.pause(0.1)  # Brief pause to show the check
     
     def update_plot(self, final=False):
         """
-        更新绘图，显示当前搜索状态
+        Update the plot with the current search state.
         """
-        # 清除当前图形
+        # Clear current figure
         plt.cla()
         
-        # 重新绘制网格
+        # Redraw grid
         obs_x = [x[0] for x in self.obs]
         obs_y = [x[1] for x in self.obs]
 
@@ -401,36 +399,36 @@ class LazyThetaStar:
         plt.title("Lazy Theta*")
         plt.axis("equal")
         
-        # 绘制已访问节点
+        # Draw visited nodes
         if self.current_visited:
             for node in self.current_visited:
                 if node != self.s_start and node != self.s_goal:
                     plt.plot(node[0], node[1], color='gray', marker='o')
         
-        # 绘制视线检查
+        # Draw line-of-sight checks
         if self.current_los_checks:
             for start, end, result in self.current_los_checks:
                 color = 'g' if result else 'r'
                 plt.plot([start[0], end[0]], [start[1], end[1]], color=color, alpha=0.3)
         
-        # 绘制当前路径
+        # Draw current path
         if self.current_path:
             path_x = [self.current_path[i][0] for i in range(len(self.current_path))]
             path_y = [self.current_path[i][1] for i in range(len(self.current_path))]
             plt.plot(path_x, path_y, linewidth='3', color='r')
         
-        # 重新绘制起点和终点以确保它们在最上层
+        # Redraw start and goal so they stay on top
         plt.plot(self.s_start[0], self.s_start[1], "bs")
         plt.plot(self.s_goal[0], self.s_goal[1], "gs")
         
-        # 捕获帧
+        # Capture frame
         self.plot.capture_frame()
         
-        # 更新图形
+        # Refresh figure
         plt.gcf().canvas.draw()
         plt.gcf().canvas.flush_events()
         
-        # 最终结果时暂停更长时间
+        # Pause longer for the final result
         if final:
             plt.pause(0.5)
         else:
@@ -438,7 +436,7 @@ class LazyThetaStar:
     
     def extract_temp_path(self, current):
         """
-        提取从起点到当前节点的临时路径
+        Extract a temporary path from the start to the current node.
         """
         path = [current]
         s = current
@@ -451,8 +449,8 @@ class LazyThetaStar:
 
     def update_parent(self, s):
         """
-        如果视线检查失败，使用路径1更新父节点
-        :param s: 当前节点
+        Update the parent through Path 1 when line-of-sight validation fails.
+        :param s: current node
         """
         min_g = math.inf
         best_parent = None
@@ -470,28 +468,28 @@ class LazyThetaStar:
 
     def get_neighbor(self, s):
         """
-        查找不在障碍物中的状态s的邻居
-        :param s: 状态
-        :return: 邻居
+        Find valid neighbors of state s that are not blocked by obstacles.
+        :param s: state
+        :return: neighbors
         """
         nei_list = []
         for u in self.u_set:
             s_next = (s[0] + u[0], s[1] + u[1])
-            # 检查边界约束
+            # Check boundary constraints
             if (0 <= s_next[0] < self.Env.x_range and 
                 0 <= s_next[1] < self.Env.y_range and
-                s_next not in self.obs):  # 过滤掉障碍物和边界违规
+                s_next not in self.obs):  # Filter obstacles and boundary violations
                 nei_list.append(s_next)
                 
         return nei_list
 
     def cost(self, s_start, s_goal):
         """
-        计算此移动的代价
-        :param s_start: 起始节点
-        :param s_goal: 目标节点
-        :return: 此移动的代价
-        :note: 代价函数可能更复杂!
+        Calculate the movement cost.
+        :param s_start: start node
+        :param s_goal: goal node
+        :return: movement cost
+        :note: the cost function can be made more complex
         """
 
         if self.is_collision(s_start, s_goal):
@@ -501,15 +499,15 @@ class LazyThetaStar:
 
     def is_collision(self, s_start, s_end):
         """
-        检查线段(s_start, s_end)是否碰撞
-        :param s_start: 起始节点
-        :param s_end: 结束节点
-        :return: True: 碰撞 / False: 不碰撞
+        Check whether the segment from s_start to s_end collides with obstacles.
+        :param s_start: start node
+        :param s_end: end node
+        :return: True if collision exists, otherwise False
         """
-        # 检查点是否在网格边界内
+        # Check whether points are inside grid boundaries
         x_range, y_range = self.Env.x_range, self.Env.y_range
         
-        # 检查边界约束
+        # Check boundary constraints
         if (s_start[0] < 0 or s_start[0] >= x_range or 
             s_start[1] < 0 or s_start[1] >= y_range or
             s_end[0] < 0 or s_end[0] >= x_range or
@@ -519,7 +517,7 @@ class LazyThetaStar:
         if s_start in self.obs or s_end in self.obs:
             return True
 
-        # 对对角线线段的基本检查
+        # Basic check for diagonal line segments
         if s_start[0] != s_end[0] and s_start[1] != s_end[1]:
             if s_end[0] - s_start[0] == s_start[1] - s_end[1]:
                 s1 = (min(s_start[0], s_end[0]), min(s_start[1], s_end[1]))
@@ -531,17 +529,17 @@ class LazyThetaStar:
             if s1 in self.obs or s2 in self.obs:
                 return True
 
-        # Bresenham线算法进行更彻底的检查
+        # Use Bresenham's line algorithm for a more thorough check
         x0, y0 = s_start
         x1, y1 = s_end
         
-        # 如果线很陡，转置网格
+        # Transpose coordinates for steep lines
         steep = abs(y1 - y0) > abs(x1 - x0)
         if steep:
             x0, y0 = y0, x0
             x1, y1 = y1, x1
         
-        # 如果需要，交换点以确保x增加
+        # Swap points if needed so x increases
         if x0 > x1:
             x0, x1 = x1, x0
             y0, y1 = y1, y0
@@ -551,16 +549,16 @@ class LazyThetaStar:
         error = dx / 2
         y = y0
         
-        # 确定步长方向
+        # Determine step direction
         if y0 < y1:
             y_step = 1
         else:
             y_step = -1
         
-        # 检查线上的每个点
+        # Check every point on the line
         for x in range(x0, x1 + 1):
             if steep:
-                # 如果陡峭，坐标被转置
+                # Coordinates are transposed for steep lines
                 if (y, x) in self.obs:
                     return True
             else:
@@ -576,17 +574,17 @@ class LazyThetaStar:
 
     def line_of_sight(self, s_start, s_end):
         """
-        检查两个节点之间是否存在视线
-        :param s_start: 起始节点
-        :param s_end: 结束节点
-        :return: 如果存在视线则为True
+        Check whether two nodes have line of sight.
+        :param s_start: start node
+        :param s_end: end node
+        :return: True when line of sight exists
         """
         return not self.is_collision(s_start, s_end)
 
     def f_value(self, s):
         """
-        f = g + h. (g: 到达代价, h: 启发式值)
-        :param s: 当前状态
+        f = g + h. (g: cost to come, h: heuristic value)
+        :param s: current state
         :return: f
         """
 
@@ -594,8 +592,8 @@ class LazyThetaStar:
 
     def extract_path(self, PARENT):
         """
-        根据PARENT集提取路径
-        :return: 规划路径
+        Extract a path from the parent map.
+        :return: planned path
         """
 
         path = [self.s_goal]
@@ -612,13 +610,13 @@ class LazyThetaStar:
 
     def heuristic(self, s):
         """
-        计算启发式值
-        :param s: 当前节点(状态)
-        :return: 启发式函数值
+        Calculate the heuristic value.
+        :param s: current node state
+        :return: heuristic value
         """
 
-        heuristic_type = self.heuristic_type  # 启发式类型
-        goal = self.s_goal  # 目标节点
+        heuristic_type = self.heuristic_type  # Heuristic type
+        goal = self.s_goal  # Goal node
 
         if heuristic_type == "manhattan":
             return abs(goal[0] - s[0]) + abs(goal[1] - s[1])
@@ -628,15 +626,17 @@ class LazyThetaStar:
 
 def main():
     """
-    Lazy Theta*: 网格上的任意角度路径规划
+    Lazy Theta*: any-angle path planning on grids.
     
-    Lazy Theta*是Theta*的优化版本，它推迟视线检查以减少计算开销。
-    它的工作原理是乐观地假设存在直接路径，只有当节点从开放列表中实际扩展时才执行视线检查。
+    Lazy Theta* is an optimized Theta* variant that delays line-of-sight checks
+    to reduce computational overhead. It optimistically assumes a direct path
+    exists, and performs validation only when a node is expanded from OPEN.
     
-    这种"延迟"方法减少了视线检查的数量，而视线检查通常是Theta*中最昂贵的操作。
+    This lazy approach reduces the number of line-of-sight checks, which are
+    often the most expensive operation in Theta*.
     
-    参考: Nash, A., Koenig, S., & Tovey, C. (2010).
-    Lazy Theta*: 3D中的任意角度路径规划和路径长度分析。
+    Reference: Nash, A., Koenig, S., & Tovey, C. (2010).
+    Lazy Theta*: Any-Angle Path Planning and Path Length Analysis in 3D.
     """
     s_start = (5, 5)
     s_goal = (45, 25)

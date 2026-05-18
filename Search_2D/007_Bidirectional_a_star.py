@@ -5,7 +5,7 @@ Self-contained implementation with GIF generation capability
 Modified to be self-contained with GIF support
 """
 
-from metrics import install_metrics
+from metrics import install_metrics, print_latest_metrics
 install_metrics()
 
 import io
@@ -454,6 +454,7 @@ def main():
     plot = Plotting(s_start, s_goal)
 
     path, visited_fore, visited_back = bastar.searching()
+    print_latest_metrics()
     plot.animation_bi_astar(path, visited_fore, visited_back, "007_Bidirectional_a_star", save_gif=True)
 
 

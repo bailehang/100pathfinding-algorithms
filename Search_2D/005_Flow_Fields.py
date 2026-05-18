@@ -8,7 +8,7 @@ stores, for every free cell, the best local direction to move toward that goal.
 It is especially useful when many agents share the same destination.
 """
 
-from metrics import install_metrics, latest_metrics_line
+from metrics import install_metrics, latest_metrics_line, print_latest_metrics
 install_metrics()
 
 import heapq
@@ -395,6 +395,7 @@ def main():
 
     planner = FlowFields(starts, goal)
     path, visited, _ = planner.searching()
+    print_latest_metrics()
 
     print(f"Goal: {goal}")
     print(f"Starts: {starts}")

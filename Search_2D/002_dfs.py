@@ -3,7 +3,7 @@ Depth-first Searching_2D (DFS)
 @author: clark bai
 """
 
-from metrics import install_metrics
+from metrics import elapsed_ms, install_metrics, now_ms, print_metrics_for
 install_metrics()
 
 import io
@@ -284,7 +284,7 @@ class DFS:
             # Sort by cost(neighbor, goal) (smaller is better)
             neighbors.sort(key=lambda n: self.cost(n, self.s_goal))
 
-            # Put the most promising node at the top of the stack → popped first
+            # Put the most promising node at the top of the stack so it is popped first
             for nb in reversed(neighbors):
                 stack.append(nb)
                 parent[nb] = current
@@ -300,14 +300,16 @@ class DFS:
 
         
 def main():
-    """Main function to run the BFS algorithm"""
+    """Main function to run the DFS algorithm"""
     s_start = (5, 5)
     s_goal = (45, 25)
 
-    bfs = DFS(s_start, s_goal)  # Third parameter is ignored in BFS
+    dfs = DFS(s_start, s_goal)
     plot = Plotting(s_start, s_goal)
 
-    path, visited = bfs.searching()
+    algorithm_start = now_ms()
+    path, visited = dfs.searching()
+    print_metrics_for(path, elapsed_ms(algorithm_start))
     plot.animation(path, visited, "002_dfs", save_gif=True)
 
 

@@ -3,7 +3,7 @@ Breadth-first Searching_2D (BFS)
 @author: clark bai
 """
 
-from metrics import install_metrics
+from metrics import install_metrics, print_latest_metrics
 install_metrics()
 
 import io
@@ -340,6 +340,7 @@ def main():
     plot = Plotting(s_start, s_goal)
 
     path, visited = bfs.searching()
+    print_latest_metrics()
     plot.animation(path, visited, "001_bfs", save_gif=True)
 
 
