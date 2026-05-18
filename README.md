@@ -218,68 +218,68 @@ Required attribution: `100pathfinding-algorithms by bailehang`.
 ## 一、图搜索算法 (Graph Search Algorithms)
 -   **基础搜索 (Uninformed Search)**
     -   **001 广度优先搜索 (Breadth-First Searching - BFS)**
-        -   路径长度：54.042；算法时间：13.400 ms（纯算法，不含动画/GIF 渲染）
         -   Moore (1959), Lee (1961)
         -   ![001_bfs](Search_2D/gif/001_bfs.gif)
+        -   Path length: 54.042; Algorithm time: 13.400 ms (Algorithm-only, no animation/GIF)
         -   算法心得：
         逐层扩展的搜索策略，它从起始节点开始，逐层向外扩展，直到找到目标节点或遍历完整个搜索空间。
     -   **002 深度优先搜索 (Depth-First Search - DFS)**
-        -   路径长度：89.213；算法时间：1.337 ms（纯算法，不含动画/GIF 渲染）
         -   Trémaux (1882), Hopcroft & Tarjan (1973)
         -   ![002_dfs](Search_2D/gif/002_dfs.gif)
+        -   Path length: 89.213; Algorithm time: 1.337 ms (Algorithm-only, no animation/GIF)
         -   算法心得：
         从起始节点开始，沿着一条路径尽可能深入，直到无法继续前进，然后回溯到上一个节点，继续探索其他路径。
 -   **启发式搜索 (Informed/Heuristic Search)**
     -   **003 贪婪最佳优先搜索 (Greedy Best-First Search - GBFS)**
-        -   路径长度：67.255；算法时间：5.040 ms（纯算法，不含动画/GIF 渲染）
         -   Doran & Michie (1966), Pearl (1984)
         -   ![003_GBFS](Search_2D/gif/003_GBFS.gif)
+        -   Path length: 67.255; Algorithm time: 5.040 ms (Algorithm-only, no animation/GIF)
         - 算法心得：
         从起始节点开始，每次选择与目标节点最近的节点进行扩展，直到找到目标节点或遍历完整个搜索空间。
     -   **004 Dijkstra 算法**
-        -   路径长度：54.042；算法时间：9.098 ms（纯算法，不含动画/GIF 渲染）
         -   Dijkstra (1959)
         -   ![004_Dijkstra](Search_2D/gif/004_Dijkstra.gif)
+        -   Path length: 54.042; Algorithm time: 9.098 ms (Algorithm-only, no animation/GIF)
         -   算法心得：
         Dijkstra 算法是一种用于寻找最短路径的算法，它通过维护一个距离表来记录从起始节点到其他节点的最短距离。
         算法从起始节点开始，每次选择距离表中距离最小的节点进行扩展，更新其相邻节点的距离表，直到找到目标节点或遍历完整个搜索空间。
     -   **005 Flow Fields（流场寻路）**
-        -   路径长度：54.042；算法时间：9.807 ms（纯算法，不含动画/GIF 渲染）
         -   Treuille, Cooper, Popović (2006), 常用于 RTS/Game AI 群体寻路
         -   ![005_Flow_Fields](Search_2D/gif/005_Flow_Fields.gif)
+        -   Path length: 54.042; Algorithm time: 9.807 ms (Algorithm-only, no animation/GIF)
         -   算法心得：
         Flow Fields 先从目标点反向传播总代价，得到 integration field，再让每个可行格子指向代价最低的邻居。多个智能体共享同一目标时，只需复用这张方向场即可快速前进。
     -   **006 A\* 算法 (A\* Algorithm)**
-        -   路径长度：54.042；算法时间：4.956 ms（纯算法，不含动画/GIF 渲染）
         -   Hart, Nilsson, Raphael (1968)
         -   ![006_Astar](Search_2D/gif/006_Astar.gif)
+        -   Path length: 54.042; Algorithm time: 4.956 ms (Algorithm-only, no animation/GIF)
         -   算法心得：
         A\* 算法是一种启发式搜索算法，它结合了广度优先搜索和贪婪最佳优先搜索的优点。
         算法从起始节点开始，每次选择距离表中距离最小的节点进行扩展，更新其相邻节点的距离表，直到找到目标节点或遍历完整个搜索空间。
     -   **A\* 变体与扩展 (A\* Variants & Extensions)**
         -   **007 双向 A\* (Bidirectional A\*)**
-            -   路径长度：54.042；算法时间：3.558 ms（纯算法，不含动画/GIF 渲染）
             -   Pohl (1971)
             -   ![007_Bidirectional_Astar](Search_2D/gif/007_Bidirectional_a_star.gif)
+            -   Path length: 54.042; Algorithm time: 3.558 ms (Algorithm-only, no animation/GIF)
             -   算法心得：
             它从起始节点和目标节点同时开始进行搜索，直到两个搜索方向相遇。
         
         -   **008 加权 A\* (Weighted A\*)**
-            -   路径长度：57.355；算法时间：6.071 ms（纯算法，不含动画/GIF 渲染）
             -   Pohl (1970)
             -   ![008_Weighted_Astar](Search_2D/gif/008_Weighted_Astar_w2.0.gif)
+            -   Path length: 57.355; Algorithm time: 6.071 ms (Algorithm-only, no animation/GIF)
             -   算法心得：
             加权 A\* 算法是 A\* 算法的一种变体，它通过对每个节点的代价进行加权来调整搜索过程。
         -   **009 分层 A\* (Hierarchical A\* - HPA\*)**
-            -   路径长度：51.632；算法时间：2.374 ms（纯算法，不含动画/GIF 渲染）
             -   Botea, Müller, Schaeffer (2004)
             -   ![009_Hierarchical_Astar](Search_2D/gif/009_Hierarchical_Astar.gif)
+            -   Path length: 51.632; Algorithm time: 2.374 ms (Algorithm-only, no animation/GIF)
             -   算法心得：
             分层 A\* 算法是 A\* 算法的一种变体，它将搜索空间划分为多个层次，每个层次使用 A\* 算法进行搜索。这里展示两个层次。
         -   **010 并行 A\* (Parallel A\*)**
-            -   路径长度：total 142.083, avg 47.361, n=3；算法时间：60.805 ms（纯算法，不含动画/GIF 渲染）
             -   Zhou & Zeng (2015)
             -   ![010_Parallel_Astar](Search_2D/gif/010_Parallel_Astar.gif)
+            -   Path length: total 142.083, avg 47.361, n=3; Algorithm time: 60.805 ms (Algorithm-only, no animation/GIF)
             -   算法心得：
             并行 A\* 算法的优点是可以利用多核处理器的并行计算能力，加快搜索速度。这里难以展示这种并行改为展示多个终点复用查询路径的情况
         -   **011 Hybrid A\***
