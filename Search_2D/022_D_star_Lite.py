@@ -9,7 +9,12 @@ install_metrics()
 import os
 import sys
 import math
+import io
+import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from PIL import Image
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) +
                 "/../")
@@ -49,6 +54,115 @@ class DStar:
         self.plot_path(self.extract_path())
         self.fig.canvas.mpl_connect('button_press_event', self.on_press)
         plt.show()
+
+    def capture_frame(self):
+        """Capture the current Matplotlib figure for GIF output."""
+        buf = io.BytesIO()
+        fig = plt.gcf()
+        fig.canvas.draw()
+        fig.savefig(
+            buf,
+            format="png",
+            dpi=100,
+            bbox_inches="tight",
+            facecolor="white",
+            edgecolor="none",
+        )
+        buf.seek(0)
+        image = Image.open(buf).convert("RGB")
+        frame = np.array(image)
+        buf.close()
+        return frame
+
+    def save_gif(self, frames, name, fps=2):
+        """Save captured frames under Search_2D/gif."""
+        if not frames:
+            print("No frames captured; GIF was not saved.")
+            return
+
+        gif_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gif")
+        os.makedirs(gif_dir, exist_ok=True)
+        gif_path = os.path.join(gif_dir, f"{name}.gif")
+
+        palette_frames = [
+            Image.fromarray(frame).convert("P", palette=Image.ADAPTIVE, colors=256)
+            for frame in frames
+        ]
+        palette_frames[0].save(
+            gif_path,
+            format="GIF",
+            append_images=palette_frames[1:],
+            save_all=True,
+            duration=int(1000 / fps),
+            loop=0,
+            disposal=2,
+        )
+        print(f"GIF animation saved to {gif_path}")
+
+    def draw_state(self, title, path, highlight=None):
+        """Redraw the grid, visited states, current path, and optional markers."""
+        plt.cla()
+        self.Plot.plot_grid(title)
+        self.plot_visited(self.visited)
+        self.plot_path(path)
+
+        if highlight:
+            x_values = [p[0] for p in highlight]
+            y_values = [p[1] for p in highlight]
+            plt.plot(x_values, y_values, "ro", label="Changed obstacle")
+            plt.legend()
+
+    def add_dynamic_obstacle(self, obstacle):
+        """Apply an obstacle insertion and update affected D* Lite vertices."""
+        if obstacle in self.obs:
+            return
+
+        self.obs.add(obstacle)
+        self.Plot.update_obs(self.obs)
+        self.g[obstacle] = float("inf")
+        self.rhs[obstacle] = float("inf")
+        self.U.pop(obstacle, None)
+
+        for s in self.get_neighbor(obstacle):
+            self.UpdateVertex(s)
+
+    def run_demonstration(self):
+        """Run a deterministic D* Lite demo and save it as a GIF."""
+        print("Starting D* Lite demonstration...")
+        frames = []
+        plt.figure(figsize=(6, 4), dpi=100)
+
+        self.ComputePath()
+        path = self.extract_path()
+        self.draw_state("022 D* Lite - Initial Path", path)
+        frames.append(self.capture_frame())
+
+        original_path = [p for p in path if p not in (self.s_start, self.s_goal)]
+        obstacle_sequence = []
+        if original_path:
+            fractions = (0.35, 0.5, 0.65)
+            for fraction in fractions:
+                index = min(len(original_path) - 1, max(0, int(len(original_path) * fraction)))
+                candidate = original_path[index]
+                if candidate not in obstacle_sequence:
+                    obstacle_sequence.append(candidate)
+
+        s_last = self.s_start
+        for idx, obstacle in enumerate(obstacle_sequence, start=1):
+            print(f"Adding dynamic obstacle {idx}: {obstacle}")
+            self.km += self.h(s_last, self.s_start)
+            s_last = self.s_start
+            self.visited = set()
+            self.count += 1
+            self.add_dynamic_obstacle(obstacle)
+            self.ComputePath()
+            path = self.extract_path()
+            self.draw_state(f"022 D* Lite - Replan {idx}", path, [obstacle])
+            frames.append(self.capture_frame())
+
+        self.save_gif(frames, "022_D_star_Lite", fps=2)
+        plt.close()
+        print(f"D* Lite demonstration finished. Final path length: {len(path)} nodes")
 
     def on_press(self, event):
         x, y = event.xdata, event.ydata
@@ -234,7 +348,7 @@ def main():
     s_goal = (45, 25)
 
     dstar = DStar(s_start, s_goal, "euclidean")
-    dstar.run()
+    dstar.run_demonstration()
 
 
 if __name__ == '__main__':

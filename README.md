@@ -8,11 +8,11 @@ I am very interested in further summarizing all the pathfinding algorithms.
 
 > This repository is progressing toward the long-term goal of implementing **100 pathfinding algorithms**.
 
-**总进度：50 / 94 已实现（约 53%），其中 35 个附带演示动图。**
+**总进度：50 / 94 已实现（约 53%），其中 37 个附带演示动图。**
 
 ```text
 IMPLEMENTED   [###########.........]  53%   50/94
-DEMO GIF      [#######.............]  37%   35/94
+DEMO GIF      [########............]  39%   37/94
 ```
 
 ### 逐算法实现状态明细 (per-algorithm status)
@@ -21,9 +21,9 @@ DEMO GIF      [#######.............]  37%   35/94
 
 |  #  | 算法                       |  状态 |    #   | 算法                         |   状态   |
 | :-: | :----------------------- | :-: | :----: | :------------------------- | :----: |
-| 001 | BFS                      |  ✅  |   022  | D\* Lite                   |   WIP   |
+| 001 | BFS                      |  ✅  |   022  | D\* Lite                   |    ✅   |
 | 002 | DFS                      |  ✅  |   023  | Anytime D\*                |    ✅   |
-| 003 | GBFS                     |  ✅  |   024  | Field D\*                  |   WIP   |
+| 003 | GBFS                     |  ✅  |   024  | Field D\*                  |    ✅   |
 | 004 | Dijkstra                 |  ✅  |   025  | Theta\*                    |    ✅   |
 | 005 | Bellman-Ford             |  ✅  |   026  | Lazy Theta\*               |    ✅   |
 | 006 | SPFA                     |  ✅  |   027  | S-Theta\*                  |    ✅   |
@@ -38,7 +38,7 @@ DEMO GIF      [#######.............]  37%   35/94
 | 015 | Repairing A\*            |  ✅  |   036  | Hierarchical JPS (HJPS)    |   WIP   |
 | 016 | LPA\*                    |  ✅  |   037  | Dynamic JPS                |   TODO   |
 | 017 | ARA\*                    |  ✅  |   038  | JPS-Lite                   |   TODO   |
-| 018 | RTAA\*                   |  ✅  |   039  | _(预留 / Reserved JPS slot)_    |   TODO   |
+| 018 | RTAA\*                   |  ✅  |   039  | Reserved JPS  |   TODO   |
 | 019 | D\*                      |  ✅  |   040  | Adaptive JPS               |   TODO   |
 | 020 | Lazy D\*                 |  ✅  |   041  | Lattice Planning           |   TODO   |
 | 021 | Focused D\*              |  ✅  | |                     | |
@@ -458,11 +458,13 @@ Required attribution: `100pathfinding-algorithms by bailehang`.
         - ![021\_Focused\_D\_star](Search_2D/gif/021_Focused_D_star.gif)
       - **022 D\* Lite**
         - Koenig & Likhachev (2002)
+        - ![022\_D\_star\_Lite](Search_2D/gif/022_D_star_Lite.gif)
       - **023 Anytime D\***
         - Likhachev, Ferguson, Gordon, Stentz, Thrun (2005)
         - ![023\_Anytime\_D\_star](Search_2D/gif/023_Anytime_D_star.gif)
       - **024 Field D\***
         - Ferguson & Stentz (2007)
+        - ![024\_Field\_D\_star](Search_2D/gif/024_Field_D_star.gif)
   - **任意角度路径规划 (Any-Angle Path Planning)**
     - **ThetA\* 家族 (ThetA\* Family)**
       - **025 ThetA\***
