@@ -7,10 +7,16 @@ Edited by: clark bai
 from metrics import install_metrics
 install_metrics()
 
+import io
 import math
+import os
 import numpy as np
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+from matplotlib.collections import LineCollection
+from PIL import Image
 import collections
 import heapq
 
@@ -119,7 +125,7 @@ class Utils:
         if div == 0:
             return False
 
-        t1 = np.linalg.norm(np.cross(v2, v1)) / div
+        t1 = abs(v2[0] * v1[1] - v2[1] * v1[0]) / div
         t2 = np.dot(v1, v3) / div
 
         if t1 >= 0 and 0 <= t2 <= 1:
@@ -275,7 +281,7 @@ class Plotting:
         if len(path) != 0:
             plt.plot([x[0] for x in path], [x[1] for x in path], '-r', linewidth=2)
             plt.pause(0.01)
-        plt.show()
+        plt.close()
 
 
 class RrtStar:
@@ -300,7 +306,11 @@ class RrtStar:
         self.obs_rectangle = self.env.obs_rectangle
         self.obs_boundary = self.env.obs_boundary
 
-    def planning(self):
+    def planning(self, save_gif=False, gif_name="048_rrt_star"):
+        snapshots = []
+        best_path = []
+        best_cost = math.inf
+
         for k in range(self.iter_max):
             node_rand = self.generate_random_node(self.goal_sample_rate)
             node_near = self.nearest_neighbor(self.vertex, node_rand)
@@ -317,10 +327,32 @@ class RrtStar:
                     self.choose_parent(node_new, neighbor_index)
                     self.rewire(node_new, neighbor_index)
 
-        index = self.search_goal_parent()
-        self.path = self.extract_path(self.vertex[index])
+                should_check_goal = (
+                    k % 75 == 0
+                    or self.utils.get_dist(node_new, self.s_goal) <= self.step_len
+                )
+                if should_check_goal:
+                    candidate_path = self.best_path_to_goal()
+                    candidate_cost = self.path_length(candidate_path) if candidate_path else math.inf
+                    if candidate_cost + 0.1 < best_cost:
+                        best_path = candidate_path
+                        best_cost = candidate_cost
 
-        self.plotting.animation(self.vertex, self.path, "rrt*, N = " + str(self.iter_max))
+                if k % 100 == 0:
+                    snapshots.append(self.snapshot(k, best_path))
+
+        index = self.search_goal_parent()
+        self.path = self.extract_path(self.vertex[index]) if index is not None else []
+
+        if self.path:
+            snapshots.append(self.snapshot(self.iter_max, self.path))
+
+        if save_gif:
+            self.save_process_gif(snapshots, gif_name)
+        else:
+            self.plotting.animation(self.vertex, self.path, "rrt*, N = " + str(self.iter_max))
+
+        return self.path
 
     def new_state(self, node_start, node_goal):
         dist, theta = self.get_distance_and_angle(node_start, node_goal)
@@ -350,12 +382,16 @@ class RrtStar:
         dist_list = [math.hypot(n.x - self.s_goal.x, n.y - self.s_goal.y) for n in self.vertex]
         node_index = [i for i in range(len(dist_list)) if dist_list[i] <= self.step_len]
 
-        if len(node_index) > 0:
-            cost_list = [dist_list[i] + self.cost(self.vertex[i]) for i in node_index
-                         if not self.utils.is_collision(self.vertex[i], self.s_goal)]
-            return node_index[int(np.argmin(cost_list))]
+        candidates = [
+            (dist_list[i] + self.cost(self.vertex[i]), i)
+            for i in node_index
+            if not self.utils.is_collision(self.vertex[i], self.s_goal)
+        ]
 
-        return len(self.vertex) - 1
+        if candidates:
+            return min(candidates, key=lambda item: item[0])[1]
+
+        return None
 
     def get_new_cost(self, node_start, node_end):
         dist, _ = self.get_distance_and_angle(node_start, node_end)
@@ -422,6 +458,114 @@ class RrtStar:
 
         return path
 
+    def best_path_to_goal(self):
+        index = self.search_goal_parent()
+        if index is None:
+            return []
+        return self.extract_path(self.vertex[index])
+
+    def snapshot(self, iteration, path):
+        edges = [
+            ((node.parent.x, node.parent.y), (node.x, node.y))
+            for node in self.vertex
+            if node.parent is not None
+        ]
+        return {
+            "iteration": iteration,
+            "nodes": len(self.vertex),
+            "edges": edges,
+            "path": [point[:] for point in path],
+            "cost": self.path_length(path) if path else None,
+        }
+
+    @staticmethod
+    def path_length(path):
+        if len(path) < 2:
+            return 0.0
+        return sum(
+            math.hypot(path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1])
+            for i in range(1, len(path))
+        )
+
+    def save_process_gif(self, snapshots, gif_name):
+        if not snapshots:
+            snapshots = [self.snapshot(0, self.path)]
+
+        frames = [self.render_snapshot(snapshot) for snapshot in self.select_snapshots(snapshots)]
+        if frames:
+            frames.extend([frames[-1]] * 4)
+
+        gif_dir = os.path.join(os.path.dirname(__file__), "gif")
+        os.makedirs(gif_dir, exist_ok=True)
+        gif_path = os.path.join(gif_dir, f"{gif_name}.gif")
+
+        frames[0].save(
+            gif_path,
+            save_all=True,
+            append_images=frames[1:],
+            duration=380,
+            loop=0,
+            disposal=2,
+        )
+        print(f"Saved {gif_path} with {len(frames)} frames")
+
+    @staticmethod
+    def select_snapshots(snapshots, max_frames=42):
+        if len(snapshots) <= max_frames:
+            return snapshots
+
+        indices = np.linspace(0, len(snapshots) - 1, max_frames, dtype=int)
+        return [snapshots[i] for i in indices]
+
+    def render_snapshot(self, snapshot):
+        fig, ax = plt.subplots(figsize=(7, 4.6), dpi=110)
+
+        for (ox, oy, w, h) in self.obs_boundary:
+            ax.add_patch(patches.Rectangle((ox, oy), w, h, edgecolor="black", facecolor="black"))
+
+        for (ox, oy, w, h) in self.obs_rectangle:
+            ax.add_patch(patches.Rectangle((ox, oy), w, h, edgecolor="#444444", facecolor="#9da3a6"))
+
+        for (ox, oy, r) in self.obs_circle:
+            ax.add_patch(patches.Circle((ox, oy), r, edgecolor="#444444", facecolor="#9da3a6"))
+
+        if snapshot["edges"]:
+            tree = LineCollection(snapshot["edges"], colors="#5aa469", linewidths=0.65, alpha=0.65)
+            ax.add_collection(tree)
+
+        if snapshot["path"]:
+            px = [point[0] for point in snapshot["path"]]
+            py = [point[1] for point in snapshot["path"]]
+            ax.plot(px, py, color="#d62728", linewidth=2.8, label="best path")
+
+        ax.scatter(self.s_start.x, self.s_start.y, marker="s", s=72, color="#2b6cb0", zorder=4)
+        ax.scatter(self.s_goal.x, self.s_goal.y, marker="s", s=72, color="#2f855a", zorder=4)
+
+        cost_text = "searching" if snapshot["cost"] is None else f"best cost {snapshot['cost']:.1f}"
+        ax.text(
+            1.6, 28.4,
+            f"RRT*  iter {snapshot['iteration']:4d}  nodes {snapshot['nodes']:4d}  {cost_text}",
+            fontsize=10,
+            color="#1f2933",
+            bbox={"facecolor": "white", "edgecolor": "#c7d0d9", "alpha": 0.86, "pad": 3},
+        )
+
+        ax.set_xlim(self.x_range[0], self.x_range[1])
+        ax.set_ylim(self.y_range[0], self.y_range[1])
+        ax.set_aspect("equal", adjustable="box")
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_title("048 RRT* - expansion, rewiring and cost improvement")
+        fig.tight_layout(pad=0.4)
+
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", dpi=110)
+        plt.close(fig)
+        buf.seek(0)
+        frame = Image.open(buf).convert("RGB")
+        buf.close()
+        return frame
+
     @staticmethod
     def get_distance_and_angle(node_start, node_end):
         dx = node_end.x - node_start.x
@@ -430,11 +574,14 @@ class RrtStar:
 
 
 def main():
+    np.random.seed(48)
     x_start = (18, 8)  # Starting node
     x_goal = (37, 18)  # Goal node
 
-    rrt_star = RrtStar(x_start, x_goal, 10, 0.10, 20, 10000)
-    rrt_star.planning()
+    rrt_star = RrtStar(x_start, x_goal, 5, 0.18, 20, 2200)
+    path = rrt_star.planning(save_gif=True)
+    if not path:
+        raise RuntimeError("RRT* did not reach the goal")
 
 
 if __name__ == '__main__':

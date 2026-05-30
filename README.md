@@ -8,11 +8,11 @@ I am very interested in further summarizing all the pathfinding algorithms.
 
 > This repository is progressing toward the long-term goal of implementing **100 pathfinding algorithms**.
 
-**总进度：61 / 94 已实现（约 65%），其中 50 个附带演示动图。**
+**总进度：61 / 94 已实现（约 65%），其中 51 个附带演示动图。**
 
 ```text
 IMPLEMENTED   [#############.......]  65%   61/94
-DEMO GIF      [###########.........]  53%   50/94
+DEMO GIF      [###########.........]  54%   51/94
 ```
 
 ## Contents
@@ -221,6 +221,7 @@ DEMO GIF      [###########.........]  53%   50/94
 - **最优快速扩展随机树 (Optimal RRTs)**
   - **048 rrt star**
     - Karaman & Frazzoli (2011)
+    - ![048\_rrt\_star](Search_2D/gif/048_rrt_star.gif)
   - **049 rrt start smart**
     - Nasir, K., et al. (2013)
   - **050 rrt sharp**
@@ -389,7 +390,7 @@ DEMO GIF      [###########.........]  53%   50/94
 | 045 | RRT-Connect   |  ✅  | 055 | AIT\*          |  WIP |
 | 046 | Dynamic RRT   |  WIP | 056 | Anytime-RRT\*  |  TODO |
 | 047 | RRT-Dubins    |  WIP | 057 | CL-RRT\*       |  TODO |
-| 048 | RRT\*         |  WIP | 058 | Spline-RRT\*   |  TODO |
+| 048 | RRT\*         |  ✅ | 058 | Spline-RRT\*   |  TODO |
 | 049 | RRT\*-Smart   |  WIP | 059 | LQR-RRT\*      |  TODO |
 | 050 | RRT#          |  TODO | 051 | Informed RRT\* |  WIP |
 
