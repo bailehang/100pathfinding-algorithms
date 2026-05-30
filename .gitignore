@@ -11,5 +11,8 @@ __pycache__/
 .idea/
 .vscode/
 *.iml
-.venv/
+.venv*/
 .pytest_cache/
+# Stray GIFs written when a demo is run from the repo root instead of Search_2D/.
+# The committed previews live under Search_2D/gif/ and are unaffected.
+/gif/
