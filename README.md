@@ -8,11 +8,11 @@ I am very interested in further summarizing all the pathfinding algorithms.
 
 > This repository is progressing toward the long-term goal of implementing **100 pathfinding algorithms**.
 
-**总进度：50 / 94 已实现（约 53%），其中 39 个附带演示动图。**
+**总进度：51 / 94 已实现（约 54%），其中 40 个附带演示动图。**
 
 ```text
-IMPLEMENTED   [###########.........]  53%   50/94
-DEMO GIF      [########............]  41%   39/94
+IMPLEMENTED   [###########.........]  54%   51/94
+DEMO GIF      [#########...........]  43%   40/94
 ```
 
 ### 逐算法实现状态明细 (per-algorithm status)
@@ -78,7 +78,7 @@ DEMO GIF      [########............]  41%   39/94
 
 |  #  | 算法                |  状态 |  #  | 算法                 |  状态 |
 | :-: | :---------------- | :-: | :-: | :----------------- | :-: |
-| 071 | Polynomial Curves |  TODO | 075 | TEB                |  TODO |
+| 071 | Polynomial Curves |   ✅   | 075 | TEB                |  TODO |
 | 072 | Bezier Curves     |  TODO | 076 | Dubins Curves      |  TODO |
 | 073 | Cubic Spline      |  TODO | 077 | Reeds-Shepp Curves |  TODO |
 | 074 | B-Spline          |  TODO | 078 | VRP                |  TODO |
@@ -591,6 +591,7 @@ Required attribution: `100pathfinding-algorithms by bailehang`.
 
 - **071 多项式曲线 (Polynomial Curves)**
   - Richter, Bry, Roy (2013)
+  - ![071\_Polynomial\_Curves](Search_2D/gif/071_Polynomial_Curves.gif)
 - **072 贝塞尔曲线 (Bezier Curves)**
   - Bezier (1960s), Forrest (1972)
 - **样条曲线 (Spline Curves)**
