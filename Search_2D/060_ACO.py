@@ -52,6 +52,7 @@ class AntColonyOptimization:
         self.best_path = []
         self.best_cost = float("inf")
         self.iteration_best_paths = []
+        self.iteration_history = []
         self.frames = []
 
     def planning(self):
@@ -60,11 +61,14 @@ class AntColonyOptimization:
 
         for iteration in range(self.iterations):
             successful_paths = []
+            sampled_ant_paths = []
             iteration_best = []
             iteration_best_cost = float("inf")
 
             for _ in range(self.num_ants):
                 path = self.construct_ant_path(reference_path)
+                if len(sampled_ant_paths) < 12:
+                    sampled_ant_paths.append(path)
                 if path and path[-1] == self.s_goal:
                     cost = self.path_cost(path)
                     successful_paths.append((path, cost))
@@ -85,6 +89,18 @@ class AntColonyOptimization:
                 self.deposit_pheromone(reference_path, 0.35)
 
             self.iteration_best_paths.append(iteration_best or self.best_path or reference_path)
+            if iteration % 4 == 0 or iteration == self.iterations - 1:
+                self.iteration_history.append(
+                    {
+                        "iteration": iteration + 1,
+                        "ants": sampled_ant_paths,
+                        "iteration_best": iteration_best,
+                        "global_best": list(self.best_path),
+                        "best_cost": self.best_cost,
+                        "successes": len(successful_paths),
+                        "pheromone": dict(self.node_pheromone_values()),
+                    }
+                )
             if iteration % 6 == 0 or iteration == self.iterations - 1:
                 print(
                     f"Iteration {iteration + 1:02d}: successes={len(successful_paths)}, "
@@ -194,8 +210,9 @@ class AntColonyOptimization:
         plt.gca().set_aspect("equal", adjustable="box")
         plt.grid(True, alpha=0.25)
 
-    def draw_pheromone(self):
-        values = self.node_pheromone_values()
+    def draw_pheromone(self, values=None):
+        if values is None:
+            values = self.node_pheromone_values()
         if not values:
             return
         nodes = [node for node in values if node not in self.obs]
@@ -212,6 +229,25 @@ class AntColonyOptimization:
             alpha=0.55,
             edgecolors="none",
         )
+
+    def draw_ant_paths(self, ant_paths, fraction):
+        for path in ant_paths:
+            if not path:
+                continue
+            upto = max(2, int(len(path) * fraction))
+            visible = path[:upto]
+            reached_goal = path[-1] == self.s_goal
+            color = "tab:green" if reached_goal else "tab:blue"
+            alpha = 0.30 if reached_goal else 0.18
+            plt.plot(
+                [p[0] for p in visible],
+                [p[1] for p in visible],
+                color=color,
+                linewidth=1.2,
+                alpha=alpha,
+            )
+            head = visible[-1]
+            plt.plot(head[0], head[1], marker=".", color=color, markersize=4, alpha=0.75)
 
     def capture_frame(self):
         buf = io.BytesIO()
@@ -256,39 +292,55 @@ class AntColonyOptimization:
         self.planning()
 
         plt.figure(figsize=(7, 5), dpi=100)
-        frame_indices = np.linspace(0, len(self.iteration_best_paths) - 1, 14, dtype=int)
-        for frame_no, idx in enumerate(frame_indices, start=1):
-            path = self.iteration_best_paths[int(idx)]
-            self.draw_base(f"060 ACO - Iteration {int(idx) + 1}")
-            self.draw_pheromone()
-            if path:
-                plt.plot(
-                    [p[0] for p in path],
-                    [p[1] for p in path],
-                    color="tab:blue",
-                    linewidth=2.0,
-                    alpha=0.75,
-                    label="iteration best",
-                )
-            if self.best_path:
-                plt.plot(
-                    [p[0] for p in self.best_path],
-                    [p[1] for p in self.best_path],
-                    color="crimson",
-                    linewidth=3.0,
-                    label="global best",
-                )
-            plt.text(
-                0.02,
-                0.95,
-                f"Frame {frame_no}: best cost {self.best_cost:.2f}",
-                transform=plt.gca().transAxes,
-                fontsize=9,
-                bbox=dict(boxstyle="round", facecolor="white", alpha=0.75),
-            )
-            self.capture_frame()
+        for history in self.iteration_history:
+            for fraction, stage in ((0.35, "ants exploring"), (0.70, "paths emerging"), (1.0, "pheromone reinforced")):
+                self.draw_base(f"060 ACO - Iteration {history['iteration']} ({stage})")
+                self.draw_pheromone(history["pheromone"])
+                self.draw_ant_paths(history["ants"], fraction)
 
-        self.save_gif("060_ACO", fps=4)
+                path = history["iteration_best"]
+                if path:
+                    plt.plot(
+                        [p[0] for p in path],
+                        [p[1] for p in path],
+                        color="tab:orange",
+                        linewidth=2.0,
+                        alpha=0.85,
+                        label="iteration best",
+                    )
+
+                global_best = history["global_best"]
+                if global_best:
+                    plt.plot(
+                        [p[0] for p in global_best],
+                        [p[1] for p in global_best],
+                        color="crimson",
+                        linewidth=3.0,
+                        label="global best",
+                    )
+                plt.text(
+                    0.02,
+                    0.95,
+                    f"successes {history['successes']}/{self.num_ants} | best {history['best_cost']:.2f}",
+                    transform=plt.gca().transAxes,
+                    fontsize=9,
+                    bbox=dict(boxstyle="round", facecolor="white", alpha=0.78),
+                )
+                self.capture_frame()
+
+        self.draw_base("060 ACO - Converged Pheromone Trail")
+        self.draw_pheromone()
+        if self.best_path:
+            plt.plot(
+                [p[0] for p in self.best_path],
+                [p[1] for p in self.best_path],
+                color="crimson",
+                linewidth=3.2,
+                label="global best",
+            )
+        self.capture_frame()
+
+        self.save_gif("060_ACO", fps=5)
         plt.close("all")
         print(f"Best path nodes: {len(self.best_path)}")
         print(f"Best path cost: {self.best_cost:.3f}")
