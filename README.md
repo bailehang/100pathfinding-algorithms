@@ -8,11 +8,11 @@ I am very interested in further summarizing all the pathfinding algorithms.
 
 > This repository is progressing toward the long-term goal of implementing **100 pathfinding algorithms**.
 
-**总进度：50 / 94 已实现（约 53%），其中 34 个附带演示动图。**
+**总进度：50 / 94 已实现（约 53%），其中 35 个附带演示动图。**
 
 ```text
 IMPLEMENTED   [###########.........]  53%   50/94
-DEMO GIF      [#######.............]  36%   34/94
+DEMO GIF      [#######.............]  37%   35/94
 ```
 
 ### 逐算法实现状态明细 (per-algorithm status)
@@ -41,7 +41,7 @@ DEMO GIF      [#######.............]  36%   34/94
 | 018 | RTAA\*                   |  ✅  |   039  | _(预留 / Reserved JPS slot)_    |   TODO   |
 | 019 | D\*                      |  ✅  |   040  | Adaptive JPS               |   TODO   |
 | 020 | Lazy D\*                 |  ✅  |   041  | Lattice Planning           |   TODO   |
-| 021 | Focused D\*              |  WIP | |                     | |
+| 021 | Focused D\*              |  ✅  | |                     | |
 
 **二、基于采样的路径规划 (Sampling-Based)**
 
@@ -451,8 +451,11 @@ Required attribution: `100pathfinding-algorithms by bailehang`.
           也叫做动态 A\* 算法
       - **020 Lazy D\***
         - Koenig, Likhachev, Furcy (2004)
+        - ![020\_Focused\_D\_star](Search_2D/gif/020_Focused_D_star.gif)
+        - 注：该 GIF 文件名为历史遗留命名，当前归属 020 Lazy D\* 演示。
       - **021 Focused D\***
         - Stentz (1995)
+        - ![021\_Focused\_D\_star](Search_2D/gif/021_Focused_D_star.gif)
       - **022 D\* Lite**
         - Koenig & Likhachev (2002)
       - **023 Anytime D\***
