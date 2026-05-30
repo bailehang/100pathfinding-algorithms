@@ -12,6 +12,8 @@ than re-declaring it.
 import io
 import os
 
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
@@ -32,16 +34,22 @@ class GifPlotter:
     fig_size : tuple[int, int], optional
         Matplotlib figure size in inches.
     gif_dir : str, optional
-        Directory GIFs are written to (created on demand).
+        Directory GIFs are written to (created on demand). Defaults to the
+        repository's ``Search_2D/gif`` directory.
     """
 
-    def __init__(self, xI, xG, env=None, fig_size=(6, 4), gif_dir="gif"):
+    def __init__(self, xI, xG, env=None, fig_size=(6, 4), gif_dir=None):
         self.xI, self.xG = xI, xG
         self.env = env or Env()
         self.obs = self.env.obs_map()
         self.frames = []
         self.fig_size = fig_size
-        self.gif_dir = gif_dir
+        self.gif_dir = gif_dir or self.default_gif_dir()
+
+    @staticmethod
+    def default_gif_dir():
+        repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        return os.path.join(repo_root, "Search_2D", "gif")
 
     def update_obs(self, obs):
         self.obs = obs
@@ -52,9 +60,10 @@ class GifPlotter:
         self.plot_grid(name)
         self.plot_visited(visited)
         self.plot_path(path)
-        plt.show()
         if save_gif:
             self.save_animation_as_gif(name)
+        else:
+            plt.show()
 
     # -- primitives ---------------------------------------------------------
     def plot_grid(self, name):
@@ -95,10 +104,10 @@ class GifPlotter:
                 length = 40
 
             if count % length == 0:
-                plt.pause(0.01)
+                self.pause(0.01)
                 self.capture_frame()
 
-        plt.pause(0.1)
+        self.pause(0.1)
         self.capture_frame()
 
     def plot_path(self, path, cl="r", flag=False):
@@ -111,8 +120,13 @@ class GifPlotter:
         plt.plot(self.xI[0], self.xI[1], "bs")
         plt.plot(self.xG[0], self.xG[1], "gs")
 
-        plt.pause(0.1)
+        self.pause(0.1)
         self.capture_frame()
+
+    @staticmethod
+    def pause(interval):
+        if "agg" not in matplotlib.get_backend().lower():
+            plt.pause(interval)
 
     # -- frame capture / export --------------------------------------------
     def capture_frame(self):
