@@ -8,11 +8,11 @@ I am very interested in further summarizing all the pathfinding algorithms.
 
 > This repository is progressing toward the long-term goal of implementing **100 pathfinding algorithms**.
 
-**总进度：61 / 94 已实现（约 65%），其中 51 个附带演示动图。**
+**总进度：62 / 94 已实现（约 66%），其中 52 个附带演示动图。**
 
 ```text
-IMPLEMENTED   [#############.......]  65%   61/94
-DEMO GIF      [###########.........]  54%   51/94
+IMPLEMENTED   [#############.......]  66%   62/94
+DEMO GIF      [###########.........]  55%   52/94
 ```
 
 ## Contents
@@ -255,6 +255,7 @@ DEMO GIF      [###########.........]  54%   51/94
   - ![061\_GA](Search_2D/gif/061_GA.gif)
 - **062 粒子群优化 (Particle Swarm Optimization - PSO)**
   - Kennedy & Eberhart (1995)
+  - ![062\_PSO](Search_2D/gif/062_PSO.gif)
 
 ## 四、反应式与几何规划 (Reactive & Geometric Planning)
 
@@ -398,7 +399,7 @@ DEMO GIF      [###########.........]  54%   51/94
 
 |  #  | 算法  |  状态 |    #   | 算法     |   状态   |
 | :-: | :-- | :-: | :----: | :----- | :----: |
-| 060 | ACO |   ✅   |   062  | PSO    |   TODO   |
+| 060 | ACO |   ✅   |   062  | PSO    |   ✅   |
 | 061 | GA  |   ✅   | | | |
 
 **四、反应式与几何规划 (Reactive & Geometric)**
