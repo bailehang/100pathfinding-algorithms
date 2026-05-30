@@ -3,9 +3,9 @@ Ant Colony Optimization (ACO) 2D path planning demo.
 
 Ants probabilistically construct grid paths according to pheromone strength and
 goal-directed heuristic information. Successful paths deposit pheromone, while
-evaporation keeps exploration alive. A light initial pheromone trail from a
-known feasible corridor makes the demo deterministic enough for CI and GIF
-generation without replacing the ACO search process.
+evaporation keeps exploration alive. A reference corridor is used only as a
+weak directional bias so the GIF shows pheromone emerging from ant walks rather
+than a pre-drawn route.
 """
 
 from metrics import install_metrics
@@ -45,7 +45,7 @@ class AntColonyOptimization:
         self.alpha = 1.25
         self.beta = 3.0
         self.evaporation = 0.72
-        self.deposit_scale = 140.0
+        self.deposit_scale = 155.0
         self.initial_pheromone = 0.15
 
         self.pheromone = defaultdict(lambda: self.initial_pheromone)
@@ -57,13 +57,13 @@ class AntColonyOptimization:
 
     def planning(self):
         reference_path, _ = self.demo.a_star_search()
-        self.seed_reference_pheromone(reference_path)
 
         for iteration in range(self.iterations):
             successful_paths = []
             sampled_ant_paths = []
             iteration_best = []
             iteration_best_cost = float("inf")
+            global_best_updated = False
 
             for _ in range(self.num_ants):
                 path = self.construct_ant_path(reference_path)
@@ -78,6 +78,7 @@ class AntColonyOptimization:
                     if cost < self.best_cost:
                         self.best_path = path
                         self.best_cost = cost
+                        global_best_updated = True
 
             self.evaporate_pheromone()
             for path, cost in successful_paths:
@@ -86,7 +87,7 @@ class AntColonyOptimization:
             if self.best_path:
                 self.deposit_pheromone(self.best_path, self.deposit_scale * 0.6 / self.best_cost)
             else:
-                self.deposit_pheromone(reference_path, 0.35)
+                self.deposit_pheromone(reference_path, 0.05)
 
             self.iteration_best_paths.append(iteration_best or self.best_path or reference_path)
             if iteration % 4 == 0 or iteration == self.iterations - 1:
@@ -95,7 +96,7 @@ class AntColonyOptimization:
                         "iteration": iteration + 1,
                         "ants": sampled_ant_paths,
                         "iteration_best": iteration_best,
-                        "global_best": list(self.best_path),
+                        "global_best": list(self.best_path) if global_best_updated else [],
                         "best_cost": self.best_cost,
                         "successes": len(successful_paths),
                         "pheromone": dict(self.node_pheromone_values()),
@@ -112,11 +113,6 @@ class AntColonyOptimization:
             self.best_cost = self.path_cost(reference_path)
 
         return self.best_path
-
-    def seed_reference_pheromone(self, reference_path):
-        for i in range(len(reference_path) - 1):
-            edge = self.edge_key(reference_path[i], reference_path[i + 1])
-            self.pheromone[edge] += 2.5
 
     def construct_ant_path(self, reference_path):
         current = self.s_start
@@ -295,11 +291,13 @@ class AntColonyOptimization:
         for history in self.iteration_history:
             for fraction, stage in ((0.35, "ants exploring"), (0.70, "paths emerging"), (1.0, "pheromone reinforced")):
                 self.draw_base(f"060 ACO - Iteration {history['iteration']} ({stage})")
-                self.draw_pheromone(history["pheromone"])
                 self.draw_ant_paths(history["ants"], fraction)
 
+                if stage == "pheromone reinforced":
+                    self.draw_pheromone(history["pheromone"])
+
                 path = history["iteration_best"]
-                if path:
+                if path and stage == "pheromone reinforced":
                     plt.plot(
                         [p[0] for p in path],
                         [p[1] for p in path],
@@ -310,18 +308,22 @@ class AntColonyOptimization:
                     )
 
                 global_best = history["global_best"]
-                if global_best:
+                if global_best and stage == "pheromone reinforced":
                     plt.plot(
                         [p[0] for p in global_best],
                         [p[1] for p in global_best],
                         color="crimson",
-                        linewidth=3.0,
-                        label="global best",
+                        linewidth=2.6,
+                        linestyle="--",
+                        label="new global best",
                     )
                 plt.text(
                     0.02,
                     0.95,
-                    f"successes {history['successes']}/{self.num_ants} | best {history['best_cost']:.2f}",
+                    (
+                        f"successes {history['successes']}/{self.num_ants} | "
+                        f"best {history['best_cost']:.2f}"
+                    ),
                     transform=plt.gca().transAxes,
                     fontsize=9,
                     bbox=dict(boxstyle="round", facecolor="white", alpha=0.78),
