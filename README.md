@@ -15,323 +15,10 @@ IMPLEMENTED   [#############.......]  65%   61/94
 DEMO GIF      [###########.........]  53%   50/94
 ```
 
-### 逐算法实现状态明细 (per-algorithm status)
-
-**一、图搜索算法 (Graph Search)**
-
-|  #  | 算法                       |  状态 |    #   | 算法                         |   状态   |
-| :-: | :----------------------- | :-: | :----: | :------------------------- | :----: |
-| 001 | BFS                      |  ✅  |   022  | D\* Lite                   |    ✅   |
-| 002 | DFS                      |  ✅  |   023  | Anytime D\*                |    ✅   |
-| 003 | GBFS                     |  ✅  |   024  | Field D\*                  |    ✅   |
-| 004 | Dijkstra                 |  ✅  |   025  | Theta\*                    |    ✅   |
-| 005 | Bellman-Ford             |  ✅  |   026  | Lazy Theta\*               |    ✅   |
-| 006 | SPFA                     |  ✅  |   027  | S-Theta\*                  |    ✅   |
-| 007 | Flow Fields              |  ✅  |   028  | Enhanced Theta\*           |    ✅   |
-| 008 | A\*                      |  ✅  |   029  | Multi-Agent Theta\*        |    ✅   |
-| 009 | Bidirectional A\*        |  ✅  |   030  | Adaptive Theta\*           |    ✅   |
-| 010 | Weighted A\*             |  ✅  |   031  | Polyanya                   |    ✅   |
-| 011 | Hierarchical A\* (HPA\*) |  ✅  |   032  | JPS                        |    ✅   |
-| 012 | Parallel A\*             |  ✅  |   033  | JPS+                       |   WIP   |
-| 013 | Hybrid A\*               |  ✅  |   034  | JPS++ / Bidirectional JPS+ |   WIP   |
-| 014 | LRTA\*                   |  ✅  |   035  | Euclidean JPS (EJPS)       |   WIP   |
-| 015 | Repairing A\*            |  ✅  |   036  | Hierarchical JPS (HJPS)    |   WIP   |
-| 016 | LPA\*                    |  ✅  |   037  | Dynamic JPS                |   TODO   |
-| 017 | ARA\*                    |  ✅  |   038  | JPS-Lite                   |   TODO   |
-| 018 | RTAA\*                   |  ✅  |   039  | Reserved JPS  |   TODO   |
-| 019 | D\*                      |  ✅  |   040  | Adaptive JPS               |   TODO   |
-| 020 | Lazy D\*                 |  ✅  |   041  | Lattice Planning           |   TODO   |
-| 021 | Focused D\*              |  ✅  | |                     | |
-
-**二、基于采样的路径规划 (Sampling-Based)**
-
-|  #  | 算法            |  状态 |  #  | 算法             |  状态 |
-| :-: | :------------ | :-: | :-: | :------------- | :-: |
-| 042 | RPP           |  TODO | 052 | FMT\*          |  WIP |
-| 043 | Basic RRT     |  ✅  | 053 | BIT\*          |  TODO |
-| 044 | Goal-bias RRT |  ✅  | 054 | ABIT\*         |  TODO |
-| 045 | RRT-Connect   |  ✅  | 055 | AIT\*          |  WIP |
-| 046 | Dynamic RRT   |  WIP | 056 | Anytime-RRT\*  |  TODO |
-| 047 | RRT-Dubins    |  WIP | 057 | CL-RRT\*       |  TODO |
-| 048 | RRT\*         |  WIP | 058 | Spline-RRT\*   |  TODO |
-| 049 | RRT\*-Smart   |  WIP | 059 | LQR-RRT\*      |  TODO |
-| 050 | RRT#          |  TODO | 051 | Informed RRT\* |  WIP |
-
-**三、智能优化算法 (Intelligent Optimization)**
-
-|  #  | 算法  |  状态 |    #   | 算法     |   状态   |
-| :-: | :-- | :-: | :----: | :----- | :----: |
-| 060 | ACO |   ✅   |   062  | PSO    |   TODO   |
-| 061 | GA  |   ✅   | | | |
-
-**四、反应式与几何规划 (Reactive & Geometric)**
-
-|  #  | 算法            |  状态 |    #   | 算法                     |   状态   |
-| :-: | :------------ | :-: | :----: | :--------------------- | :----: |
-| 063 | APF           |   ✅   |   068  | Weighted Voronoi       |   TODO   |
-| 064 | DWA           |   ✅   |   069  | Fuzzy Voronoi          |   TODO   |
-| 065 | VFH           |  TODO |   070  | Adaptive Voronoi Field |   TODO   |
-| 066 | Basic Voronoi |  ✅  | | | |
-| 067 | Voronoi Field |  TODO | | | |
-
-**五、基于曲线与运动学的规划 (Curve-Based & Kinematic)**
-
-|  #  | 算法                |  状态 |  #  | 算法                 |  状态 |
-| :-: | :---------------- | :-: | :-: | :----------------- | :-: |
-| 071 | Polynomial Curves |   ✅   | 075 | TEB                |   ✅   |
-| 072 | Bezier Curves     |   ✅   | 076 | Dubins Curves      |   ✅   |
-| 073 | Cubic Spline      |   ✅   | 077 | Reeds-Shepp Curves |   ✅   |
-| 074 | B-Spline          |   ✅   | 078 | VRP                |  TODO |
-
-**六、基于模型的控制与规划 (Model-Based Control)**
-
-|  #  | 算法  |  状态 |    #   | 算法     |   状态   |
-| :-: | :-- | :-: | :----: | :----- | :----: |
-| 079 | PID |  TODO |   081  | MPC    |   TODO   |
-| 080 | LQR |  TODO | | | |
-
-**七、多智能体路径规划 (Multi-Agent / MAPF)**
-
-|  #  | 算法           |  状态 |    #   | 算法               |   状态   |
-| :-: | :----------- | :-: | :----: | :--------------- | :----: |
-| 082 | VO           |  TODO |   088  | CBS              |    ✅   |
-| 083 | RVO          |  TODO |   089  | HCA\*            |    ✅   |
-| 084 | HRVO         |  TODO |   090  | WHCA\*           |   TODO   |
-| 085 | ORCA         |  TODO |   091  | UE5 AI Avoidance |   TODO   |
-| 086 | PORCA        |  TODO | | | |
-| 087 | ERVO / EORCA |  TODO | | | |
-
-**八、其他规划方法 (Other Methods)**
-
-|  #  | 算法            |  状态 |    #   | 算法     |   状态   |
-| :-: | :------------ | :-: | :----: | :----- | :----: |
-| 092 | GCS / GCS\*   |  ✅  |   094  | MAMOP  |   TODO   |
-| 093 | MGCS / MGCS\* |  TODO | | | |
-
-## Quick Start
-
-python 3.12 or 3.13
-```bash
-pip install -r requirements.txt
-```
-
-每个算法都是一个可独立运行的脚本，例如 / Each algorithm is a standalone script, e.g.:
-
-```bash
-python Search_2D/008_Astar.py
-```
-
-## 项目结构 (Project Layout)
-
-- `Search_2D/`: standalone algorithm demo scripts and generated GIF previews.
-- `common/`: shared demo infrastructure, including the reusable 2D grid environment.
-- `benchmarks/`: timing and path-length metrics helpers used by demos and tests.
-- `tests/`: import smoke tests and layout compatibility checks.
-- `tools/`: repository maintenance checks, including README status validation.
-
-## 测试 (Testing)
-
-每个 demo 都是独立脚本。一个轻量级 smoke 测试会在无界面（headless）后端下导入全部
-`Search_2D/NNN_*.py`，以捕获跨所有 demo 的语法 / 导入 / `sys.path` 问题，而不会触发会阻塞的动画与 GIF 代码。
-
-The demos are standalone scripts. A lightweight smoke test imports every
-`Search_2D/NNN_*.py` demo under a headless backend to catch syntax / import /
-`sys.path` breakage across all demos, without running their blocking
-animation/GIF code.
-
-```bash
-pip install -r requirements.txt pytest
-pytest tests/
-```
-
-`tools/check_readme_status.py` 校验本 README 的状态表与磁盘上的文件（实现与演示 GIF）保持一致 /
-checks that the status tables above stay consistent with the files on disk:
-
-```bash
-python tools/check_readme_status.py
-```
-
-GitHub Actions 会在每次 push 与 pull request 时于 Python 3.12 / 3.13 上运行 smoke 测试 /
-GitHub Actions runs the smoke test on Python 3.12 and 3.13 for every push and pull request.
-
-## 算法笔记 (Algorithm Notes)
-
-部分算法家族附带更详细的中文笔记 / Longer notes for some algorithm families live in [`doc/`](doc/):
-
-- [D\* 家族 (D\* family)](doc/doc_D.md)
-- [JPS (Jump Point Search)](doc/doc_JPS.md)
-- [RRT 家族 (RRT family)](doc/doc_RRT.md)
-- [Repairing A\*](doc/doc_RepairingA.md)
-- [Theta\* 家族 (Theta\* family)](doc/doc_Theta.md)
-- [Voronoi 图方法 (Voronoi diagram methods)](doc/doc_Voronoi.md)
-- [速度障碍 (Velocity Obstacle - VO)](doc/doc_vo.md)
-
-## Thanks
-
-ZJU Prof. FeiGao
-
-Some code references
-
-<https://github.com/zhm-real/PathPlanning>
-
-<https://github.com/ai-winter/ros_motion_planning>
-
-## Warning
-
-AI assistance has been used in this article
-
-Claude 3.7/4, Doubao, ChatGPT for in-depth research and Manus.
-
-2026-05-17 iteration: updated with Codex and ChatGPT 5.5.
-
-Manual review and inspection.
-
-## License
-
-This project is licensed under the Apache License, Version 2.0.
-
-When redistributing this project or substantial portions of it, you must keep
-the copyright notice, the `LICENSE` file, and the `NOTICE` attribution file as
-required by Apache-2.0.
-
-Required attribution: `100pathfinding-algorithms by bailehang`.
-
-***
-
-# Contents
+## Contents
 
 ![Contents](images/Contents.png)
 
-## 一、图搜索算法 (Graph Search Algorithms)
-
-### 基础搜索 (Uninformed Search)
-
-- 广度优先搜索 (Breadth-First Searching - BFS)
-- 深度优先搜索 (Depth-First Search - DFS)
-
-### 最短路径与启发式搜索 (Shortest Path & Heuristic Search)
-
-- 最佳优先搜索 (Greedy Best-First Search - GBFS)
-- Dijkstra 算法
-- Bellman-Ford 算法
-- SPFA 算法
-- Flow Fields（流场寻路）
-- A\* 算法 (A\* Algorithm)
-  - 传统 A\*
-  - A\* 变体与扩展
-    - 加权 A\* (Weighted A\*)
-    - 双向 A\* (Bidirectional A\*)
-    - 分层 A\* (Hierarchical A\* - HPA\*)
-    - 并行 A\* (Parallel A\*)
-
-### 实时/动态启发式搜索
-
-- LRTA\* (Learning Real-time A\*)
-- D\* 家族
-  - D\* (Dynamic A\*)
-  - Focused D\*
-  - D\* Lite
-  - Anytime D\*
-- LPA\* (Lifelong Planning A\*)
-- ARA\* (Anytime Repairing A\*)
-- RTAA\* (Real-time Adaptive A\*)
-
-### 任意角度路径规划
-
-- Theta\* 家族
-  - Theta\*
-  - Lazy Theta\*
-  - S-Theta\*
-  - Enhanced Theta\*
-  - Adaptive Theta\*
-- Field D\*
-- 导航网格任意角规划 (Navmesh Any-Angle Pathfinding)
-  - Polyanya
-- JPS 家族
-  - JPS (Jump Point Search)
-  - JPS+
-  - JPS++
-  - 欧几里得 JPS (Euclidean JPS - EJPS)
-  - 分层 JPS (Hierarchical JPS - HJPS)
-  - 动态 JPS (Dynamic JPS)
-  - JPS-Lite
-  - 自适应 JPS (Adaptive JPS)
-
-- 格网规划 (Lattice Planning)
-
-## 二、基于采样的路径规划 (Sampling-Based Path Planning)
-
-- 随机路径规划 (Random Path Planning - RPP)
-- 快速扩展随机树 (Rapidly-Exploring Random Trees - RRT)
-  - 基础 RRT (Basic RRT)
-  - 目标偏向 RRT (Goal-bias RRT)
-  - RRT-Connect
-  - 动态 RRT (Dynamic RRT)
-  - RRT-Dubins (考虑运动学约束)
-- 最优快速扩展随机树 (Optimal RRTs)
-  - RRT\*
-  - Informed RRT\*
-
-## 三、智能优化算法 (Intelligent Optimization Algorithms)
-
-- 蚁群优化 (Ant Colony Optimization - ACO)
-- 遗传算法 (Genetic Algorithm - GA)
-- 粒子群优化 (Particle Swarm Optimization - PSO)
-
-## 四、反应式与几何规划 (Reactive & Geometric Planning)
-
-- 人工势场法 (Artificial Potential Field - APF)
-- 动态窗口法 (Dynamic Window Approach - DWA)
-- 向量场直方图 (Vector Field Histogram - VFH)
-- Voronoi 图方法
-  - 基础 Voronoi 图 (Basic Voronoi Diagram)
-  - Voronoi 场 (Voronoi Field)
-  - 加权 Voronoi 图 (Weighted Voronoi Diagram)
-  - 模糊 Voronoi 图 (Fuzzy Voronoi Diagram)
-  - 自适应 Voronoi 场 (Adaptive Voronoi Field)
-
-## 五、基于曲线与运动学的规划 (Curve-Based & Kinematic Planning)
-
-- 多项式曲线 (Polynomial Curves)
-- 贝塞尔曲线 (Bezier Curves)
-- 样条曲线 (Spline Curves)
-  - 三次样条曲线 (Cubic Spline)
-  - B样条曲线 (B-Spline)
-- 时间弹性带 (Timed Elastic Band - TEB)
-- Dubins 曲线 (Dubins Curves)
-- Reeds-Shepp 曲线 (Reeds-Shepp Curves)
-- 特定应用优化
-  - Hybrid A\*
-- 车辆路径问题 (Vehicle Routing Problem - VRP)
-
-## 六、基于模型的控制与规划 (Model-Based Control & Planning)
-
-- PID 控制器 (PID Controller - for path following)
-- 线性二次型调节器 (Linear Quadratic Regulator - LQR)
-- 模型预测控制 (Model Predictive Control - MPC)
-
-## 七、多智能体路径规划 (Multi-Agent Path Finding - MAPF)
-
-### 基于速度障碍 (VO) 的方法
-
-- 速度障碍 (VO)
-- 相互速度障碍 (Reciprocal Velocity Obstacles - RVO)
-- 混合相互速度障碍 (Hybrid Reciprocal Velocity Obstacles - HRVO)
-- 最优相互碰撞避免 (Optimal Reciprocal Collision Avoidance - ORCA)
-- 行人最优相互碰撞避免 (Pedestrian ORCA - PORCA)
-- 椭圆相互速度障碍 (Elliptical Reciprocal Velocity Obstacles - ERVO / EORCA)
-
-### 基于搜索的冲突解决
-
-- 冲突驱动搜索 (Conflict-Based Search - CBS)
-- 分层协作 A\* (Hierarchical Cooperative A\* - HCA\*)
-- 窗口化分层协作 A\* (Windowed HCA\* - WHCA\*)
-
-## 八、其他规划方法 (Other Planning Methods)
-
-- 凸集图规划 (Graph of Convex Sets - GCS / GCS\*)
-
-***
 
 ## 一、图搜索算法 (Graph Search Algorithms)
 
@@ -664,4 +351,315 @@ Required attribution: `100pathfinding-algorithms by bailehang`.
   - Chia, Jiang, Graesdal, Kaelbling, Tedrake (2024)
 
 ---
+### 逐算法实现状态明细 (per-algorithm status)
+
+**一、图搜索算法 (Graph Search)**
+
+|  #  | 算法                       |  状态 |    #   | 算法                         |   状态   |
+| :-: | :----------------------- | :-: | :----: | :------------------------- | :----: |
+| 001 | BFS                      |  ✅  |   022  | D\* Lite                   |    ✅   |
+| 002 | DFS                      |  ✅  |   023  | Anytime D\*                |    ✅   |
+| 003 | GBFS                     |  ✅  |   024  | Field D\*                  |    ✅   |
+| 004 | Dijkstra                 |  ✅  |   025  | Theta\*                    |    ✅   |
+| 005 | Bellman-Ford             |  ✅  |   026  | Lazy Theta\*               |    ✅   |
+| 006 | SPFA                     |  ✅  |   027  | S-Theta\*                  |    ✅   |
+| 007 | Flow Fields              |  ✅  |   028  | Enhanced Theta\*           |    ✅   |
+| 008 | A\*                      |  ✅  |   029  | Multi-Agent Theta\*        |    ✅   |
+| 009 | Bidirectional A\*        |  ✅  |   030  | Adaptive Theta\*           |    ✅   |
+| 010 | Weighted A\*             |  ✅  |   031  | Polyanya                   |    ✅   |
+| 011 | Hierarchical A\* (HPA\*) |  ✅  |   032  | JPS                        |    ✅   |
+| 012 | Parallel A\*             |  ✅  |   033  | JPS+                       |   WIP   |
+| 013 | Hybrid A\*               |  ✅  |   034  | JPS++ / Bidirectional JPS+ |   WIP   |
+| 014 | LRTA\*                   |  ✅  |   035  | Euclidean JPS (EJPS)       |   WIP   |
+| 015 | Repairing A\*            |  ✅  |   036  | Hierarchical JPS (HJPS)    |   WIP   |
+| 016 | LPA\*                    |  ✅  |   037  | Dynamic JPS                |   TODO   |
+| 017 | ARA\*                    |  ✅  |   038  | JPS-Lite                   |   TODO   |
+| 018 | RTAA\*                   |  ✅  |   039  | Reserved JPS  |   TODO   |
+| 019 | D\*                      |  ✅  |   040  | Adaptive JPS               |   TODO   |
+| 020 | Lazy D\*                 |  ✅  |   041  | Lattice Planning           |   TODO   |
+| 021 | Focused D\*              |  ✅  | |                     | |
+
+**二、基于采样的路径规划 (Sampling-Based)**
+
+|  #  | 算法            |  状态 |  #  | 算法             |  状态 |
+| :-: | :------------ | :-: | :-: | :------------- | :-: |
+| 042 | RPP           |  TODO | 052 | FMT\*          |  WIP |
+| 043 | Basic RRT     |  ✅  | 053 | BIT\*          |  TODO |
+| 044 | Goal-bias RRT |  ✅  | 054 | ABIT\*         |  TODO |
+| 045 | RRT-Connect   |  ✅  | 055 | AIT\*          |  WIP |
+| 046 | Dynamic RRT   |  WIP | 056 | Anytime-RRT\*  |  TODO |
+| 047 | RRT-Dubins    |  WIP | 057 | CL-RRT\*       |  TODO |
+| 048 | RRT\*         |  WIP | 058 | Spline-RRT\*   |  TODO |
+| 049 | RRT\*-Smart   |  WIP | 059 | LQR-RRT\*      |  TODO |
+| 050 | RRT#          |  TODO | 051 | Informed RRT\* |  WIP |
+
+**三、智能优化算法 (Intelligent Optimization)**
+
+|  #  | 算法  |  状态 |    #   | 算法     |   状态   |
+| :-: | :-- | :-: | :----: | :----- | :----: |
+| 060 | ACO |   ✅   |   062  | PSO    |   TODO   |
+| 061 | GA  |   ✅   | | | |
+
+**四、反应式与几何规划 (Reactive & Geometric)**
+
+|  #  | 算法            |  状态 |    #   | 算法                     |   状态   |
+| :-: | :------------ | :-: | :----: | :--------------------- | :----: |
+| 063 | APF           |   ✅   |   068  | Weighted Voronoi       |   TODO   |
+| 064 | DWA           |   ✅   |   069  | Fuzzy Voronoi          |   TODO   |
+| 065 | VFH           |  TODO |   070  | Adaptive Voronoi Field |   TODO   |
+| 066 | Basic Voronoi |  ✅  | | | |
+| 067 | Voronoi Field |  TODO | | | |
+
+**五、基于曲线与运动学的规划 (Curve-Based & Kinematic)**
+
+|  #  | 算法                |  状态 |  #  | 算法                 |  状态 |
+| :-: | :---------------- | :-: | :-: | :----------------- | :-: |
+| 071 | Polynomial Curves |   ✅   | 075 | TEB                |   ✅   |
+| 072 | Bezier Curves     |   ✅   | 076 | Dubins Curves      |   ✅   |
+| 073 | Cubic Spline      |   ✅   | 077 | Reeds-Shepp Curves |   ✅   |
+| 074 | B-Spline          |   ✅   | 078 | VRP                |  TODO |
+
+**六、基于模型的控制与规划 (Model-Based Control)**
+
+|  #  | 算法  |  状态 |    #   | 算法     |   状态   |
+| :-: | :-- | :-: | :----: | :----- | :----: |
+| 079 | PID |  TODO |   081  | MPC    |   TODO   |
+| 080 | LQR |  TODO | | | |
+
+**七、多智能体路径规划 (Multi-Agent / MAPF)**
+
+|  #  | 算法           |  状态 |    #   | 算法               |   状态   |
+| :-: | :----------- | :-: | :----: | :--------------- | :----: |
+| 082 | VO           |  TODO |   088  | CBS              |    ✅   |
+| 083 | RVO          |  TODO |   089  | HCA\*            |    ✅   |
+| 084 | HRVO         |  TODO |   090  | WHCA\*           |   TODO   |
+| 085 | ORCA         |  TODO |   091  | UE5 AI Avoidance |   TODO   |
+| 086 | PORCA        |  TODO | | | |
+| 087 | ERVO / EORCA |  TODO | | | |
+
+**八、其他规划方法 (Other Methods)**
+
+|  #  | 算法            |  状态 |    #   | 算法     |   状态   |
+| :-: | :------------ | :-: | :----: | :----- | :----: |
+| 092 | GCS / GCS\*   |  ✅  |   094  | MAMOP  |   TODO   |
+| 093 | MGCS / MGCS\* |  TODO | | | |
+
+# Quick Start
+
+python 3.12 or 3.13
+```bash
+pip install -r requirements.txt
+```
+
+每个算法都是一个可独立运行的脚本，例如 / Each algorithm is a standalone script, e.g.:
+
+```bash
+python Search_2D/008_Astar.py
+```
+
+## 项目结构 (Project Layout)
+
+- `Search_2D/`: standalone algorithm demo scripts and generated GIF previews.
+- `common/`: shared demo infrastructure, including the reusable 2D grid environment.
+- `benchmarks/`: timing and path-length metrics helpers used by demos and tests.
+- `tests/`: import smoke tests and layout compatibility checks.
+- `tools/`: repository maintenance checks, including README status validation.
+
+## 测试 (Testing)
+
+每个 demo 都是独立脚本。一个轻量级 smoke 测试会在无界面（headless）后端下导入全部
+`Search_2D/NNN_*.py`，以捕获跨所有 demo 的语法 / 导入 / `sys.path` 问题，而不会触发会阻塞的动画与 GIF 代码。
+
+The demos are standalone scripts. A lightweight smoke test imports every
+`Search_2D/NNN_*.py` demo under a headless backend to catch syntax / import /
+`sys.path` breakage across all demos, without running their blocking
+animation/GIF code.
+
+```bash
+pip install -r requirements.txt pytest
+pytest tests/
+```
+
+`tools/check_readme_status.py` 校验本 README 的状态表与磁盘上的文件（实现与演示 GIF）保持一致 /
+checks that the status tables above stay consistent with the files on disk:
+
+```bash
+python tools/check_readme_status.py
+```
+
+GitHub Actions 会在每次 push 与 pull request 时于 Python 3.12 / 3.13 上运行 smoke 测试 /
+GitHub Actions runs the smoke test on Python 3.12 and 3.13 for every push and pull request.
+
+## 算法笔记 (Algorithm Notes)
+
+部分算法家族附带更详细的中文笔记 / Longer notes for some algorithm families live in [`doc/`](doc/):
+
+- [D\* 家族 (D\* family)](doc/doc_D.md)
+- [JPS (Jump Point Search)](doc/doc_JPS.md)
+- [RRT 家族 (RRT family)](doc/doc_RRT.md)
+- [Repairing A\*](doc/doc_RepairingA.md)
+- [Theta\* 家族 (Theta\* family)](doc/doc_Theta.md)
+- [Voronoi 图方法 (Voronoi diagram methods)](doc/doc_Voronoi.md)
+- [速度障碍 (Velocity Obstacle - VO)](doc/doc_vo.md)
+
+### 一、图搜索算法 (Graph Search Algorithms)
+
+#### 基础搜索 (Uninformed Search)
+
+- 广度优先搜索 (Breadth-First Searching - BFS)
+- 深度优先搜索 (Depth-First Search - DFS)
+
+#### 最短路径与启发式搜索 (Shortest Path & Heuristic Search)
+
+- 最佳优先搜索 (Greedy Best-First Search - GBFS)
+- Dijkstra 算法
+- Bellman-Ford 算法
+- SPFA 算法
+- Flow Fields（流场寻路）
+- A\* 算法 (A\* Algorithm)
+  - 传统 A\*
+  - A\* 变体与扩展
+    - 加权 A\* (Weighted A\*)
+    - 双向 A\* (Bidirectional A\*)
+    - 分层 A\* (Hierarchical A\* - HPA\*)
+    - 并行 A\* (Parallel A\*)
+
+#### 实时/动态启发式搜索
+
+- LRTA\* (Learning Real-time A\*)
+- D\* 家族
+  - D\* (Dynamic A\*)
+  - Focused D\*
+  - D\* Lite
+  - Anytime D\*
+- LPA\* (Lifelong Planning A\*)
+- ARA\* (Anytime Repairing A\*)
+- RTAA\* (Real-time Adaptive A\*)
+
+#### 任意角度路径规划
+
+- Theta\* 家族
+  - Theta\*
+  - Lazy Theta\*
+  - S-Theta\*
+  - Enhanced Theta\*
+  - Adaptive Theta\*
+- Field D\*
+- 导航网格任意角规划 (Navmesh Any-Angle Pathfinding)
+  - Polyanya
+- JPS 家族
+  - JPS (Jump Point Search)
+  - JPS+
+  - JPS++
+  - 欧几里得 JPS (Euclidean JPS - EJPS)
+  - 分层 JPS (Hierarchical JPS - HJPS)
+  - 动态 JPS (Dynamic JPS)
+  - JPS-Lite
+  - 自适应 JPS (Adaptive JPS)
+
+- 格网规划 (Lattice Planning)
+
+### 二、基于采样的路径规划 (Sampling-Based Path Planning)
+
+- 随机路径规划 (Random Path Planning - RPP)
+- 快速扩展随机树 (Rapidly-Exploring Random Trees - RRT)
+  - 基础 RRT (Basic RRT)
+  - 目标偏向 RRT (Goal-bias RRT)
+  - RRT-Connect
+  - 动态 RRT (Dynamic RRT)
+  - RRT-Dubins (考虑运动学约束)
+- 最优快速扩展随机树 (Optimal RRTs)
+  - RRT\*
+  - Informed RRT\*
+
+### 三、智能优化算法 (Intelligent Optimization Algorithms)
+
+- 蚁群优化 (Ant Colony Optimization - ACO)
+- 遗传算法 (Genetic Algorithm - GA)
+- 粒子群优化 (Particle Swarm Optimization - PSO)
+
+### 四、反应式与几何规划 (Reactive & Geometric Planning)
+
+- 人工势场法 (Artificial Potential Field - APF)
+- 动态窗口法 (Dynamic Window Approach - DWA)
+- 向量场直方图 (Vector Field Histogram - VFH)
+- Voronoi 图方法
+  - 基础 Voronoi 图 (Basic Voronoi Diagram)
+  - Voronoi 场 (Voronoi Field)
+  - 加权 Voronoi 图 (Weighted Voronoi Diagram)
+  - 模糊 Voronoi 图 (Fuzzy Voronoi Diagram)
+  - 自适应 Voronoi 场 (Adaptive Voronoi Field)
+
+### 五、基于曲线与运动学的规划 (Curve-Based & Kinematic Planning)
+
+- 多项式曲线 (Polynomial Curves)
+- 贝塞尔曲线 (Bezier Curves)
+- 样条曲线 (Spline Curves)
+  - 三次样条曲线 (Cubic Spline)
+  - B样条曲线 (B-Spline)
+- 时间弹性带 (Timed Elastic Band - TEB)
+- Dubins 曲线 (Dubins Curves)
+- Reeds-Shepp 曲线 (Reeds-Shepp Curves)
+- 特定应用优化
+  - Hybrid A\*
+- 车辆路径问题 (Vehicle Routing Problem - VRP)
+
+### 六、基于模型的控制与规划 (Model-Based Control & Planning)
+
+- PID 控制器 (PID Controller - for path following)
+- 线性二次型调节器 (Linear Quadratic Regulator - LQR)
+- 模型预测控制 (Model Predictive Control - MPC)
+
+### 七、多智能体路径规划 (Multi-Agent Path Finding - MAPF)
+
+#### 基于速度障碍 (VO) 的方法
+
+- 速度障碍 (VO)
+- 相互速度障碍 (Reciprocal Velocity Obstacles - RVO)
+- 混合相互速度障碍 (Hybrid Reciprocal Velocity Obstacles - HRVO)
+- 最优相互碰撞避免 (Optimal Reciprocal Collision Avoidance - ORCA)
+- 行人最优相互碰撞避免 (Pedestrian ORCA - PORCA)
+- 椭圆相互速度障碍 (Elliptical Reciprocal Velocity Obstacles - ERVO / EORCA)
+
+#### 基于搜索的冲突解决
+
+- 冲突驱动搜索 (Conflict-Based Search - CBS)
+- 分层协作 A\* (Hierarchical Cooperative A\* - HCA\*)
+- 窗口化分层协作 A\* (Windowed HCA\* - WHCA\*)
+
+### 八、其他规划方法 (Other Planning Methods)
+
+- 凸集图规划 (Graph of Convex Sets - GCS / GCS\*)
+
+
+
+# Thanks
+
+ZJU Prof. FeiGao
+
+Some code references
+
+<https://github.com/zhm-real/PathPlanning>
+
+<https://github.com/ai-winter/ros_motion_planning>
+
+# Warning
+
+AI assistance has been used in this article
+
+Claude 3.7/4, Doubao, ChatGPT for in-depth research and Manus.
+
+2026-05-17 iteration: updated with Codex and ChatGPT 5.5.
+
+Manual review and inspection.
+
+# License
+
+This project is licensed under the Apache License, Version 2.0.
+
+When redistributing this project or substantial portions of it, you must keep
+the copyright notice, the `LICENSE` file, and the `NOTICE` attribution file as
+required by Apache-2.0.
+
+Required attribution: `100pathfinding-algorithms by bailehang`.
 
