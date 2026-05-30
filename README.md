@@ -8,11 +8,11 @@ I am very interested in further summarizing all the pathfinding algorithms.
 
 > This repository is progressing toward the long-term goal of implementing **100 pathfinding algorithms**.
 
-**总进度：50 / 94 已实现（约 53%），其中 38 个附带演示动图。**
+**总进度：50 / 94 已实现（约 53%），其中 39 个附带演示动图。**
 
 ```text
 IMPLEMENTED   [###########.........]  53%   50/94
-DEMO GIF      [########............]  40%   38/94
+DEMO GIF      [########............]  41%   39/94
 ```
 
 ### 逐算法实现状态明细 (per-algorithm status)
@@ -29,7 +29,7 @@ DEMO GIF      [########............]  40%   38/94
 | 006 | SPFA                     |  ✅  |   027  | S-Theta\*                  |    ✅   |
 | 007 | Flow Fields              |  ✅  |   028  | Enhanced Theta\*           |    ✅   |
 | 008 | A\*                      |  ✅  |   029  | Multi-Agent Theta\*        |    ✅   |
-| 009 | Bidirectional A\*        |  ✅  |   030  | Adaptive Theta\*           |   WIP   |
+| 009 | Bidirectional A\*        |  ✅  |   030  | Adaptive Theta\*           |    ✅   |
 | 010 | Weighted A\*             |  ✅  |   031  | Polyanya                   |    ✅   |
 | 011 | Hierarchical A\* (HPA\*) |  ✅  |   032  | JPS                        |    ✅   |
 | 012 | Parallel A\*             |  ✅  |   033  | JPS+                       |   WIP   |
@@ -484,6 +484,7 @@ Required attribution: `100pathfinding-algorithms by bailehang`.
         - ![029\_MultiAgentTheta\_star](Search_2D/gif/029_MultiAgentTheta_star.gif)
       - **030 Adaptive ThetA\***
         - Ferguson & Stentz (2006)
+        - ![030\_AdaptiveTheta\_star](Search_2D/gif/030_AdaptiveTheta_star.gif)
     - **导航网格任意角规划 (Navmesh Any-Angle Pathfinding)**
       - **031 Polyanya**
         - Cui, Harabor, Grastien (2017)

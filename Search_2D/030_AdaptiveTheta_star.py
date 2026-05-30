@@ -10,9 +10,13 @@ import os
 import sys
 import math
 import heapq
+import io
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
+from PIL import Image
 import time
 from matplotlib.colors import LinearSegmentedColormap
 
@@ -75,6 +79,8 @@ class AdaptiveThetaStar:
         self.current_visited = []
         self.current_los_checks = []
         self.complexity_regions = []
+        self.capture_gif = False
+        self.gif_frames = []
         
         # Performance metrics
         self.mode_switches = 0
@@ -294,6 +300,60 @@ class AdaptiveThetaStar:
         self.los_computation_time += time.time() - start_time
         return True
 
+    def capture_frame(self):
+        """Capture the current Matplotlib figure for GIF output."""
+        buf = io.BytesIO()
+        fig = plt.gcf()
+        fig.canvas.draw()
+        fig.savefig(
+            buf,
+            format="png",
+            dpi=100,
+            bbox_inches="tight",
+            facecolor="white",
+            edgecolor="none",
+        )
+        buf.seek(0)
+        image = Image.open(buf).convert("RGB")
+        frame = np.array(image)
+        buf.close()
+        return frame
+
+    def save_gif(self, frames, name, fps=5):
+        """Save captured frames under Search_2D/gif."""
+        if not frames:
+            print("No frames captured; GIF was not saved.")
+            return
+
+        gif_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gif")
+        os.makedirs(gif_dir, exist_ok=True)
+        gif_path = os.path.join(gif_dir, f"{name}.gif")
+
+        palette_frames = [
+            Image.fromarray(frame).convert("P", palette=Image.ADAPTIVE, colors=256)
+            for frame in frames
+        ]
+        palette_frames[0].save(
+            gif_path,
+            format="GIF",
+            append_images=palette_frames[1:],
+            save_all=True,
+            duration=int(1000 / fps),
+            loop=0,
+            disposal=2,
+        )
+        print(f"GIF animation saved to {gif_path}")
+
+    def run_demonstration(self):
+        """Run a deterministic Adaptive Theta* demo and save it as a GIF."""
+        print("Starting Adaptive Theta* demonstration...")
+        self.capture_gif = True
+        self.gif_frames = []
+        path, closed = self.searching()
+        self.save_gif(self.gif_frames, "030_AdaptiveTheta_star", fps=5)
+        plt.close('all')
+        return path, closed
+
     def searching(self):
         """
         Adaptive Theta* pathfinding
@@ -375,8 +435,10 @@ class AdaptiveThetaStar:
                 temp_path = self.extract_temp_path(s)
                 self.current_path = temp_path
             
-            # Update visualization periodically
-            if len(self.CLOSED) % 5 == 0 or s == self.s_goal:
+            # Update visualization periodically. Headless GIF generation uses
+            # fewer redraws so the adaptive search is not dominated by plotting.
+            redraw_interval = 40 if self.capture_gif else 5
+            if len(self.CLOSED) % redraw_interval == 0 or s == self.s_goal:
                 self.update_plot(mode=mode, elapsed_time=elapsed_time)
             
             # Check if goal reached
@@ -424,7 +486,8 @@ class AdaptiveThetaStar:
         
         # Final update
         self.update_plot(mode=mode, elapsed_time=time.time() - self.start_time, final=True)
-        plt.show()
+        if not self.capture_gif:
+            plt.show()
         
         # If goal not reached, find best partial path
         if not self.current_path or self.current_path[-1] != self.s_goal:
@@ -631,7 +694,11 @@ class AdaptiveThetaStar:
         
         # Draw current path
         if self.current_path:
-            self.plot.plot_path(self.current_path)
+            path_x = [node[0] for node in self.current_path]
+            path_y = [node[1] for node in self.current_path]
+            plt.plot(path_x, path_y, linewidth=3, color='r')
+            plt.plot(self.s_start[0], self.s_start[1], "bs")
+            plt.plot(self.s_goal[0], self.s_goal[1], "gs")
         
         # Draw status information
         status_info = [
@@ -653,12 +720,13 @@ class AdaptiveThetaStar:
         # Update figure
         plt.gcf().canvas.draw()
         plt.gcf().canvas.flush_events()
+        if self.capture_gif and (final or len(self.CLOSED) % 10 == 0):
+            self.gif_frames.append(self.capture_frame())
         
         if final:
-            plt.pause(0.5)
             # Show region statistics on final view
             self.show_final_statistics()
-        else:
+        elif not self.capture_gif:
             plt.pause(0.01)
 
     def draw_complexity_regions(self):
@@ -748,7 +816,7 @@ class AdaptiveThetaStar:
         plt.axis('off')
         plt.title('Path Statistics')
         plt.tight_layout()
-        plt.show()
+        plt.close(stats_fig)
 
     def cost(self, a, b):
         """
@@ -809,7 +877,7 @@ def main():
     )
     
     # Run planning
-    path, closed = adaptive_theta.searching()
+    path, closed = adaptive_theta.run_demonstration()
     
     # Path quality check
     if path[-1] == s_goal:
