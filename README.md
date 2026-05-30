@@ -8,11 +8,11 @@ I am very interested in further summarizing all the pathfinding algorithms.
 
 > This repository is progressing toward the long-term goal of implementing **100 pathfinding algorithms**.
 
-**总进度：63 / 94 已实现（约 67%），其中 54 个附带演示动图。**
+**总进度：63 / 94 已实现（约 67%），其中 55 个附带演示动图。**
 
 ```text
 IMPLEMENTED   [#############.......]  67%   63/94
-DEMO GIF      [###########.........]  57%   54/94
+DEMO GIF      [############........]  59%   55/94
 ```
 
 ## Contents
@@ -230,6 +230,7 @@ DEMO GIF      [###########.........]  57%   54/94
     - ![050\_rrt\_sharp](Search_2D/gif/050_rrt_sharp.gif)
   - **051 Informed RRT\***
     - Gammell, Srinivasa & Barfoot (2014)
+    - ![051\_informed\_rrt\_star](Search_2D/gif/051_informed_rrt_star.gif)
   - **052 FMT\***
     - Janson, Schmerling, Clark & Pavone (2015)
   - **053 BIT\* batch informed trees**
@@ -395,7 +396,7 @@ DEMO GIF      [###########.........]  57%   54/94
 | 047 | RRT-Dubins    |  WIP | 057 | CL-RRT\*       |  TODO |
 | 048 | RRT\*         |  ✅ | 058 | Spline-RRT\*   |  TODO |
 | 049 | RRT\*-Smart   |  ✅ | 059 | LQR-RRT\*      |  TODO |
-| 050 | RRT#          |  ✅ | 051 | Informed RRT\* |  WIP |
+| 050 | RRT#          |  ✅ | 051 | Informed RRT\* |  ✅ |
 
 **三、智能优化算法 (Intelligent Optimization)**
 

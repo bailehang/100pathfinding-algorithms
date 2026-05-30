@@ -1,26 +1,39 @@
 """
-Original author: huiming zhou
-Edited by: clark bai
+Informed RRT* 2D path planning demo.
+
+Informed RRT* behaves like RRT* until the first feasible solution is found. Then
+it restricts random samples to the prolate ellipse whose foci are the start and
+goal and whose major axis is the current best path cost. The GIF makes that
+switch explicit: green tree edges, orange candidate routes, red best path, and
+the shrinking informed sampling ellipse.
 """
 
 from metrics import install_metrics
 install_metrics()
 
-import os
-import sys
+import io
 import math
+import os
 import random
-import numpy as np
+
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from scipy.spatial.transform import Rotation as Rot
 import matplotlib.patches as patches
+import numpy as np
+from matplotlib.collections import LineCollection
+from PIL import Image
 
 
 class Node:
     def __init__(self, n):
-        self.x = n[0]
-        self.y = n[1]
+        self.x = float(n[0])
+        self.y = float(n[1])
         self.parent = None
+
+    @property
+    def point(self):
+        return (self.x, self.y)
 
 
 class Env:
@@ -33,57 +46,53 @@ class Env:
 
     @staticmethod
     def obs_boundary():
-        obs_boundary = [
+        return [
             [0, 0, 1, 30],
             [0, 30, 50, 1],
             [1, 0, 50, 1],
-            [50, 1, 1, 30]
+            [50, 1, 1, 30],
         ]
-        return obs_boundary
 
     @staticmethod
     def obs_rectangle():
-        obs_rectangle = [
+        return [
             [14, 12, 8, 2],
             [18, 22, 8, 3],
             [26, 7, 2, 12],
-            [32, 14, 10, 2]
+            [32, 14, 10, 2],
         ]
-        return obs_rectangle
 
     @staticmethod
     def obs_circle():
-        obs_cir = [
+        return [
             [7, 12, 3],
             [46, 20, 2],
             [15, 5, 2],
             [37, 7, 3],
-            [37, 23, 3]
+            [37, 23, 3],
         ]
-        return obs_cir
 
 
 class Utils:
     def __init__(self):
         self.env = Env()
         self.delta = 0.5
-
-    def update_obs(self, obs_cir, obs_bound, obs_rec):
-        self.obs_circle = obs_cir
-        self.obs_boundary = obs_bound
-        self.obs_rectangle = obs_rec
+        self.obs_circle = self.env.obs_circle
+        self.obs_boundary = self.env.obs_boundary
+        self.obs_rectangle = self.env.obs_rectangle
 
     def get_obs_vertex(self):
         delta = self.delta
         obs_list = []
-
-        for (ox, oy, w, h) in self.env.obs_rectangle:
-            vertex_list = [[ox - delta, oy - delta],
-                           [ox + w + delta, oy - delta],
-                           [ox + w + delta, oy + h + delta],
-                           [ox - delta, oy + h + delta]]
-            obs_list.append(vertex_list)
-
+        for (ox, oy, w, h) in self.obs_rectangle:
+            obs_list.append(
+                [
+                    [ox - delta, oy - delta],
+                    [ox + w + delta, oy - delta],
+                    [ox + w + delta, oy + h + delta],
+                    [ox - delta, oy + h + delta],
+                ]
+            )
         return obs_list
 
     def is_intersect_rec(self, start, end, o, d, a, b):
@@ -92,35 +101,27 @@ class Utils:
         v3 = [-d[1], d[0]]
 
         div = np.dot(v2, v3)
-
         if div == 0:
             return False
 
-        t1 = np.cross(v2, v1) / div
+        t1 = abs(v2[0] * v1[1] - v2[1] * v1[0]) / div
         t2 = np.dot(v1, v3) / div
 
         if t1 >= 0 and 0 <= t2 <= 1:
             shot = Node((o[0] + t1 * d[0], o[1] + t1 * d[1]))
-            dist_obs = self.get_dist(start, shot)
-            dist_seg = self.get_dist(start, end)
-            if dist_obs <= dist_seg:
-                return True
+            return self.get_dist(start, shot) <= self.get_dist(start, end)
 
         return False
 
     def is_intersect_circle(self, o, d, a, r):
         d2 = np.dot(d, d)
-        delta = self.delta
-
         if d2 == 0:
             return False
 
         t = np.dot([a[0] - o[0], a[1] - o[1]], d) / d2
-
         if 0 <= t <= 1:
             shot = Node((o[0] + t * d[0], o[1] + t * d[1]))
-            if self.get_dist(shot, Node(a)) <= r + delta:
-                return True
+            return self.get_dist(shot, Node(a)) <= r + self.delta
 
         return False
 
@@ -129,9 +130,7 @@ class Utils:
             return True
 
         o, d = self.get_ray(start, end)
-        obs_vertex = self.get_obs_vertex()
-
-        for (v1, v2, v3, v4) in obs_vertex:
+        for (v1, v2, v3, v4) in self.get_obs_vertex():
             if self.is_intersect_rec(start, end, o, d, v1, v2):
                 return True
             if self.is_intersect_rec(start, end, o, d, v2, v3):
@@ -141,45 +140,40 @@ class Utils:
             if self.is_intersect_rec(start, end, o, d, v4, v1):
                 return True
 
-        for (x, y, r) in self.env.obs_circle:
+        for (x, y, r) in self.obs_circle:
             if self.is_intersect_circle(o, d, [x, y], r):
                 return True
 
         return False
 
     def is_inside_obs(self, node):
-        delta = self.delta
-
-        for (x, y, r) in self.env.obs_circle:
-            if math.hypot(node.x - x, node.y - y) <= r + delta:
+        for (x, y, r) in self.obs_circle:
+            if math.hypot(node.x - x, node.y - y) <= r + self.delta:
                 return True
 
-        for (x, y, w, h) in self.env.obs_rectangle:
-            if 0 <= node.x - (x - delta) <= w + 2 * delta \
-                    and 0 <= node.y - (y - delta) <= h + 2 * delta:
+        for (x, y, w, h) in self.obs_rectangle:
+            if 0 <= node.x - (x - self.delta) <= w + 2 * self.delta \
+                    and 0 <= node.y - (y - self.delta) <= h + 2 * self.delta:
                 return True
 
-        for (x, y, w, h) in self.env.obs_boundary:
-            if 0 <= node.x - (x - delta) <= w + 2 * delta \
-                    and 0 <= node.y - (y - delta) <= h + 2 * delta:
+        for (x, y, w, h) in self.obs_boundary:
+            if 0 <= node.x - (x - self.delta) <= w + 2 * self.delta \
+                    and 0 <= node.y - (y - self.delta) <= h + 2 * self.delta:
                 return True
 
         return False
 
     @staticmethod
     def get_ray(start, end):
-        orig = [start.x, start.y]
-        direc = [end.x - start.x, end.y - start.y]
-        return orig, direc
+        return [start.x, start.y], [end.x - start.x, end.y - start.y]
 
     @staticmethod
     def get_dist(start, end):
         return math.hypot(end.x - start.x, end.y - start.y)
 
 
-class IRrtStar:
-    def __init__(self, x_start, x_goal, step_len,
-                 goal_sample_rate, search_radius, iter_max):
+class InformedRrtStar:
+    def __init__(self, x_start, x_goal, step_len, goal_sample_rate, search_radius, iter_max):
         self.x_start = Node(x_start)
         self.x_goal = Node(x_goal)
         self.step_len = step_len
@@ -189,9 +183,6 @@ class IRrtStar:
 
         self.env = Env()
         self.utils = Utils()
-
-        self.fig, self.ax = plt.subplots()
-        self.delta = self.utils.delta
         self.x_range = self.env.x_range
         self.y_range = self.env.y_range
         self.obs_circle = self.env.obs_circle
@@ -199,168 +190,321 @@ class IRrtStar:
         self.obs_boundary = self.env.obs_boundary
 
         self.V = [self.x_start]
-        self.X_soln = set()
-        self.path = None
+        self.path = []
+        self.candidate_path = []
+        self.candidate_cost = math.inf
+        self.best_cost = math.inf
+        self.c_min = self.line(self.x_start, self.x_goal)
+        self.center = np.array([(self.x_start.x + self.x_goal.x) / 2.0,
+                                (self.x_start.y + self.x_goal.y) / 2.0])
+        self.rotation = self.rotation_to_world()
 
-    def init(self):
-        cMin, theta = self.get_distance_and_angle(self.x_start, self.x_goal)
-        C = self.RotationToWorldFrame(self.x_start, self.x_goal, cMin)
-        xCenter = np.array([[(self.x_start.x + self.x_goal.x) / 2.0],
-                            [(self.x_start.y + self.x_goal.y) / 2.0], [0.0]])
-        x_best = self.x_start
-
-        return theta, cMin, xCenter, C, x_best
-
-    def planning(self):
-        theta, dist, x_center, C, x_best = self.init()
-        c_best = np.inf
+    def planning(self, save_gif=False, gif_name="051_informed_rrt_star"):
+        snapshots = [self.snapshot(0, "global sampling")]
 
         for k in range(self.iter_max):
-            if self.X_soln:
-                cost = {node: self.Cost(node) for node in self.X_soln}
-                x_best = min(cost, key=cost.get)
-                c_best = cost[x_best]
+            if k % 500 == 0:
+                print(k)
 
-            x_rand = self.Sample(c_best, dist, x_center, C)
-            x_nearest = self.Nearest(self.V, x_rand)
-            x_new = self.Steer(x_nearest, x_rand)
+            sample_mode = "informed ellipse" if math.isfinite(self.best_cost) else "global sampling"
+            x_rand = self.sample()
+            x_nearest = self.nearest(self.V, x_rand)
+            x_new = self.steer(x_nearest, x_rand)
+            if x_new is None or self.utils.is_collision(x_nearest, x_new):
+                continue
 
-            if x_new and not self.utils.is_collision(x_nearest, x_new):
-                X_near = self.Near(self.V, x_new)
-                c_min = self.Cost(x_nearest) + self.Line(x_nearest, x_new)
-                self.V.append(x_new)
+            x_near = self.near(self.V, x_new)
+            self.V.append(x_new)
+            if x_near:
+                self.choose_parent(x_new, x_near)
+                self.rewire(x_new, x_near)
 
-                # choose parent
-                for x_near in X_near:
-                    c_new = self.Cost(x_near) + self.Line(x_near, x_new)
-                    if c_new < c_min:
-                        x_new.parent = x_near
-                        c_min = c_new
+            if self.line(x_new, self.x_goal) <= self.step_len \
+                    and not self.utils.is_collision(x_new, self.x_goal):
+                candidate = self.extract_path(x_new) + [(self.x_goal.x, self.x_goal.y)]
+                candidate_cost = self.path_length(candidate)
+                self.candidate_path = candidate
+                self.candidate_cost = candidate_cost
+                if candidate_cost + 0.05 < self.best_cost:
+                    self.path = candidate
+                    self.best_cost = candidate_cost
+                    snapshots.append(self.snapshot(k, "ellipse shrinks"))
+                else:
+                    snapshots.append(self.snapshot(k, "candidate route"))
 
-                # rewire
-                for x_near in X_near:
-                    c_near = self.Cost(x_near)
-                    c_new = self.Cost(x_new) + self.Line(x_new, x_near)
-                    if c_new < c_near:
-                        x_near.parent = x_new
+            if k % 100 == 0:
+                snapshots.append(self.snapshot(k, sample_mode))
 
-                if self.InGoalRegion(x_new):
-                    if not self.utils.is_collision(x_new, self.x_goal):
-                        self.X_soln.add(x_new)
+        if self.path:
+            snapshots.append(self.snapshot(self.iter_max, "final informed optimum", final=True))
 
-            if k % 20 == 0:
-                self.animation(x_center=x_center, c_best=c_best, dist=dist, theta=theta)
+        if save_gif:
+            self.save_process_gif(snapshots, gif_name)
+        return self.path
 
-        self.path = self.ExtractPath(x_best)
-        self.animation(x_center=x_center, c_best=c_best, dist=dist, theta=theta)
-        plt.plot([x for x, _ in self.path], [y for _, y in self.path], '-r')
-        plt.pause(0.01)
-        plt.show()
+    def sample(self):
+        if math.isfinite(self.best_cost):
+            return self.sample_informed()
+        return self.sample_free()
 
-    def Steer(self, x_start, x_goal):
+    def sample_informed(self):
+        major = self.best_cost / 2.0
+        minor_sq = max(self.best_cost ** 2 - self.c_min ** 2, 0.0)
+        minor = math.sqrt(minor_sq) / 2.0
+
+        for _ in range(120):
+            point = self.sample_unit_ball()
+            scaled = np.array([major * point[0], minor * point[1]])
+            world = self.rotation @ scaled + self.center
+            node = Node(world)
+            if self.in_bounds(node) and not self.utils.is_inside_obs(node):
+                return node
+        return self.sample_free()
+
+    def sample_free(self):
+        if np.random.random() < self.goal_sample_rate:
+            return self.x_goal
+        delta = self.utils.delta
+        return Node(
+            (
+                np.random.uniform(self.x_range[0] + delta, self.x_range[1] - delta),
+                np.random.uniform(self.y_range[0] + delta, self.y_range[1] - delta),
+            )
+        )
+
+    @staticmethod
+    def sample_unit_ball():
+        while True:
+            x, y = random.uniform(-1.0, 1.0), random.uniform(-1.0, 1.0)
+            if x * x + y * y <= 1.0:
+                return np.array([x, y])
+
+    def in_bounds(self, node):
+        delta = self.utils.delta
+        return (
+            self.x_range[0] + delta <= node.x <= self.x_range[1] - delta
+            and self.y_range[0] + delta <= node.y <= self.y_range[1] - delta
+        )
+
+    def steer(self, x_start, x_goal):
         dist, theta = self.get_distance_and_angle(x_start, x_goal)
         dist = min(self.step_len, dist)
-        node_new = Node((x_start.x + dist * math.cos(theta),
-                         x_start.y + dist * math.sin(theta)))
+        node_new = Node((x_start.x + dist * math.cos(theta), x_start.y + dist * math.sin(theta)))
         node_new.parent = x_start
-
         return node_new
 
-    def Near(self, nodelist, node):
-        n = len(nodelist) + 1
-        r = 50 * math.sqrt((math.log(n) / n))
+    def near(self, nodelist, node):
+        n = len(self.V) + 1
+        radius = min(self.search_radius * math.sqrt(math.log(n) / n), self.step_len * 2.5)
+        return [
+            nd for nd in nodelist
+            if self.line(nd, node) <= radius and not self.utils.is_collision(nd, node)
+        ]
 
-        dist_table = [(nd.x - node.x) ** 2 + (nd.y - node.y) ** 2 for nd in nodelist]
-        X_near = [nodelist[ind] for ind in range(len(dist_table)) if dist_table[ind] <= r ** 2 and
-                  not self.utils.is_collision(nodelist[ind], node)]
+    def choose_parent(self, x_new, x_near):
+        costs = [self.cost(node) + self.line(node, x_new) for node in x_near]
+        x_new.parent = x_near[int(np.argmin(costs))]
 
-        return X_near
+    def rewire(self, x_new, x_near):
+        x_new_cost = self.cost(x_new)
+        for node in x_near:
+            new_cost = x_new_cost + self.line(x_new, node)
+            if new_cost + 0.05 < self.cost(node) and not self.would_create_cycle(node, x_new):
+                node.parent = x_new
 
-    def Sample(self, c_max, c_min, x_center, C):
-        if c_max < np.inf:
-            r = [c_max / 2.0,
-                 math.sqrt(c_max ** 2 - c_min ** 2) / 2.0,
-                 math.sqrt(c_max ** 2 - c_min ** 2) / 2.0]
-            L = np.diag(r)
+    def extract_path(self, node):
+        path = []
+        seen = set()
+        current = node
+        while current is not None and id(current) not in seen:
+            seen.add(id(current))
+            path.append((current.x, current.y))
+            current = current.parent
+        return list(reversed(path))
 
-            while True:
-                x_ball = self.SampleUnitBall()
-                x_rand = np.dot(np.dot(C, L), x_ball) + x_center
-                if self.x_range[0] + self.delta <= x_rand[0] <= self.x_range[1] - self.delta and \
-                        self.y_range[0] + self.delta <= x_rand[1] <= self.y_range[1] - self.delta:
-                    break
-            x_rand = Node((x_rand[(0, 0)], x_rand[(1, 0)]))
-        else:
-            x_rand = self.SampleFreeSpace()
-
-        return x_rand
-
-    @staticmethod
-    def SampleUnitBall():
-        while True:
-            x, y = random.uniform(-1, 1), random.uniform(-1, 1)
-            if x ** 2 + y ** 2 < 1:
-                return np.array([[x], [y], [0.0]])
-
-    def SampleFreeSpace(self):
-        delta = self.delta
-
-        if np.random.random() > self.goal_sample_rate:
-            return Node((np.random.uniform(self.x_range[0] + delta, self.x_range[1] - delta),
-                         np.random.uniform(self.y_range[0] + delta, self.y_range[1] - delta)))
-
-        return self.x_goal
-
-    def ExtractPath(self, node):
-        path = [[self.x_goal.x, self.x_goal.y]]
-
-        while node.parent:
-            path.append([node.x, node.y])
-            node = node.parent
-
-        path.append([self.x_start.x, self.x_start.y])
-
-        return path
-
-    def InGoalRegion(self, node):
-        if self.Line(node, self.x_goal) < self.step_len:
-            return True
-
+    def would_create_cycle(self, child, candidate_parent):
+        current = candidate_parent
+        while current is not None:
+            if current is child:
+                return True
+            current = current.parent
         return False
 
-    @staticmethod
-    def RotationToWorldFrame(x_start, x_goal, L):
-        a1 = np.array([[(x_goal.x - x_start.x) / L],
-                       [(x_goal.y - x_start.y) / L], [0.0]])
-        e1 = np.array([[1.0], [0.0], [0.0]])
-        M = a1 @ e1.T
-        U, _, V_T = np.linalg.svd(M, True, True)
-        C = U @ np.diag([1.0, 1.0, np.linalg.det(U) * np.linalg.det(V_T.T)]) @ V_T
+    def snapshot(self, iteration, phase, final=False):
+        edges = [
+            ((node.parent.x, node.parent.y), (node.x, node.y))
+            for node in self.V
+            if node.parent is not None
+        ]
+        display_path = self.path if final else (self.candidate_path or self.path)
+        display_cost = self.best_cost if final else (
+            self.candidate_cost if self.candidate_path else self.best_cost
+        )
+        return {
+            "phase": phase,
+            "final": final,
+            "iteration": iteration,
+            "nodes": len(self.V),
+            "edges": edges,
+            "path": list(display_path),
+            "cost": display_cost if display_path else None,
+            "best_path": list(self.path),
+            "best_cost": self.best_cost if self.path else None,
+            "ellipse": self.ellipse_parameters() if math.isfinite(self.best_cost) else None,
+        }
 
-        return C
+    def ellipse_parameters(self):
+        major = self.best_cost / 2.0
+        minor = math.sqrt(max(self.best_cost ** 2 - self.c_min ** 2, 0.0)) / 2.0
+        theta = math.atan2(self.x_goal.y - self.x_start.y, self.x_goal.x - self.x_start.x)
+        return {
+            "center": tuple(self.center),
+            "width": 2.0 * major,
+            "height": 2.0 * minor,
+            "angle": math.degrees(theta),
+        }
+
+    def save_process_gif(self, snapshots, gif_name):
+        if not snapshots:
+            snapshots = [self.snapshot(0, "global sampling")]
+
+        frames = [self.render_snapshot(snapshot) for snapshot in self.select_snapshots(snapshots)]
+        if frames:
+            frames.extend([frames[-1]] * 4)
+
+        gif_dir = os.path.join(os.path.dirname(__file__), "gif")
+        os.makedirs(gif_dir, exist_ok=True)
+        gif_path = os.path.join(gif_dir, f"{gif_name}.gif")
+        frames[0].save(
+            gif_path,
+            save_all=True,
+            append_images=frames[1:],
+            duration=380,
+            loop=0,
+            disposal=2,
+        )
+        print(f"Saved {gif_path} with {len(frames)} frames")
 
     @staticmethod
-    def Nearest(nodelist, n):
-        return nodelist[int(np.argmin([(nd.x - n.x) ** 2 + (nd.y - n.y) ** 2
-                                       for nd in nodelist]))]
+    def select_snapshots(snapshots, max_frames=46):
+        if len(snapshots) <= max_frames:
+            return snapshots
+        indices = np.linspace(0, len(snapshots) - 1, max_frames, dtype=int)
+        return [snapshots[i] for i in indices]
+
+    def render_snapshot(self, snapshot):
+        fig, ax = plt.subplots(figsize=(7, 4.6), dpi=110)
+
+        for (ox, oy, w, h) in self.obs_boundary:
+            ax.add_patch(patches.Rectangle((ox, oy), w, h, edgecolor="black", facecolor="black"))
+        for (ox, oy, w, h) in self.obs_rectangle:
+            ax.add_patch(patches.Rectangle((ox, oy), w, h, edgecolor="#444444", facecolor="#9da3a6"))
+        for (ox, oy, r) in self.obs_circle:
+            ax.add_patch(patches.Circle((ox, oy), r, edgecolor="#444444", facecolor="#9da3a6"))
+
+        if snapshot["ellipse"] is not None:
+            ellipse = snapshot["ellipse"]
+            ax.add_patch(
+                patches.Ellipse(
+                    ellipse["center"],
+                    ellipse["width"],
+                    ellipse["height"],
+                    angle=ellipse["angle"],
+                    edgecolor="#f59e0b",
+                    facecolor="#fbbf24",
+                    alpha=0.12,
+                    linewidth=2.0,
+                    linestyle="--",
+                    zorder=1,
+                )
+            )
+
+        if snapshot["edges"]:
+            tree = LineCollection(snapshot["edges"], colors="#5aa469", linewidths=0.62, alpha=0.56)
+            ax.add_collection(tree)
+
+        if snapshot["path"]:
+            color = "#d62728" if snapshot["final"] else "#f97316"
+            label = "best path" if snapshot["final"] else "candidate route"
+            ax.plot(
+                [p[0] for p in snapshot["path"]],
+                [p[1] for p in snapshot["path"]],
+                color=color,
+                linewidth=3.0 if snapshot["final"] else 2.4,
+                alpha=0.92,
+                label=label,
+                zorder=4,
+            )
+
+        if snapshot["best_path"] and snapshot["best_path"] != snapshot["path"]:
+            ax.plot(
+                [p[0] for p in snapshot["best_path"]],
+                [p[1] for p in snapshot["best_path"]],
+                color="#d62728",
+                linewidth=2.8,
+                alpha=0.82,
+                label="current best",
+                zorder=4,
+            )
+
+        ax.scatter(self.x_start.x, self.x_start.y, marker="s", s=72, color="#2b6cb0", zorder=5)
+        ax.scatter(self.x_goal.x, self.x_goal.y, marker="s", s=72, color="#2f855a", zorder=5)
+
+        mode = "informed" if snapshot["ellipse"] is not None else "global"
+        cost_text = "searching" if snapshot["cost"] is None else f"route {snapshot['cost']:.1f}"
+        if snapshot["best_cost"] is not None:
+            cost_text += f" best {snapshot['best_cost']:.1f}"
+        ax.text(
+            1.5,
+            28.4,
+            (
+                f"Informed RRT*  iter {snapshot['iteration']:4d}  nodes {snapshot['nodes']:4d}\n"
+                f"{mode} sampling  {snapshot['phase']}  {cost_text}"
+            ),
+            fontsize=8.5,
+            color="#1f2933",
+            bbox={"facecolor": "white", "edgecolor": "#c7d0d9", "alpha": 0.88, "pad": 3},
+        )
+
+        ax.set_xlim(self.x_range[0], self.x_range[1])
+        ax.set_ylim(self.y_range[0], self.y_range[1])
+        ax.set_aspect("equal", adjustable="box")
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_title("051 Informed RRT* - ellipse-restricted sampling")
+        fig.tight_layout(pad=0.4)
+
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", dpi=110)
+        plt.close(fig)
+        buf.seek(0)
+        frame = Image.open(buf).convert("RGB")
+        buf.close()
+        return frame
+
+    def rotation_to_world(self):
+        direction = np.array([self.x_goal.x - self.x_start.x, self.x_goal.y - self.x_start.y])
+        direction = direction / max(np.linalg.norm(direction), 1e-9)
+        normal = np.array([-direction[1], direction[0]])
+        return np.column_stack((direction, normal))
 
     @staticmethod
-    def Line(x_start, x_goal):
+    def nearest(nodelist, n):
+        return nodelist[int(np.argmin([(node.x - n.x) ** 2 + (node.y - n.y) ** 2 for node in nodelist]))]
+
+    @staticmethod
+    def line(x_start, x_goal):
         return math.hypot(x_goal.x - x_start.x, x_goal.y - x_start.y)
 
-    def Cost(self, node):
-        if node == self.x_start:
+    @staticmethod
+    def path_length(path):
+        if len(path) < 2:
             return 0.0
+        return sum(math.hypot(path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1])
+                   for i in range(1, len(path)))
 
-        if node.parent is None:
-            return np.inf
-
-        cost = 0.0
-        while node.parent:
-            cost += math.hypot(node.x - node.parent.x, node.y - node.parent.y)
-            node = node.parent
-
-        return cost
+    def cost(self, node):
+        return self.path_length(self.extract_path(node))
 
     @staticmethod
     def get_distance_and_angle(node_start, node_end):
@@ -368,84 +512,17 @@ class IRrtStar:
         dy = node_end.y - node_start.y
         return math.hypot(dx, dy), math.atan2(dy, dx)
 
-    def animation(self, x_center=None, c_best=None, dist=None, theta=None):
-        plt.cla()
-        self.plot_grid("Informed RRT*, N = " + str(self.iter_max))
-        plt.gcf().canvas.mpl_connect(
-            'key_release_event',
-            lambda event: [exit(0) if event.key == 'escape' else None])
-
-        for node in self.V:
-            if node.parent:
-                plt.plot([node.x, node.parent.x], [node.y, node.parent.y], "-g")
-
-        if c_best != np.inf:
-            self.draw_ellipse(x_center, c_best, dist, theta)
-
-        plt.pause(0.01)
-
-    def plot_grid(self, name):
-        for (ox, oy, w, h) in self.obs_boundary:
-            self.ax.add_patch(
-                patches.Rectangle(
-                    (ox, oy), w, h,
-                    edgecolor='black',
-                    facecolor='black',
-                    fill=True
-                )
-            )
-
-        for (ox, oy, w, h) in self.obs_rectangle:
-            self.ax.add_patch(
-                patches.Rectangle(
-                    (ox, oy), w, h,
-                    edgecolor='black',
-                    facecolor='gray',
-                    fill=True
-                )
-            )
-
-        for (ox, oy, r) in self.obs_circle:
-            self.ax.add_patch(
-                patches.Circle(
-                    (ox, oy), r,
-                    edgecolor='black',
-                    facecolor='gray',
-                    fill=True
-                )
-            )
-
-        plt.plot(self.x_start.x, self.x_start.y, "bs", linewidth=3)
-        plt.plot(self.x_goal.x, self.x_goal.y, "rs", linewidth=3)
-
-        plt.title(name)
-        plt.axis("equal")
-
-    @staticmethod
-    def draw_ellipse(x_center, c_best, dist, theta):
-        a = math.sqrt(c_best ** 2 - dist ** 2) / 2.0
-        b = c_best / 2.0
-        angle = math.pi / 2.0 - theta
-        cx = x_center[0]
-        cy = x_center[1]
-        t = np.arange(0, 2 * math.pi + 0.1, 0.1)
-        x = [a * math.cos(it) for it in t]
-        y = [b * math.sin(it) for it in t]
-        # Replace as_dcm() with as_matrix() which is the new method name
-        rot = Rot.from_euler('z', -angle).as_matrix()[0:2, 0:2]
-        fx = rot @ np.array([x, y])
-        px = np.array(fx[0, :] + cx).flatten()
-        py = np.array(fx[1, :] + cy).flatten()
-        plt.plot(cx, cy, ".b")
-        plt.plot(px, py, linestyle='--', color='darkorange', linewidth=2)
-
 
 def main():
-    x_start = (18, 8)  # starting node
-    x_goal = (37, 18)  # goal node
+    random.seed(51)
+    np.random.seed(51)
+    x_start = (18, 8)
+    x_goal = (37, 18)
 
-    rrt_star = IRrtStar(x_start, x_goal, 1, 0.10, 12, 1000)
-    rrt_star.planning()
+    rrt_star = InformedRrtStar(x_start, x_goal, 4.0, 0.14, 22, 2500)
+    path = rrt_star.planning(save_gif=True)
+    if not path:
+        raise RuntimeError("Informed RRT* did not reach the goal")
 
 
 if __name__ == "__main__":
