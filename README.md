@@ -1,5 +1,7 @@
 # 100pathfinding-algorithms
 
+[![CI](https://github.com/bailehang/100pathfinding-algorithms/actions/workflows/ci.yml/badge.svg)](https://github.com/bailehang/100pathfinding-algorithms/actions/workflows/ci.yml)
+
 I am very interested in further summarizing all the pathfinding algorithms.
 
 ## 实现进度 (Implementation Status)
@@ -110,6 +112,37 @@ DEMO GIF      [#######.............]  36%   34/94
 
 python3.12 or 3.13
 pip install -r requirements.txt
+
+每个算法都是一个可独立运行的脚本，例如 / Each algorithm is a standalone script, e.g.:
+
+```bash
+python Search_2D/008_Astar.py
+```
+
+## 测试 (Testing)
+
+每个 demo 都是独立脚本。一个轻量级 smoke 测试会在无界面（headless）后端下导入全部
+`Search_2D/NNN_*.py`，以捕获跨所有 demo 的语法 / 导入 / `sys.path` 问题，而不会触发会阻塞的动画与 GIF 代码。
+
+The demos are standalone scripts. A lightweight smoke test imports every
+`Search_2D/NNN_*.py` demo under a headless backend to catch syntax / import /
+`sys.path` breakage across all demos, without running their blocking
+animation/GIF code.
+
+```bash
+pip install -r requirements.txt pytest
+pytest tests/
+```
+
+`tools/check_readme_status.py` 校验本 README 的状态表与磁盘上的文件（实现与演示 GIF）保持一致 /
+checks that the status tables above stay consistent with the files on disk:
+
+```bash
+python tools/check_readme_status.py
+```
+
+GitHub Actions 会在每次 push 与 pull request 时于 Python 3.12 / 3.13 上运行 smoke 测试 /
+GitHub Actions runs the smoke test on Python 3.12 and 3.13 for every push and pull request.
 
 ## Thanks
 
