@@ -144,6 +144,18 @@ python tools/check_readme_status.py
 GitHub Actions 会在每次 push 与 pull request 时于 Python 3.12 / 3.13 上运行 smoke 测试 /
 GitHub Actions runs the smoke test on Python 3.12 and 3.13 for every push and pull request.
 
+## 算法笔记 (Algorithm Notes)
+
+部分算法家族附带更详细的中文笔记 / Longer notes for some algorithm families live in [`doc/`](doc/):
+
+- [D\* 家族 (D\* family)](doc/doc_D.md)
+- [JPS (Jump Point Search)](doc/doc_JPS.md)
+- [RRT 家族 (RRT family)](doc/doc_RRT.md)
+- [Repairing A\*](doc/doc_RepairingA.md)
+- [Theta\* 家族 (Theta\* family)](doc/doc_Theta.md)
+- [Voronoi 图方法 (Voronoi diagram methods)](doc/doc_Voronoi.md)
+- [速度障碍 (Velocity Obstacle - VO)](doc/doc_vo.md)
+
 ## Thanks
 
 ZJU Prof. FeiGao
