@@ -11,3 +11,5 @@ __pycache__/
 .idea/
 .vscode/
 *.iml
+.venv/
+.pytest_cache/
