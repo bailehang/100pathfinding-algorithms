@@ -340,7 +340,7 @@ class AntColonyOptimization:
             )
         self.capture_frame()
 
-        self.save_gif("060_ACO", fps=5)
+        self.save_gif("060_ACO", fps=2)
         plt.close("all")
         print(f"Best path nodes: {len(self.best_path)}")
         print(f"Best path cost: {self.best_cost:.3f}")
