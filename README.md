@@ -8,11 +8,11 @@ I am very interested in further summarizing all the pathfinding algorithms.
 
 > This repository is progressing toward the long-term goal of implementing **100 pathfinding algorithms**.
 
-**总进度：52 / 94 已实现（约 55%），其中 41 个附带演示动图。**
+**总进度：57 / 94 已实现（约 61%），其中 46 个附带演示动图。**
 
 ```text
-IMPLEMENTED   [###########.........]  55%   52/94
-DEMO GIF      [#########...........]  44%   41/94
+IMPLEMENTED   [############........]  61%   57/94
+DEMO GIF      [##########..........]  49%   46/94
 ```
 
 ### 逐算法实现状态明细 (per-algorithm status)
@@ -78,10 +78,10 @@ DEMO GIF      [#########...........]  44%   41/94
 
 |  #  | 算法                |  状态 |  #  | 算法                 |  状态 |
 | :-: | :---------------- | :-: | :-: | :----------------- | :-: |
-| 071 | Polynomial Curves |   ✅   | 075 | TEB                |  TODO |
-| 072 | Bezier Curves     |   ✅   | 076 | Dubins Curves      |  TODO |
-| 073 | Cubic Spline      |  TODO | 077 | Reeds-Shepp Curves |  TODO |
-| 074 | B-Spline          |  TODO | 078 | VRP                |  TODO |
+| 071 | Polynomial Curves |   ✅   | 075 | TEB                |   ✅   |
+| 072 | Bezier Curves     |   ✅   | 076 | Dubins Curves      |   ✅   |
+| 073 | Cubic Spline      |   ✅   | 077 | Reeds-Shepp Curves |   ✅   |
+| 074 | B-Spline          |   ✅   | 078 | VRP                |  TODO |
 
 **六、基于模型的控制与规划 (Model-Based Control)**
 
@@ -598,14 +598,19 @@ Required attribution: `100pathfinding-algorithms by bailehang`.
 - **样条曲线 (Spline Curves)**
   - **073 三次样条曲线 (Cubic Spline)**
     - Ahlberg, Nilson, Walsh (1967)
+    - ![073\_Cubic\_Spline](Search_2D/gif/073_Cubic_Spline.gif)
   - **074 B样条曲线 (B-Spline)**
     - de Boor (1972), Cox (1972)
+    - ![074\_B\_Spline](Search_2D/gif/074_B_Spline.gif)
 - **075 时间弹性带 (Timed Elastic Band - TEB)**
   - Rösmann, Hoffmann, Bertram (2012, 2017)
+  - ![075\_TEB](Search_2D/gif/075_TEB.gif)
 - **076 Dubins 曲线 (Dubins Curves)**
   - Dubins (1957)
+  - ![076\_Dubins\_Curves](Search_2D/gif/076_Dubins_Curves.gif)
 - **077 Reeds-Shepp 曲线 (Reeds-Shepp Curves)**
   - Reeds & Shepp (1990)
+  - ![077\_Reeds\_Shepp\_Curves](Search_2D/gif/077_Reeds_Shepp_Curves.gif)
 - **078 车辆路径问题 (Vehicle Routing Problem - VRP)**
   - Dantzig & Ramser (1959)
 
