@@ -110,14 +110,24 @@ DEMO GIF      [#######.............]  36%   34/94
 
 ## Quick Start
 
-python3.12 or 3.13
+python 3.12 or 3.13
+```bash
 pip install -r requirements.txt
+```
 
 每个算法都是一个可独立运行的脚本，例如 / Each algorithm is a standalone script, e.g.:
 
 ```bash
 python Search_2D/008_Astar.py
 ```
+
+## 项目结构 (Project Layout)
+
+- `Search_2D/`: standalone algorithm demo scripts and generated GIF previews.
+- `common/`: shared demo infrastructure, including the reusable 2D grid environment.
+- `benchmarks/`: timing and path-length metrics helpers used by demos and tests.
+- `tests/`: import smoke tests and layout compatibility checks.
+- `tools/`: repository maintenance checks, including README status validation.
 
 ## 测试 (Testing)
 
