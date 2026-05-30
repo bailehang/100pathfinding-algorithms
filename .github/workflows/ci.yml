@@ -31,3 +31,6 @@ jobs:
         env:
           MPLBACKEND: Agg
         run: pytest tests/ -v
+
+      - name: README status consistency
+        run: python tools/check_readme_status.py
