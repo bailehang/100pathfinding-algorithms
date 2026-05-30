@@ -5,7 +5,8 @@ RRT# keeps two cost labels for every sampled state: ``g`` (current committed
 cost-to-come) and ``lmc`` (one-step lookahead cost). Newly sampled edges can make
 nearby vertices locally inconsistent; a priority queue then propagates the cost
 improvement, similar in spirit to LPA*/D* Lite. The GIF highlights this process:
-green tree edges, blue inconsistent vertices, and the current best path to goal.
+green tree edges, blue propagated vertices, the current route being tested, and
+the final best path.
 """
 
 from metrics import install_metrics
@@ -208,6 +209,8 @@ class RrtSharp:
         self.queue = []
         self.recent_updates = []
         self.path = []
+        self.preview_path = []
+        self.preview_cost = math.inf
         self.best_cost = math.inf
 
     def planning(self, save_gif=False, gif_name="050_rrt_sharp"):
@@ -232,13 +235,17 @@ class RrtSharp:
             self.try_connect_goal(x_new)
             self.reduce_inconsistency(max_pops=60)
             self.refresh_best_path()
+            self.preview_path = self.active_route(x_new)
+            self.preview_cost = self.path_length(self.preview_path)
 
-            if k % 90 == 0:
+            if self.preview_path and (not snapshots or snapshots[-1].get("path") != self.preview_path):
+                snapshots.append(self.snapshot(k, "active g/lmc route"))
+            elif k % 90 == 0:
                 snapshots.append(self.snapshot(k))
 
         self.refresh_best_path()
         if self.path:
-            snapshots.append(self.snapshot(self.iter_max))
+            snapshots.append(self.snapshot(self.iter_max, "final best path", final=True))
 
         if save_gif:
             self.save_process_gif(snapshots, gif_name)
@@ -298,6 +305,8 @@ class RrtSharp:
             return
 
         candidate = node.g + self.line(node, self.x_goal)
+        self.preview_path = self.extract_path(node) + [(self.x_goal.x, self.x_goal.y)]
+        self.preview_cost = candidate
         if candidate + self.eps < self.x_goal.lmc:
             self.x_goal.lmc = candidate
             self.x_goal.parent = node
@@ -347,6 +356,14 @@ class RrtSharp:
         self.path = self.extract_path(self.x_goal.parent) + [(self.x_goal.x, self.x_goal.y)]
         self.best_cost = self.x_goal.lmc
 
+    def active_route(self, node):
+        if node is None or not math.isfinite(node.g):
+            return []
+        route = self.extract_path(node)
+        if not self.utils.is_collision(node, self.x_goal):
+            route = route + [(self.x_goal.x, self.x_goal.y)]
+        return route
+
     def extract_path(self, node):
         path = []
         seen = set()
@@ -365,7 +382,7 @@ class RrtSharp:
             current = current.parent
         return False
 
-    def snapshot(self, iteration):
+    def snapshot(self, iteration, phase="propagating g/lmc", final=False):
         edges = [
             ((node.parent.x, node.parent.y), (node.x, node.y))
             for node in self.V
@@ -377,12 +394,18 @@ class RrtSharp:
             if not self.is_consistent(node)
         ]
         update_points = inconsistent or list(self.recent_updates)
+        display_path = self.path if final else (self.preview_path or self.path)
+        display_cost = self.best_cost if final else (self.preview_cost if self.preview_path else self.best_cost)
         return {
+            "phase": phase,
+            "final": final,
             "iteration": iteration,
             "nodes": len(self.V),
             "edges": edges,
-            "path": list(self.path),
-            "cost": self.best_cost if self.path else None,
+            "path": list(display_path),
+            "cost": display_cost if display_path else None,
+            "best_path": list(self.path) if final else [],
+            "best_cost": self.best_cost if self.path else None,
             "queue": len(self.queue),
             "updates": update_points[:90],
         }
@@ -441,9 +464,22 @@ class RrtSharp:
             )
 
         if snapshot["path"]:
+            path_color = "#d62728" if snapshot["final"] else "#f97316"
+            path_width = 3.0 if snapshot["final"] else 2.4
+            path_label = "best path" if snapshot["final"] else "active route"
             ax.plot(
                 [p[0] for p in snapshot["path"]],
                 [p[1] for p in snapshot["path"]],
+                color=path_color,
+                linewidth=path_width,
+                alpha=0.88,
+                label=path_label,
+            )
+
+        if snapshot["best_path"] and snapshot["best_path"] != snapshot["path"]:
+            ax.plot(
+                [p[0] for p in snapshot["best_path"]],
+                [p[1] for p in snapshot["best_path"]],
                 color="#d62728",
                 linewidth=3.0,
                 label="best path",
@@ -452,13 +488,15 @@ class RrtSharp:
         ax.scatter(self.x_start.x, self.x_start.y, marker="s", s=72, color="#2b6cb0", zorder=5)
         ax.scatter(self.x_goal.x, self.x_goal.y, marker="s", s=72, color="#2f855a", zorder=5)
 
-        cost_text = "searching" if snapshot["cost"] is None else f"best cost {snapshot['cost']:.1f}"
+        cost_text = "searching" if snapshot["cost"] is None else f"route {snapshot['cost']:.1f}"
+        if snapshot["best_cost"] is not None:
+            cost_text += f" best {snapshot['best_cost']:.1f}"
         ax.text(
             1.6,
             28.4,
             (
                 f"RRT#  iter {snapshot['iteration']:4d}  nodes {snapshot['nodes']:4d}  "
-                f"queue {snapshot['queue']:3d}  {cost_text}"
+                f"queue {snapshot['queue']:3d}  {snapshot['phase']}  {cost_text}"
             ),
             fontsize=9.3,
             color="#1f2933",
@@ -488,6 +526,15 @@ class RrtSharp:
     @staticmethod
     def line(x_start, x_goal):
         return math.hypot(x_goal.x - x_start.x, x_goal.y - x_start.y)
+
+    @staticmethod
+    def path_length(path):
+        if len(path) < 2:
+            return 0.0
+        return sum(
+            math.hypot(path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1])
+            for i in range(1, len(path))
+        )
 
     @staticmethod
     def get_distance_and_angle(node_start, node_end):
