@@ -38,7 +38,7 @@ DEMO GIF      [#######.............]  36%   34/94
 | 015 | Repairing A\*            |  ✅  |   036  | Hierarchical JPS (HJPS)    |   WIP   |
 | 016 | LPA\*                    |  ✅  |   037  | Dynamic JPS                |   TODO   |
 | 017 | ARA\*                    |  ✅  |   038  | JPS-Lite                   |   TODO   |
-| 018 | RTAA\*                   |  ✅  |   039  | _(编号重复，待修正)_               |   TODO   |
+| 018 | RTAA\*                   |  ✅  |   039  | _(预留 / Reserved JPS slot)_    |   TODO   |
 | 019 | D\*                      |  ✅  |   040  | Adaptive JPS               |   TODO   |
 | 020 | Lazy D\*                 |  ✅  |   041  | Lattice Planning           |   TODO   |
 | 021 | Focused D\*              |  WIP | |                     | |
@@ -478,8 +478,7 @@ Required attribution: `100pathfinding-algorithms by bailehang`.
         - Papadakis (2013)
       - **038 JPS-Lite**
         - Gong, Zhang, Wang, Wang (2019)
-      - \**039 Multi - Agent ThetA\**
-        - Li, Zhang, Wang, Zhang (2022)
+      - **039 _(预留 JPS 变体 / Reserved JPS-family slot)_**
       - **040 自适应 JPS (Adaptive JPS)**
         - Su, Hsueh (2016)
   - **041 格网规划 (Lattice Planning)**
