@@ -3,12 +3,7 @@ Plot tools 2D
 @author: huiming zhou
 """
 
-import os
-import sys
 import matplotlib.pyplot as plt
-
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) +
-                "/../../Search_based_Planning/")
 
 from Search_2D import env
 
