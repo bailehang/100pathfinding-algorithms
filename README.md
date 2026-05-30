@@ -8,11 +8,11 @@ I am very interested in further summarizing all the pathfinding algorithms.
 
 > This repository is progressing toward the long-term goal of implementing **100 pathfinding algorithms**.
 
-**总进度：59 / 94 已实现（约 63%），其中 48 个附带演示动图。**
+**总进度：60 / 94 已实现（约 64%），其中 49 个附带演示动图。**
 
 ```text
-IMPLEMENTED   [#############.......]  63%   59/94
-DEMO GIF      [##########..........]  51%   48/94
+IMPLEMENTED   [#############.......]  64%   60/94
+DEMO GIF      [##########..........]  52%   49/94
 ```
 
 ### 逐算法实现状态明细 (per-algorithm status)
@@ -61,7 +61,7 @@ DEMO GIF      [##########..........]  51%   48/94
 
 |  #  | 算法  |  状态 |    #   | 算法     |   状态   |
 | :-: | :-- | :-: | :----: | :----- | :----: |
-| 060 | ACO |  TODO |   062  | PSO    |   TODO   |
+| 060 | ACO |   ✅   |   062  | PSO    |   TODO   |
 | 061 | GA  |  TODO | | | |
 
 **四、反应式与几何规划 (Reactive & Geometric)**
@@ -561,6 +561,7 @@ Required attribution: `100pathfinding-algorithms by bailehang`.
 
 - **060 蚁群优化 (Ant Colony Optimization - ACO)**
   - Dorigo, Maniezzo, Colorni (1991, 1996), Dorigo & Di Caro (1999)
+  - ![060\_ACO](Search_2D/gif/060_ACO.gif)
 - **061 遗传算法 (Genetic Algorithm - GA)**
   - Holland (1975/1992)
 - **062 粒子群优化 (Particle Swarm Optimization - PSO)**
