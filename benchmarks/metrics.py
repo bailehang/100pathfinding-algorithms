@@ -626,3 +626,76 @@ def install_metrics():
     builtins.__build_class__ = _build_class_wrapper
     _patch_matplotlib_demo_calls()
     atexit.register(print_metrics)
+
+
+# ---------------------------------------------------------------------------
+# Explicit, reusable benchmarking API
+#
+# install_metrics() above auto-discovers timings by monkeypatching
+# builtins.__build_class__ and matplotlib. That is convenient but name-coupled
+# and silent (a new algorithm whose method/variable names are not in the
+# hard-coded sets produces no metric).
+#
+# measure() is the recommended path for new and refactored demos: explicit,
+# deterministic, composable (works in a loop, returns data), and decoupled from
+# plotting. It reuses the same path-length helpers.
+# ---------------------------------------------------------------------------
+
+import dataclasses
+
+
+@dataclasses.dataclass
+class Result:
+    """A single benchmark measurement."""
+
+    elapsed_ms: float
+    path_length: float = None
+    extra: dict = dataclasses.field(default_factory=dict)
+
+    def line(self):
+        parts = []
+        if self.path_length is not None:
+            parts.append(f"Path length: {self.path_length:.3f}")
+        parts.append(f"Algorithm time: {self.elapsed_ms:.3f} ms")
+        for key, value in self.extra.items():
+            parts.append(f"{key}: {value}")
+        return " | ".join(parts)
+
+
+class Measurement:
+    """Mutable handle yielded by measure(); times the ``with`` block."""
+
+    def __init__(self):
+        self._start = None
+        self.result = Result(elapsed_ms=0.0)
+
+    def __enter__(self):
+        self._start = now_ms()
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        self.result.elapsed_ms = elapsed_ms(self._start)
+        return False
+
+    def record(self, path=None, **extra):
+        """Attach a path (length computed) and/or named extra metrics."""
+        if path is not None:
+            lengths = path_lengths(path)
+            self.result.path_length = sum(lengths) if lengths else None
+        self.result.extra.update(extra)
+        return self.result
+
+    def line(self):
+        return self.result.line()
+
+
+def measure():
+    """Return a Measurement context manager.
+
+    >>> with measure() as m:
+    ...     path, visited = astar.searching()
+    >>> m.record(path, expanded=len(visited))
+    >>> print(m.line())
+    Path length: 54.042 | Algorithm time: 4.956 ms | expanded: 312
+    """
+    return Measurement()
