@@ -8,11 +8,11 @@ I am very interested in further summarizing all the pathfinding algorithms.
 
 > This repository is progressing toward the long-term goal of implementing **100 pathfinding algorithms**.
 
-**总进度：50 / 94 已实现（约 53%），其中 37 个附带演示动图。**
+**总进度：50 / 94 已实现（约 53%），其中 38 个附带演示动图。**
 
 ```text
 IMPLEMENTED   [###########.........]  53%   50/94
-DEMO GIF      [########............]  39%   37/94
+DEMO GIF      [########............]  40%   38/94
 ```
 
 ### 逐算法实现状态明细 (per-algorithm status)
@@ -28,7 +28,7 @@ DEMO GIF      [########............]  39%   37/94
 | 005 | Bellman-Ford             |  ✅  |   026  | Lazy Theta\*               |    ✅   |
 | 006 | SPFA                     |  ✅  |   027  | S-Theta\*                  |    ✅   |
 | 007 | Flow Fields              |  ✅  |   028  | Enhanced Theta\*           |    ✅   |
-| 008 | A\*                      |  ✅  |   029  | Multi-Agent Theta\*        |   WIP   |
+| 008 | A\*                      |  ✅  |   029  | Multi-Agent Theta\*        |    ✅   |
 | 009 | Bidirectional A\*        |  ✅  |   030  | Adaptive Theta\*           |   WIP   |
 | 010 | Weighted A\*             |  ✅  |   031  | Polyanya                   |    ✅   |
 | 011 | Hierarchical A\* (HPA\*) |  ✅  |   032  | JPS                        |    ✅   |
@@ -481,6 +481,7 @@ Required attribution: `100pathfinding-algorithms by bailehang`.
         - ![028\_EnhancedTheta\_star](Search_2D/gif/028_EnhancedTheta_star.gif)
       - **029 Multi - Agent Theta**
         - Li, Zhang, Wang, Zhang (2022)
+        - ![029\_MultiAgentTheta\_star](Search_2D/gif/029_MultiAgentTheta_star.gif)
       - **030 Adaptive ThetA\***
         - Ferguson & Stentz (2006)
     - **导航网格任意角规划 (Navmesh Any-Angle Pathfinding)**

@@ -10,11 +10,14 @@ import os
 import sys
 import math
 import heapq
+import io
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-import matplotlib.patches as patches
 import numpy as np
 from matplotlib.animation import FuncAnimation
+from PIL import Image
 import time
 import random
 
@@ -79,7 +82,7 @@ class MultiAgentThetaStar:
         self.collision_checks = 0
         self.search_nodes_expanded = 0
 
-    def plan_paths(self):
+    def plan_paths(self, visualize=True):
         """
         Plan paths for all agents using prioritized planning
         """
@@ -115,10 +118,131 @@ class MultiAgentThetaStar:
         
         self.planning_time = time.time() - start_time
         
-        # Create visualization
-        self.visualize_paths()
+        # Create visualization when running the interactive demo.
+        if visualize:
+            self.visualize_paths()
         
         return self.paths, self.path_costs
+
+    def capture_frame(self, fig):
+        """Capture the current Matplotlib figure for GIF output."""
+        buf = io.BytesIO()
+        fig.canvas.draw()
+        fig.savefig(
+            buf,
+            format="png",
+            dpi=100,
+            bbox_inches="tight",
+            facecolor="white",
+            edgecolor="none",
+        )
+        buf.seek(0)
+        image = Image.open(buf).convert("RGB")
+        frame = np.array(image)
+        buf.close()
+        return frame
+
+    def save_gif(self, frames, name, fps=4):
+        """Save captured frames under Search_2D/gif."""
+        if not frames:
+            print("No frames captured; GIF was not saved.")
+            return
+
+        gif_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gif")
+        os.makedirs(gif_dir, exist_ok=True)
+        gif_path = os.path.join(gif_dir, f"{name}.gif")
+
+        palette_frames = [
+            Image.fromarray(frame).convert("P", palette=Image.ADAPTIVE, colors=256)
+            for frame in frames
+        ]
+        palette_frames[0].save(
+            gif_path,
+            format="GIF",
+            append_images=palette_frames[1:],
+            save_all=True,
+            duration=int(1000 / fps),
+            loop=0,
+            disposal=2,
+        )
+        print(f"GIF animation saved to {gif_path}")
+
+    def draw_world_frame(self, ax, time_step):
+        """Draw one synchronized multi-agent time step."""
+        ax.clear()
+
+        obs_x = [x[0] for x in self.obs]
+        obs_y = [x[1] for x in self.obs]
+        ax.plot(obs_x, obs_y, "sk", markersize=4)
+
+        for agent_idx, agent_path in enumerate(self.paths):
+            color = self.agent_colors[agent_idx]
+
+            if len(agent_path) >= 2:
+                xs = [pos[0] for pos in agent_path]
+                ys = [pos[1] for pos in agent_path]
+                ax.plot(xs, ys, color=color, alpha=0.25, linewidth=2)
+
+                active_index = min(time_step, len(agent_path) - 1)
+                active_segment = agent_path[:active_index + 1]
+                ax.plot(
+                    [pos[0] for pos in active_segment],
+                    [pos[1] for pos in active_segment],
+                    color=color,
+                    linewidth=2.5,
+                )
+            else:
+                active_index = 0
+
+            current_pos = agent_path[min(active_index, len(agent_path) - 1)]
+            ax.add_patch(plt.Circle(current_pos, radius=0.55, color=color, alpha=0.9))
+            ax.text(
+                current_pos[0],
+                current_pos[1],
+                str(agent_idx),
+                color="white",
+                ha="center",
+                va="center",
+                fontsize=8,
+                fontweight="bold",
+            )
+            ax.plot(
+                self.agent_starts[agent_idx][0],
+                self.agent_starts[agent_idx][1],
+                marker="o",
+                color=color,
+                markersize=7,
+            )
+            ax.plot(
+                self.agent_goals[agent_idx][0],
+                self.agent_goals[agent_idx][1],
+                marker="*",
+                color=color,
+                markersize=11,
+            )
+
+        ax.set_title(f"029 Multi-Agent Theta* - Time {time_step}")
+        ax.set_aspect("equal", adjustable="box")
+        ax.set_xlim(0, self.Env.x_range)
+        ax.set_ylim(0, self.Env.y_range)
+        ax.grid(True, alpha=0.25)
+
+    def run_demonstration(self):
+        """Run a deterministic multi-agent demo and save it as a GIF."""
+        print("Starting Multi-Agent Theta* demonstration...")
+        self.plan_paths(visualize=False)
+        self.display_solution_stats()
+
+        max_path_length = max(len(path) for path in self.paths)
+        frames = []
+        fig, ax = plt.subplots(figsize=(7, 5), dpi=100)
+
+        for time_step in range(max_path_length):
+            self.draw_world_frame(ax, time_step)
+            frames.append(self.capture_frame(fig))
+
+        self.save_gif(frames, "029_MultiAgentTheta_star", fps=4)
+        plt.close(fig)
 
     def calculate_agent_priorities(self):
         """
@@ -643,12 +767,12 @@ def main():
         priority_method="distance_to_goal"  # Options: distance_to_goal, random, sequential
     )
     
-    # Plan paths for all agents
-    paths, costs = planner.plan_paths()
+    # Plan paths for all agents and save a GIF demonstration.
+    planner.run_demonstration()
     
     # Output solution quality
-    for i in range(len(paths)):
-        print(f"Agent {i} path cost: {costs[i]:.2f}")
+    for i in range(len(planner.paths)):
+        print(f"Agent {i} path cost: {planner.path_costs[i]:.2f}")
 
 
 if __name__ == '__main__':
