@@ -8,11 +8,11 @@ I am very interested in further summarizing all the pathfinding algorithms.
 
 > This repository is progressing toward the long-term goal of implementing **100 pathfinding algorithms**.
 
-**总进度：57 / 94 已实现（约 61%），其中 46 个附带演示动图。**
+**总进度：58 / 94 已实现（约 62%），其中 47 个附带演示动图。**
 
 ```text
-IMPLEMENTED   [############........]  61%   57/94
-DEMO GIF      [##########..........]  49%   46/94
+IMPLEMENTED   [############........]  62%   58/94
+DEMO GIF      [##########..........]  50%   47/94
 ```
 
 ### 逐算法实现状态明细 (per-algorithm status)
@@ -68,7 +68,7 @@ DEMO GIF      [##########..........]  49%   46/94
 
 |  #  | 算法            |  状态 |    #   | 算法                     |   状态   |
 | :-: | :------------ | :-: | :----: | :--------------------- | :----: |
-| 063 | APF           |  TODO |   068  | Weighted Voronoi       |   TODO   |
+| 063 | APF           |   ✅   |   068  | Weighted Voronoi       |   TODO   |
 | 064 | DWA           |  TODO |   069  | Fuzzy Voronoi          |   TODO   |
 | 065 | VFH           |  TODO |   070  | Adaptive Voronoi Field |   TODO   |
 | 066 | Basic Voronoi |  ✅  | | | |
@@ -570,6 +570,7 @@ Required attribution: `100pathfinding-algorithms by bailehang`.
 
 - **063 人工势场法 (Artificial Potential Field - APF)**
   - Khatib (1986)
+  - ![063\_APF](Search_2D/gif/063_APF.gif)
 - **064 动态窗口法 (Dynamic Window Approach - DWA)**
   - Fox, Burgard, Thrun (1997)
 - **065 向量场直方图 (Vector Field Histogram - VFH)**
