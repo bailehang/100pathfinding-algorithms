@@ -6,13 +6,13 @@ I am very interested in further summarizing all the pathfinding algorithms.
 
 ## 实现进度 (Implementation Status)
 
-> This repository is progressing toward the long-term goal of implementing **99 pathfinding algorithms**.
+> This repository is progressing toward the long-term goal of implementing **100 pathfinding algorithms**.
 
-**总进度：99 / 99 已实现（100%），其中 99 个附带演示动图。**
+**总进度：100 / 100 已实现（100%），其中 100 个附带演示动图。**
 
 ```text
-IMPLEMENTED   [####################] 100%   99/99
-DEMO GIF      [####################] 100%   99/99
+IMPLEMENTED   [####################] 100%   100/100
+DEMO GIF      [####################] 100%   100/100
 ```
 
 ## Contents
@@ -26,7 +26,7 @@ DEMO GIF      [####################] 100%   99/99
   - **001 广度优先搜索 (Breadth-First Searching - BFS)**
     - Moore (1959), Lee (1961)
     - ![001\_bfs](Search_2D/gif/001_bfs.gif)
-    - Path length: 54.047; Algorithm time: 13.405 ms
+    - Path length: 54.048; Algorithm time: 13.405 ms
     - 算法心得：
       逐层扩展的搜索策略，它从起始节点开始，逐层向外扩展，直到找到目标节点或遍历完整个搜索空间。
   - **002 深度优先搜索 (Depth-First Search - DFS)**
@@ -45,32 +45,32 @@ DEMO GIF      [####################] 100%   99/99
   - **004 Dijkstra 算法**
     - Dijkstra (1959)
     - ![004\_Dijkstra](Search_2D/gif/004_Dijkstra.gif)
-    - Path length: 54.047; Algorithm time: 9.103 ms
+    - Path length: 54.048; Algorithm time: 9.103 ms
     - 算法心得：
       Dijkstra 算法是一种用于寻找最短路径的算法，它通过维护一个距离表来记录从起始节点到其他节点的最短距离。
       算法从起始节点开始，每次选择距离表中距离最小的节点进行扩展，更新其相邻节点的距离表，直到找到目标节点或遍历完整个搜索空间。
   - **005 Bellman-Ford 算法**
     - Bellman (1958), Ford (1956)
     - ![005\_Bellman\_Ford](Search_2D/gif/005_Bellman_Ford.gif)
-    - Path length: 54.047; Algorithm time: 19.293 ms
+    - Path length: 54.048; Algorithm time: 19.293 ms
     - 算法心得：
       Bellman-Ford 通过反复松弛所有边来求单源最短路径，速度通常慢于 Dijkstra，但可以处理负权边并检测负权环。
   - **006 SPFA 算法**
     - Moore (1959), Bellman-Ford queue optimization
     - ![006\_SPFA](Search_2D/gif/006_SPFA.gif)
-    - Path length: 54.047; Algorithm time: 7.176 ms
+    - Path length: 54.048; Algorithm time: 7.176 ms
     - 算法心得：
       SPFA 使用队列只传播距离发生变化的节点，是 Bellman-Ford 的常见队列优化版本，在许多稀疏图上能减少无效松弛。
   - **007 Flow Fields（流场寻路）**
     - Treuille, Cooper, Popović (2006), 常用于 RTS/Game AI 群体寻路
     - ![007\_Flow\_Fields](Search_2D/gif/007_Flow_Fields.gif)
-    - Path length: 54.047; Algorithm time: 13.754 ms
+    - Path length: 54.048; Algorithm time: 13.754 ms
     - 算法心得：
       Flow Fields 先从目标点反向传播总代价，得到 integration field，再让每个可行格子指向代价最低的邻居。多个智能体共享同一目标时，只需复用这张方向场即可快速前进。
   - **008 A\* 算法 (A\* Algorithm)**
     - Hart, Nilsson, Raphael (1968)
     - ![008\_Astar](Search_2D/gif/008_Astar.gif)
-    - Path length: 54.047; Algorithm time: 4.961 ms
+    - Path length: 54.048; Algorithm time: 4.961 ms
     - 算法心得：
       A\* 算法是一种启发式搜索算法，它结合了广度优先搜索和贪婪最佳优先搜索的优点。
       算法从起始节点开始，每次选择距离表中距离最小的节点进行扩展，更新其相邻节点的距离表，直到找到目标节点或遍历完整个搜索空间。
@@ -78,13 +78,13 @@ DEMO GIF      [####################] 100%   99/99
     - **009 双向 A\* (Bidirectional A\*)**
       - Pohl (1971)
       - ![009\_Bidirectional\_a\_star](Search_2D/gif/009_Bidirectional_a_star.gif)
-      - Path length: 54.047; Algorithm time: 3.563 ms
+      - Path length: 54.048; Algorithm time: 3.563 ms
       - 算法心得：
         它从起始节点和目标节点同时开始进行搜索，直到两个搜索方向相遇。
     - **010 加权 A\* (Weighted A\*)**
       - Pohl (1970)
       - ![010\_Weighted\_Astar\_w2.0](Search_2D/gif/010_Weighted_Astar_w2.0.gif)
-      - Path length: 57.360; Algorithm time: 6.076 ms
+      - Path length: 57.360; Algorithm time: 6.077 ms
       - 算法心得：
         加权 A\* 算法是 A\* 算法的一种变体，它通过对每个节点的代价进行加权来调整搜索过程。
     - **011 分层 A\* (Hierarchical A\* - HPA\*)**
@@ -96,7 +96,7 @@ DEMO GIF      [####################] 100%   99/99
     - **012 并行 A\* (Parallel A\*)**
       - Zhou & Zeng (2015)
       - ![012\_Parallel\_Astar](Search_2D/gif/012_Parallel_Astar.gif)
-      - Path length: total 147.088, avg 47.366, n=3; Algorithm time: 60.810 ms
+      - Path length: total 147.089, avg 47.366, n=3; Algorithm time: 60.810 ms
       - 算法心得：
         并行 A\* 算法的优点是可以利用多核处理器的并行计算能力，加快搜索速度。这里难以展示这种并行改为展示多个终点复用查询路径的情况
     - **013 Hybrid A\***
@@ -220,184 +220,190 @@ DEMO GIF      [####################] 100%   99/99
 - **044 NavMesh 多边形搜索 (NavMesh Cell Graph Search)**
   - Delaunay triangulation around two circular obstacles, then merge triangles into 3-6 sided convex navmesh polygons
   - ![044\_navmesh\_cell\_graph](Search_2D/gif/044_navmesh_cell_graph.gif)
-- **045 层级格子搜索 (Hierarchical Cell Search)**
+- **045 Havok AI 通道图寻路 (Havok AI Corridor Map Pathfinding)**
+  - Havok AI style navmesh corridor, portal sequence, and funnel/string-pulling path extraction
+  - ![045\_havok\_ai\_corridor\_map](Search_2D/gif/045_havok_ai_corridor_map.gif)
+  - Path length: 47.513; Algorithm time: 13.523 ms
+  - 算法心得：
+    Corridor Map 不直接在每个点上搜索，而是先在 NavMesh 多边形之间找到一串 corridor cells，再通过共享 portal 和 funnel/string-pulling 得到贴合通道的连续路径。
+- **046 层级格子搜索 (Hierarchical Cell Search)**
   - Aggregate cells into cluster/region graph, search regions first, then refine cells
-  - ![045\_hierarchical\_cell\_search](Search_2D/gif/045_hierarchical_cell_search.gif)
-- **046 动态预生成格子图搜索 (Dynamic Cell Graph Search)**
+  - ![046\_hierarchical\_cell\_search](Search_2D/gif/046_hierarchical_cell_search.gif)
+- **047 动态预生成格子图搜索 (Dynamic Cell Graph Search)**
   - Incremental repair after precomputed cells become blocked or traversal costs change
-  - ![046\_dynamic\_cell\_graph](Search_2D/gif/046_dynamic_cell_graph.gif)
+  - ![047\_dynamic\_cell\_graph](Search_2D/gif/047_dynamic_cell_graph.gif)
 
 ## 三、基于采样的路径规划 (Sampling-Based Path Planning)
 
-- **047 随机路径规划 (Random Path Planning - RPP)**
+- **048 随机路径规划 (Random Path Planning - RPP)**
   - Barraquand & Latombe (1991)
-  - ![047\_random\_path\_planning](Search_2D/gif/047_random_path_planning.gif)
-  - Path length: 63.051; Algorithm time: 3734.890 ms
+  - ![048\_random\_path\_planning](Search_2D/gif/048_random_path_planning.gif)
+  - Path length: 63.052; Algorithm time: 3734.890 ms
   - 算法心得：
     通过随机采样自由空间节点并连接可见邻居，逐步形成随机路网；随后在路网上搜索可行路径，适合展示随机采样如何绕开复杂障碍。
 - **快速扩展随机树 (Rapidly-Exploring Random Trees - RRT)**
-  - **048 基础 RRT (Basic RRT)**
+  - **049 基础 RRT (Basic RRT)**
     - LaValle (1998)
-    - ![048\_rrt](Search_2D/gif/048_rrt.gif)
-  - **049 目标偏向 RRT (Goal-bias RRT)**
+    - ![049\_rrt](Search_2D/gif/049_rrt.gif)
+  - **050 目标偏向 RRT (Goal-bias RRT)**
     - LaValle & Kuffner (2001)
-    - ![049\_extended\_rrt](Search_2D/gif/049_extended_rrt.gif)
-  - **050 RRT-Connect**
+    - ![050\_extended\_rrt](Search_2D/gif/050_extended_rrt.gif)
+  - **051 RRT-Connect**
     - Kuffner & LaValle (2000)
-    - ![050\_rrt\_connect](Search_2D/gif/050_rrt_connect.gif)
-  - **051 动态 RRT (Dynamic RRT)**
+    - ![051\_rrt\_connect](Search_2D/gif/051_rrt_connect.gif)
+  - **052 动态 RRT (Dynamic RRT)**
     - Ferguson, Howard, Likhachev (2008)
-    - ![051\_dynamic\_rrt](Search_2D/gif/051_dynamic_rrt.gif)
+    - ![052\_dynamic\_rrt](Search_2D/gif/052_dynamic_rrt.gif)
     - Path length: 78.887; Algorithm time: 3870.116 ms
     - 算法心得：
       Dynamic RRT 先保留旧地图中的随机树和路径，环境变化后标记被新障碍截断的边，剪掉失效子树，再从剩余有效树继续修复到目标。
-  - **052 RRT-Dubins (考虑运动学约束)**
+  - **053 RRT-Dubins (考虑运动学约束)**
     - LaValle & Kuffner (2001) (Dubins with RRT)
-    - ![052\_dubins\_rrt](Search_2D/gif/052_dubins_rrt.gif)
+    - ![053\_dubins\_rrt](Search_2D/gif/053_dubins_rrt.gif)
     - Path length: 63.973; Algorithm time: 7890.028 ms
     - 算法心得：
       RRT-Dubins 将节点扩展到 `(x, y, yaw)` 状态空间，每条边必须满足最大曲率约束，因此路径会呈现连续转向而不是任意折线。
 - **最优快速扩展随机树 (Optimal RRTs)**
-  - **053 rrt star**
+  - **054 rrt star**
     - Karaman & Frazzoli (2011)
-    - ![053\_rrt\_star](Search_2D/gif/053_rrt_star.gif)
-  - **054 rrt start smart**
+    - ![054\_rrt\_star](Search_2D/gif/054_rrt_star.gif)
+  - **055 rrt start smart**
     - Nasir, K., et al. (2013)
-    - ![054\_rrt\_star\_smart](Search_2D/gif/054_rrt_star_smart.gif)
-  - **055 rrt sharp**
+    - ![055\_rrt\_star\_smart](Search_2D/gif/055_rrt_star_smart.gif)
+  - **056 rrt sharp**
     - Otte & Frazzoli (2014)
-    - ![055\_rrt\_sharp](Search_2D/gif/055_rrt_sharp.gif)
-  - **056 Informed RRT\***
+    - ![056\_rrt\_sharp](Search_2D/gif/056_rrt_sharp.gif)
+  - **057 Informed RRT\***
     - Gammell, Srinivasa & Barfoot (2014)
-    - ![056\_informed\_rrt\_star](Search_2D/gif/056_informed_rrt_star.gif)
-  - **057 FMT\***
+    - ![057\_informed\_rrt\_star](Search_2D/gif/057_informed_rrt_star.gif)
+  - **058 FMT\***
     - Janson, Schmerling, Clark & Pavone (2015)
-    - ![057\_fast\_marching\_trees](Search_2D/gif/057_fast_marching_trees.gif)
-  - **058 BIT\* batch informed trees**
+    - ![058\_fast\_marching\_trees](Search_2D/gif/058_fast_marching_trees.gif)
+  - **059 BIT\* batch informed trees**
     - Gammell, Srinivasa & Barfoot (2015)
-    - ![058\_BIT\_star](Search_2D/gif/058_BIT_star.gif)
-  - **059 ABIT\* advanced batch informed trees**
+    - ![059\_BIT\_star](Search_2D/gif/059_BIT_star.gif)
+  - **060 ABIT\* advanced batch informed trees**
     - Strub & Gammell (2020)
-    - ![059\_ABIT\_star](Search_2D/gif/059_ABIT_star.gif)
-  - **060 AIT\* (Adaptively Informed Trees)**
+    - ![060\_ABIT\_star](Search_2D/gif/060_ABIT_star.gif)
+  - **061 AIT\* (Adaptively Informed Trees)**
     - Strub & Gammell (2020)
-    - ![060\_AIT\_star](Search_2D/gif/060_AIT_star.gif)
-  - **061 Anytime-RRT\***
+    - ![061\_AIT\_star](Search_2D/gif/061_AIT_star.gif)
+  - **062 Anytime-RRT\***
     - Karaman, Walter, Perez, Frazzoli & Teller (2011)
-    - ![061\_anytime\_rrt\_star](Search_2D/gif/061_anytime_rrt_star.gif)
-  - **062 Closed-loop RRT\* (CL-RRT\*)**
+    - ![062\_anytime\_rrt\_star](Search_2D/gif/062_anytime_rrt_star.gif)
+  - **063 Closed-loop RRT\* (CL-RRT\*)**
     - Luders, Kothari & How (2010)
-    - ![062\_closed\_loop\_rrt\_star](Search_2D/gif/062_closed_loop_rrt_star.gif)
-  - **063 Spline-RRT\***
+    - ![063\_closed\_loop\_rrt\_star](Search_2D/gif/063_closed_loop_rrt_star.gif)
+  - **064 Spline-RRT\***
     - Lee, Song & Shim (2014)
-    - ![063\_spline\_rrt\_star](Search_2D/gif/063_spline_rrt_star.gif)
-  - **064 LQR-RRT\***\*
+    - ![064\_spline\_rrt\_star](Search_2D/gif/064_spline_rrt_star.gif)
+  - **065 LQR-RRT\***\*
     - Perez, Platt, Konidaris, Kaelbling & Lozano-Perez (2012)
-    - ![064\_lqr\_rrt\_star](Search_2D/gif/064_lqr_rrt_star.gif)
+    - ![065\_lqr\_rrt\_star](Search_2D/gif/065_lqr_rrt_star.gif)
 
 ## 四、智能优化算法 (Intelligent Optimization Algorithms)
 
-- **065 蚁群优化 (Ant Colony Optimization - ACO)**
+- **066 蚁群优化 (Ant Colony Optimization - ACO)**
   - Dorigo, Maniezzo, Colorni (1991, 1996), Dorigo & Di Caro (1999)
-  - ![065\_ACO](Search_2D/gif/065_ACO.gif)
-- **066 遗传算法 (Genetic Algorithm - GA)**
+  - ![066\_ACO](Search_2D/gif/066_ACO.gif)
+- **067 遗传算法 (Genetic Algorithm - GA)**
   - Holland (1975/1992)
-  - ![066\_GA](Search_2D/gif/066_GA.gif)
-- **067 粒子群优化 (Particle Swarm Optimization - PSO)**
+  - ![067\_GA](Search_2D/gif/067_GA.gif)
+- **068 粒子群优化 (Particle Swarm Optimization - PSO)**
   - Kennedy & Eberhart (1995)
-  - ![067\_PSO](Search_2D/gif/067_PSO.gif)
+  - ![068\_PSO](Search_2D/gif/068_PSO.gif)
 
 ## 五、反应式与几何规划 (Reactive & Geometric Planning)
 
-- **068 人工势场法 (Artificial Potential Field - APF)**
+- **069 人工势场法 (Artificial Potential Field - APF)**
   - Khatib (1986)
-  - ![068\_APF](Search_2D/gif/068_APF.gif)
-- **069 动态窗口法 (Dynamic Window Approach - DWA)**
+  - ![069\_APF](Search_2D/gif/069_APF.gif)
+- **070 动态窗口法 (Dynamic Window Approach - DWA)**
   - Fox, Burgard, Thrun (1997)
-  - ![069\_DWA](Search_2D/gif/069_DWA.gif)
-- **070 向量场直方图 (Vector Field Histogram - VFH)**
+  - ![070\_DWA](Search_2D/gif/070_DWA.gif)
+- **071 向量场直方图 (Vector Field Histogram - VFH)**
   - Borenstein & Koren (1991)
-  - ![070\_VFH](Search_2D/gif/070_VFH.gif)
+  - ![071\_VFH](Search_2D/gif/071_VFH.gif)
   - Path length: 53.450; Algorithm time: 24.365 ms
   - 算法心得：
     VFH 将局部障碍投影成极坐标直方图，在可通行扇区中选择最接近局部目标的方向，适合展示反应式避障和全局引导的结合。
 - **Voronoi 图方法 (Voronoi Diagram Methods)**
-  - **071 基础 Voronoi 图 (Basic Voronoi Diagram)**
+  - **072 基础 Voronoi 图 (Basic Voronoi Diagram)**
     - Voronoi (1908), Shamos & Hoey (1975)
-    - ![071\_voronoi](Search_2D/gif/071_voronoi.gif)
-  - **072 Voronoi 场 (Voronoi Field)**
+    - ![072\_voronoi](Search_2D/gif/072_voronoi.gif)
+  - **073 Voronoi 场 (Voronoi Field)**
     - Okabe, Boots, Sugihara, Chiu (2000)
-    - ![072\_voronoi\_field](Search_2D/gif/072_voronoi_field.gif)
+    - ![073\_voronoi\_field](Search_2D/gif/073_voronoi_field.gif)
     - Path length: 55.698; Algorithm time: 3786.940 ms
     - 算法心得：
       Voronoi Field 用障碍距离场和 Voronoi ridge 构造连续代价，路径不会只贴最短线，而会主动远离障碍边界。
-  - **073 加权 Voronoi 图 (Weighted Voronoi Diagram)**
+  - **074 加权 Voronoi 图 (Weighted Voronoi Diagram)**
     - Aurenhammer & Edelsbrunner (1984)
-    - ![073\_weighted\_voronoi](Search_2D/gif/073_weighted_voronoi.gif)
-    - Path length: 55.698; Algorithm time: 4063.387 ms
+    - ![074\_weighted\_voronoi](Search_2D/gif/074_weighted_voronoi.gif)
+    - Path length: 55.698; Algorithm time: 4064.387 ms
     - 算法心得：
       Weighted Voronoi 为不同区域赋予不同障碍影响权重，使路径在同样的 Voronoi 结构上偏向代价更低、更安全的通道。
-  - **074 模糊 Voronoi 图 (Fuzzy Voronoi Diagram)**
+  - **075 模糊 Voronoi 图 (Fuzzy Voronoi Diagram)**
     - Jooyandeh, Mohades Khorasani (2008)
-    - ![074\_fuzzy\_voronoi](Search_2D/gif/074_fuzzy_voronoi.gif)
+    - ![075\_fuzzy\_voronoi](Search_2D/gif/075_fuzzy_voronoi.gif)
     - Path length: 57.698; Algorithm time: 3838.347 ms
     - 算法心得：
       Fuzzy Voronoi 用软隶属度混合“离障碍远”和“靠近 Voronoi ridge”，避免硬阈值导致路径突然切换。
-  - **075 自适应 Voronoi 场 (Adaptive Voronoi Field)**
+  - **076 自适应 Voronoi 场 (Adaptive Voronoi Field)**
     - Garrido, Moreno, Blanco, Medina (2010)
-    - ![075\_adaptive\_voronoi\_field](Search_2D/gif/075_adaptive_voronoi_field.gif)
+    - ![076\_adaptive\_voronoi\_field](Search_2D/gif/076_adaptive_voronoi_field.gif)
     - Path length: 55.698; Algorithm time: 3961.134 ms
     - 算法心得：
       Adaptive Voronoi Field 根据局部通道宽度调整 ridge 吸引力，在狭窄区域更强调居中通过，在开阔区域允许更直接地朝目标推进。
 
 ## 六、基于曲线与运动学的规划 (Curve-Based & Kinematic Planning)
 
-- **076 多项式曲线 (Polynomial Curves)**
+- **077 多项式曲线 (Polynomial Curves)**
   - Richter, Bry, Roy (2013)
-  - ![076\_Polynomial\_Curves](Search_2D/gif/076_Polynomial_Curves.gif)
-- **077 贝塞尔曲线 (Bezier Curves)**
+  - ![077\_Polynomial\_Curves](Search_2D/gif/077_Polynomial_Curves.gif)
+- **078 贝塞尔曲线 (Bezier Curves)**
   - Bezier (1960s), Forrest (1972)
-  - ![077\_Bezier\_Curves](Search_2D/gif/077_Bezier_Curves.gif)
+  - ![078\_Bezier\_Curves](Search_2D/gif/078_Bezier_Curves.gif)
 - **样条曲线 (Spline Curves)**
-  - **078 三次样条曲线 (Cubic Spline)**
+  - **079 三次样条曲线 (Cubic Spline)**
     - Ahlberg, Nilson, Walsh (1967)
-    - ![078\_Cubic\_Spline](Search_2D/gif/078_Cubic_Spline.gif)
-  - **079 B样条曲线 (B-Spline)**
+    - ![079\_Cubic\_Spline](Search_2D/gif/079_Cubic_Spline.gif)
+  - **080 B样条曲线 (B-Spline)**
     - de Boor (1972), Cox (1972)
-    - ![079\_B\_Spline](Search_2D/gif/079_B_Spline.gif)
-- **080 时间弹性带 (Timed Elastic Band - TEB)**
+    - ![080\_B\_Spline](Search_2D/gif/080_B_Spline.gif)
+- **081 时间弹性带 (Timed Elastic Band - TEB)**
   - Rösmann, Hoffmann, Bertram (2012, 2017)
-  - ![080\_TEB](Search_2D/gif/080_TEB.gif)
-- **081 Dubins 曲线 (Dubins Curves)**
+  - ![081\_TEB](Search_2D/gif/081_TEB.gif)
+- **082 Dubins 曲线 (Dubins Curves)**
   - Dubins (1957)
-  - ![081\_Dubins\_Curves](Search_2D/gif/081_Dubins_Curves.gif)
-- **082 Reeds-Shepp 曲线 (Reeds-Shepp Curves)**
+  - ![082\_Dubins\_Curves](Search_2D/gif/082_Dubins_Curves.gif)
+- **083 Reeds-Shepp 曲线 (Reeds-Shepp Curves)**
   - Reeds & Shepp (1990)
-  - ![082\_Reeds\_Shepp\_Curves](Search_2D/gif/082_Reeds_Shepp_Curves.gif)
-- **083 车辆路径问题 (Vehicle Routing Problem - VRP)**
+  - ![083\_Reeds\_Shepp\_Curves](Search_2D/gif/083_Reeds_Shepp_Curves.gif)
+- **084 车辆路径问题 (Vehicle Routing Problem - VRP)**
   - Dantzig & Ramser (1959)
-  - ![083\_VRP](Search_2D/gif/083_VRP.gif)
+  - ![084\_VRP](Search_2D/gif/084_VRP.gif)
   - Path length: total 199.023, avg 66.341, n=3; Algorithm time: 0.113 ms
   - 算法心得：
     VRP 在单条最短路之外加入车辆容量和客户分配约束，Clarke-Wright savings 合并过程直观展示了从单客户路线到多车配送方案的构造。
 
 ## 七、基于模型的控制与规划 (Model-Based Control & Planning)
 
-- **084 PID 控制器 (PID Controller - for path following)**
+- **085 PID 控制器 (PID Controller - for path following)**
   - Minorsky (1922), Ziegler & Nichols (1942)
-  - ![084\_PID\_Controller](Search_2D/gif/084_PID_Controller.gif)
+  - ![085\_PID\_Controller](Search_2D/gif/085_PID_Controller.gif)
   - Path length: 50.297; Algorithm time: 16.358 ms
   - 算法心得：
     PID 路径跟踪把规划出的参考路径转成连续控制问题，比例项快速修正朝向误差，积分项消除稳态偏差，微分项抑制转向振荡。
-- **085 线性二次型调节器 (Linear Quadratic Regulator - LQR)**
+- **086 线性二次型调节器 (Linear Quadratic Regulator - LQR)**
   - Kalman (1960)
-  - ![085\_LQR](Search_2D/gif/085_LQR.gif)
+  - ![086\_LQR](Search_2D/gif/086_LQR.gif)
   - Path length: 51.781; Algorithm time: 16.529 ms
   - 算法心得：
     LQR 将横向误差和航向误差写成线性状态反馈，通过二次代价权衡跟踪精度与转向输入，适合展示稳定、平滑的最优反馈控制。
-- **086 模型预测控制 (Model Predictive Control - MPC)**
+- **087 模型预测控制 (Model Predictive Control - MPC)**
   - Cutler & Ramaker (1980), Garcia, Prett, Morari (1989)
-  - ![086\_MPC](Search_2D/gif/086_MPC.gif)
+  - ![087\_MPC](Search_2D/gif/087_MPC.gif)
   - Path length: 53.911; Algorithm time: 1956.238 ms
   - 算法心得：
     MPC 每一步都向前滚动预测多个候选控制序列，用有限时域代价选择当前控制，能把跟踪误差、控制平滑度和未来约束放在同一个优化框架里。
@@ -405,75 +411,75 @@ DEMO GIF      [####################] 100%   99/99
 ## 八、多智能体路径规划 (Multi-Agent Path Finding - MAPF)
 
 - **基于速度障碍 (Velocity Obstacle - VO) 的方法**
-  - **087 速度障碍 (VO)**
+  - **088 速度障碍 (VO)**
     - Fiorini & Shiller (1998)
-    - ![087\_velocity\_obstacle](Search_2D/gif/087_velocity_obstacle.gif)
-    - Path length: total 448.059, avg 44.806, n=10; Algorithm time: 7960.935 ms
+    - ![088\_velocity\_obstacle](Search_2D/gif/088_velocity_obstacle.gif)
+    - Path length: total 448.060, avg 44.806, n=10; Algorithm time: 7960.935 ms
     - 算法心得：
       10 个智能体左右相向穿越同一通道，VO 让每个智能体独立避开预测速度障碍，适合作为后续 reciprocal 方法的基线对比。
-  - **088 相互速度障碍 (Reciprocal Velocity Obstacles - RVO)**
+  - **089 相互速度障碍 (Reciprocal Velocity Obstacles - RVO)**
     - van den Berg, Lin, Manocha (2008)
-    - ![088\_reciprocal\_velocity\_obstacle](Search_2D/gif/088_reciprocal_velocity_obstacle.gif)
+    - ![089\_reciprocal\_velocity\_obstacle](Search_2D/gif/089_reciprocal_velocity_obstacle.gif)
     - Path length: total 441.718, avg 44.172, n=10; Algorithm time: 7834.005 ms
     - 算法心得：
       RVO 将避让责任在相向智能体之间分摊，比单边 VO 更容易形成双方同时让行的轨迹。
-  - **089 混合相互速度障碍 (Hybrid Reciprocal Velocity Obstacles - HRVO)**
+  - **090 混合相互速度障碍 (Hybrid Reciprocal Velocity Obstacles - HRVO)**
     - Snape, van den Berg, Guy, Manocha (2011)
-    - ![089\_hybrid\_reciprocal\_velocity\_obstacle](Search_2D/gif/089_hybrid_reciprocal_velocity_obstacle.gif)
-    - Path length: total 430.937, avg 43.094, n=10; Algorithm time: 8445.856 ms
+    - ![090\_hybrid\_reciprocal\_velocity\_obstacle](Search_2D/gif/090_hybrid_reciprocal_velocity_obstacle.gif)
+    - Path length: total 430.937, avg 43.095, n=10; Algorithm time: 8445.856 ms
     - 算法心得：
       HRVO 在 reciprocal 思路上加入混合侧向选择，减少双方对称避让时的左右摇摆。
-  - **090 最优相互碰撞避免 (Optimal Reciprocal Collision Avoidance - ORCA)**
+  - **091 最优相互碰撞避免 (Optimal Reciprocal Collision Avoidance - ORCA)**
     - van den Berg, Guy, Lin, Manocha (2008, 2011)
-    - ![090\_orca](Search_2D/gif/090_orca.gif)
+    - ![091\_orca](Search_2D/gif/091_orca.gif)
     - Path length: total 446.853, avg 44.685, n=10; Algorithm time: 7746.566 ms
     - 算法心得：
       ORCA 用近似半平面约束筛选速度，在中间障碍和迎面人流叠加时保持更稳定的安全间距。
-  - **091 行人最优相互碰撞避免 (Pedestrian ORCA - PORCA)**
+  - **092 行人最优相互碰撞避免 (Pedestrian ORCA - PORCA)**
     - Luo, Cai, Bera, Hsu, Lee, Manocha (2018)
-    - ![091\_porca](Search_2D/gif/091_porca.gif)
+    - ![092\_porca](Search_2D/gif/092_porca.gif)
     - Path length: total 422.992, avg 42.299, n=10; Algorithm time: 8686.551 ms
     - 算法心得：
       PORCA 加入行人式侧向偏好和速度调制，更像人群在窄通道里自然分流通过。
-  - **092 椭圆相互速度障碍 (Elliptical Reciprocal Velocity Obstacles - ERVO / EORCA)**
+  - **093 椭圆相互速度障碍 (Elliptical Reciprocal Velocity Obstacles - ERVO / EORCA)**
     - Best, Narang, Manocha (2016)
-    - ![092\_elliptical\_reciprocal\_velocity\_obstacle](Search_2D/gif/092_elliptical_reciprocal_velocity_obstacle.gif)
+    - ![093\_elliptical\_reciprocal\_velocity\_obstacle](Search_2D/gif/093_elliptical_reciprocal_velocity_obstacle.gif)
     - Path length: total 425.009, avg 42.501, n=10; Algorithm time: 8299.813 ms
     - 算法心得：
       ERVO 用椭圆速度障碍表达迎面运动的非圆形风险区，能更早对正面会车做出侧向避让。
 - **基于搜索的冲突解决 (Search-Based Conflict Resolution)**
-  - **093 冲突驱动搜索 (Conflict-Based Search - CBS)**
+  - **094 冲突驱动搜索 (Conflict-Based Search - CBS)**
     - Sharon, Stern, Felner, Sturtevant (2012, 2015)
-  - **094 分层协作 A\* (Hierarchical Cooperative A\* - HCA\*)**
+  - **095 分层协作 A\* (Hierarchical Cooperative A\* - HCA\*)**
     - Silver (2005)
-  - **095 窗口化分层协作 A\* (Windowed HCA\* - WHCA\*)**
+  - **096 窗口化分层协作 A\* (Windowed HCA\* - WHCA\*)**
     - Silver (2005)
-    - ![095\_WHCA\_star](Search_2D/gif/095_WHCA_star.gif)
+    - ![096\_WHCA\_star](Search_2D/gif/096_WHCA_star.gif)
     - Path length: total 199.196, avg 49.799, n=4; Algorithm time: 18.867 ms
     - 算法心得：
       WHCA\* 在上层 guide 的约束下只规划有限时间窗，并把近期 cell/edge 写入预约表，适合把多智能体冲突处理拆成反复滚动的小问题。
 - **基于社会力模型 (Social Force) 的方法**
-  - **096 UE5 AI Avoidance**
+  - **097 UE5 AI Avoidance**
     - UE5 MassAI MassAvoidanceProcessors (2023)
-    - ![096\_UE5\_AI\_Avoidance](Search_2D/gif/096_UE5_AI_Avoidance.gif)
+    - ![097\_UE5\_AI\_Avoidance](Search_2D/gif/097_UE5_AI_Avoidance.gif)
     - Path length: total 439.950, avg 43.995, n=10; Algorithm time: 8219.779 ms
     - 算法心得：
       UE5 AI Avoidance 风格的局部转向把目标速度、分离力、障碍避让和速度平滑组合在一起，更贴近运行时大量智能体的连续避让管线。
 
 ## 九、其他规划方法 (Other Planning Methods)
 
-- **097 凸集图规划 (Graph of Convex Sets - GCS / GCS\*)**
+- **098 凸集图规划 (Graph of Convex Sets - GCS / GCS\*)**
   - Marcucci, Tedrake (2019), Chia, Jiang, Graesdal, Kaelbling, Tedrake (2024)
-  - ![097\_Graph\_of\_Convex\_Sets](Search_2D/gif/097_Graph_of_Convex_Sets.gif)
-- **098 多智能体凸集图规划 (Multi-Agent Graph of Convex Sets - MGCS / MGCS\*)**
+  - ![098\_Graph\_of\_Convex\_Sets](Search_2D/gif/098_Graph_of_Convex_Sets.gif)
+- **099 多智能体凸集图规划 (Multi-Agent Graph of Convex Sets - MGCS / MGCS\*)**
   - Marcucci, Tedrake (2019), Chia, Jiang, Graesdal, Kaelbling, Tedrake (2024)
-  - ![098\_MGCS](Search_2D/gif/098_MGCS.gif)
-  - Path length: total 169.456, avg 56.485, n=3; Algorithm time: 0.058 ms
+  - ![099\_MGCS](Search_2D/gif/099_MGCS.gif)
+  - Path length: total 169.456, avg 56.485, n=3; Algorithm time: 0.059 ms
   - 算法心得：
     MGCS 将每个智能体的连续运动约束映射到凸区域图上，并通过共享区域惩罚让多条路线在同一凸集网络内分流。
-- **099 多智能体多目标规划 (Multi-Agent Multi-Objective Planning - MAMOP)**
+- **100 多智能体多目标规划 (Multi-Agent Multi-Objective Planning - MAMOP)**
   - Chia, Jiang, Graesdal, Kaelbling, Tedrake (2024)
-  - ![099\_MAMOP](Search_2D/gif/099_MAMOP.gif)
+  - ![100\_MAMOP](Search_2D/gif/100_MAMOP.gif)
   - Path length: total 176.012, avg 58.671, n=3; Algorithm time: 0.274 ms
   - 算法心得：
     MAMOP 把距离、安全风险和共享区域拥堵放入同一个多目标比较过程，演示了从候选 Pareto 方案中选择折中解的流程。
@@ -511,74 +517,74 @@ DEMO GIF      [####################] 100%   99/99
 
 |  #  | 算法 | 状态 |  #  | 算法 | 状态 |
 | :-: | :-- | :-: | :-: | :-- | :-: |
-| 042 | Quadrilateral Cell Graph | ✅ | 045 | Hierarchical Cell Search | ✅ |
-| 043 | Hexagonal Cell Graph     | ✅ | 046 | Dynamic Cell Graph    | ✅ |
-| 044 | NavMesh Cell Graph       | ✅ | | | |
+| 042 | Quadrilateral Cell Graph | ✅ | 046 | Hierarchical Cell Search | ✅ |
+| 043 | Hexagonal Cell Graph     | ✅ | 047 | Dynamic Cell Graph    | ✅ |
+| 044 | NavMesh Cell Graph       | ✅ | 045 | Havok AI Corridor Map | ✅ |
 
 **三、基于采样的路径规划 (Sampling-Based)**
 
 |  #  | 算法            |  状态 |  #  | 算法             |  状态 |
 | :-: | :------------ | :-: | :-: | :------------- | :-: |
-| 047 | RPP           |  ✅ | 057 | FMT\*          |  ✅ |
-| 048 | Basic RRT     |  ✅  | 058 | BIT\*          |  ✅ |
-| 049 | Goal-bias RRT |  ✅  | 059 | ABIT\*         |  ✅ |
-| 050 | RRT-Connect   |  ✅  | 060 | AIT\*          |  ✅ |
-| 051 | Dynamic RRT   |  ✅ | 061 | Anytime-RRT\*  |  ✅ |
-| 052 | RRT-Dubins    |  ✅ | 062 | CL-RRT\*       |  ✅ |
-| 053 | RRT\*         |  ✅ | 063 | Spline-RRT\*   |  ✅ |
-| 054 | RRT\*-Smart   |  ✅ | 064 | LQR-RRT\*      |  ✅ |
-| 055 | RRT#          |  ✅ | 056 | Informed RRT\* |  ✅ |
+| 048 | RPP           |  ✅ | 058 | FMT\*          |  ✅ |
+| 049 | Basic RRT     |  ✅  | 059 | BIT\*          |  ✅ |
+| 050 | Goal-bias RRT |  ✅  | 060 | ABIT\*         |  ✅ |
+| 051 | RRT-Connect   |  ✅  | 061 | AIT\*          |  ✅ |
+| 052 | Dynamic RRT   |  ✅ | 062 | Anytime-RRT\*  |  ✅ |
+| 053 | RRT-Dubins    |  ✅ | 063 | CL-RRT\*       |  ✅ |
+| 054 | RRT\*         |  ✅ | 064 | Spline-RRT\*   |  ✅ |
+| 055 | RRT\*-Smart   |  ✅ | 065 | LQR-RRT\*      |  ✅ |
+| 056 | RRT#          |  ✅ | 057 | Informed RRT\* |  ✅ |
 
 **四、智能优化算法 (Intelligent Optimization)**
 
 |  #  | 算法  |  状态 |    #   | 算法     |   状态   |
 | :-: | :-- | :-: | :----: | :----- | :----: |
-| 065 | ACO |   ✅   |   067  | PSO    |   ✅   |
-| 066 | GA  |   ✅   | | | |
+| 066 | ACO |   ✅   |   068  | PSO    |   ✅   |
+| 067 | GA  |   ✅   | | | |
 
 **五、反应式与几何规划 (Reactive & Geometric)**
 
 |  #  | 算法            |  状态 |    #   | 算法                     |   状态   |
 | :-: | :------------ | :-: | :----: | :--------------------- | :----: |
-| 068 | APF           |   ✅   |   073  | Weighted Voronoi       |   ✅   |
-| 069 | DWA           |   ✅   |   074  | Fuzzy Voronoi          |   ✅   |
-| 070 | VFH           |  ✅ |   075  | Adaptive Voronoi Field |   ✅   |
-| 071 | Basic Voronoi |  ✅  | | | |
-| 072 | Voronoi Field |  ✅ | | | |
+| 069 | APF           |   ✅   |   074  | Weighted Voronoi       |   ✅   |
+| 070 | DWA           |   ✅   |   075  | Fuzzy Voronoi          |   ✅   |
+| 071 | VFH           |  ✅ |   076  | Adaptive Voronoi Field |   ✅   |
+| 072 | Basic Voronoi |  ✅  | | | |
+| 073 | Voronoi Field |  ✅ | | | |
 
 **六、基于曲线与运动学的规划 (Curve-Based & Kinematic)**
 
 |  #  | 算法                |  状态 |  #  | 算法                 |  状态 |
 | :-: | :---------------- | :-: | :-: | :----------------- | :-: |
-| 076 | Polynomial Curves |   ✅   | 080 | TEB                |   ✅   |
-| 077 | Bezier Curves     |   ✅   | 081 | Dubins Curves      |   ✅   |
-| 078 | Cubic Spline      |   ✅   | 082 | Reeds-Shepp Curves |   ✅   |
-| 079 | B-Spline          |   ✅   | 083 | VRP                |  ✅ |
+| 077 | Polynomial Curves |   ✅   | 081 | TEB                |   ✅   |
+| 078 | Bezier Curves     |   ✅   | 082 | Dubins Curves      |   ✅   |
+| 079 | Cubic Spline      |   ✅   | 083 | Reeds-Shepp Curves |   ✅   |
+| 080 | B-Spline          |   ✅   | 084 | VRP                |  ✅ |
 
 **七、基于模型的控制与规划 (Model-Based Control)**
 
 |  #  | 算法  |  状态 |    #   | 算法     |   状态   |
 | :-: | :-- | :-: | :----: | :----- | :----: |
-| 084 | PID |  ✅ |   086  | MPC    |   ✅   |
-| 085 | LQR |  ✅ | | | |
+| 085 | PID |  ✅ |   087  | MPC    |   ✅   |
+| 086 | LQR |  ✅ | | | |
 
 **八、多智能体路径规划 (Multi-Agent / MAPF)**
 
 |  #  | 算法           |  状态 |    #   | 算法               |   状态   |
 | :-: | :----------- | :-: | :----: | :--------------- | :----: |
-| 087 | VO           |  ✅ |   093  | CBS              |    ✅   |
-| 088 | RVO          |  ✅ |   094  | HCA\*            |    ✅   |
-| 089 | HRVO         |  ✅ |   095  | WHCA\*           |   ✅   |
-| 090 | ORCA         |  ✅ |   096  | UE5 AI Avoidance |   ✅   |
-| 091 | PORCA        |  ✅ | | | |
-| 092 | ERVO / EORCA |  ✅ | | | |
+| 088 | VO           |  ✅ |   094  | CBS              |    ✅   |
+| 089 | RVO          |  ✅ |   095  | HCA\*            |    ✅   |
+| 090 | HRVO         |  ✅ |   096  | WHCA\*           |   ✅   |
+| 091 | ORCA         |  ✅ |   097  | UE5 AI Avoidance |   ✅   |
+| 092 | PORCA        |  ✅ | | | |
+| 093 | ERVO / EORCA |  ✅ | | | |
 
 **九、其他规划方法 (Other Methods)**
 
 |  #  | 算法            |  状态 |    #   | 算法     |   状态   |
 | :-: | :------------ | :-: | :----: | :----- | :----: |
-| 097 | GCS / GCS\*   |  ✅  |   099  | MAMOP  |   ✅   |
-| 098 | MGCS / MGCS\* |  ✅ | | | |
+| 098 | GCS / GCS\*   |  ✅  |   100  | MAMOP  |   ✅   |
+| 099 | MGCS / MGCS\* |  ✅ | | | |
 
 # Quick Start
 
