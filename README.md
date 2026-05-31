@@ -8,11 +8,11 @@ I am very interested in further summarizing all the pathfinding algorithms.
 
 > This repository is progressing toward the long-term goal of implementing **99 pathfinding algorithms**.
 
-**总进度：79 / 99 已实现（约 80%），其中 77 个附带演示动图。**
+**总进度：80 / 99 已实现（约 81%），其中 78 个附带演示动图。**
 
 ```text
-IMPLEMENTED   [################....]  80%   79/99
-DEMO GIF      [################....]  78%   77/99
+IMPLEMENTED   [################....]  81%   80/99
+DEMO GIF      [################....]  79%   78/99
 ```
 
 ## Contents
@@ -231,6 +231,10 @@ DEMO GIF      [################....]  78%   77/99
 
 - **047 随机路径规划 (Random Path Planning - RPP)**
   - Barraquand & Latombe (1991)
+  - ![047\_random\_path\_planning](Search_2D/gif/047_random_path_planning.gif)
+  - Path length: 63.051; Algorithm time: 3734.890 ms (Algorithm-only, no animation/GIF)
+  - 算法心得：
+    通过随机采样自由空间节点并连接可见邻居，逐步形成随机路网；随后在路网上搜索可行路径，适合展示随机采样如何绕开复杂障碍。
 - **快速扩展随机树 (Rapidly-Exploring Random Trees - RRT)**
   - **048 基础 RRT (Basic RRT)**
     - LaValle (1998)
@@ -431,7 +435,7 @@ DEMO GIF      [################....]  78%   77/99
 
 |  #  | 算法            |  状态 |  #  | 算法             |  状态 |
 | :-: | :------------ | :-: | :-: | :------------- | :-: |
-| 047 | RPP           |  TODO | 057 | FMT\*          |  ✅ |
+| 047 | RPP           |  ✅ | 057 | FMT\*          |  ✅ |
 | 048 | Basic RRT     |  ✅  | 058 | BIT\*          |  ✅ |
 | 049 | Goal-bias RRT |  ✅  | 059 | ABIT\*         |  ✅ |
 | 050 | RRT-Connect   |  ✅  | 060 | AIT\*          |  ✅ |
