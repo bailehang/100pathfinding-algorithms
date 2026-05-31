@@ -8,11 +8,11 @@ I am very interested in further summarizing all the pathfinding algorithms.
 
 > This repository is progressing toward the long-term goal of implementing **99 pathfinding algorithms**.
 
-**总进度：86 / 99 已实现（约 87%），其中 84 个附带演示动图。**
+**总进度：86 / 99 已实现（约 87%），其中 86 个附带演示动图。**
 
 ```text
 IMPLEMENTED   [#################...]  87%   86/99
-DEMO GIF      [#################...]  85%   84/99
+DEMO GIF      [#################...]  87%   86/99
 ```
 
 ## Contents
@@ -247,8 +247,16 @@ DEMO GIF      [#################...]  85%   84/99
     - ![050\_rrt\_connect](Search_2D/gif/050_rrt_connect.gif)
   - **051 动态 RRT (Dynamic RRT)**
     - Ferguson, Howard, Likhachev (2008)
+    - ![051\_dynamic\_rrt](Search_2D/gif/051_dynamic_rrt.gif)
+    - Path length: 78.887; Algorithm time: 3870.116 ms (Algorithm-only, no animation/GIF)
+    - 算法心得：
+      Dynamic RRT 先保留旧地图中的随机树和路径，环境变化后标记被新障碍截断的边，剪掉失效子树，再从剩余有效树继续修复到目标。
   - **052 RRT-Dubins (考虑运动学约束)**
     - LaValle & Kuffner (2001) (Dubins with RRT)
+    - ![052\_dubins\_rrt](Search_2D/gif/052_dubins_rrt.gif)
+    - Path length: 63.973; Algorithm time: 7890.028 ms (Algorithm-only, no animation/GIF)
+    - 算法心得：
+      RRT-Dubins 将节点扩展到 `(x, y, yaw)` 状态空间，每条边必须满足最大曲率约束，因此路径会呈现连续转向而不是任意折线。
 - **最优快速扩展随机树 (Optimal RRTs)**
   - **053 rrt star**
     - Karaman & Frazzoli (2011)
@@ -463,8 +471,8 @@ DEMO GIF      [#################...]  85%   84/99
 | 048 | Basic RRT     |  ✅  | 058 | BIT\*          |  ✅ |
 | 049 | Goal-bias RRT |  ✅  | 059 | ABIT\*         |  ✅ |
 | 050 | RRT-Connect   |  ✅  | 060 | AIT\*          |  ✅ |
-| 051 | Dynamic RRT   |  WIP | 061 | Anytime-RRT\*  |  ✅ |
-| 052 | RRT-Dubins    |  WIP | 062 | CL-RRT\*       |  ✅ |
+| 051 | Dynamic RRT   |  ✅ | 061 | Anytime-RRT\*  |  ✅ |
+| 052 | RRT-Dubins    |  ✅ | 062 | CL-RRT\*       |  ✅ |
 | 053 | RRT\*         |  ✅ | 063 | Spline-RRT\*   |  ✅ |
 | 054 | RRT\*-Smart   |  ✅ | 064 | LQR-RRT\*      |  ✅ |
 | 055 | RRT#          |  ✅ | 056 | Informed RRT\* |  ✅ |
