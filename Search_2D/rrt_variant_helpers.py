@@ -13,7 +13,7 @@ from matplotlib.collections import LineCollection
 from PIL import Image
 
 
-_RRT_SMART_PATH = os.path.join(os.path.dirname(__file__), "049_rrt_star_smart.py")
+_RRT_SMART_PATH = os.path.join(os.path.dirname(__file__), "054_rrt_star_smart.py")
 _SPEC = importlib.util.spec_from_file_location("_rrt_star_smart_demo", _RRT_SMART_PATH)
 _RRT_SMART = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(_RRT_SMART)
