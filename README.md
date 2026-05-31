@@ -212,19 +212,19 @@ DEMO GIF      [################....]  78%   77/99
 ## 二、预生成格子图搜索 (Precomputed Cell Graph Search)
 
 - **042 预生成四边形格子搜索 (Quadrilateral Cell Graph Search)**
-  - A* over precomputed quadrilateral cells
+  - A* over tightly tiled precomputed quadrilateral cells
   - ![042\_quad\_cell\_graph](Search_2D/gif/042_quad_cell_graph.gif)
 - **043 预生成六边形格子搜索 (Hexagonal Cell Graph Search)**
-  - A* over precomputed hexagonal cells
+  - A* over tightly packed six-neighbor hexagonal cells
   - ![043\_hex\_cell\_graph](Search_2D/gif/043_hex_cell_graph.gif)
-- **044 预生成不规则多边形搜索 (Irregular Polygon Cell Graph Search)**
-  - A* over arbitrary polygon adjacency
-  - ![044\_polygon\_cell\_graph](Search_2D/gif/044_polygon_cell_graph.gif)
-- **045 多层格子图搜索 (Multilayer Cell Graph Search)**
-  - A* with inter-layer portal transitions
-  - ![045\_multilayer\_cell\_graph](Search_2D/gif/045_multilayer_cell_graph.gif)
+- **044 NavMesh 多边形搜索 (NavMesh Cell Graph Search)**
+  - A* over precomputed convex navmesh polygons and portal adjacency
+  - ![044\_navmesh\_cell\_graph](Search_2D/gif/044_navmesh_cell_graph.gif)
+- **045 层级格子搜索 (Hierarchical Cell Search)**
+  - Aggregate cells into cluster/region graph, search regions first, then refine cells
+  - ![045\_hierarchical\_cell\_search](Search_2D/gif/045_hierarchical_cell_search.gif)
 - **046 动态预生成格子图搜索 (Dynamic Cell Graph Search)**
-  - Repairing search when precomputed cells change
+  - Incremental repair after precomputed cells become blocked or traversal costs change
   - ![046\_dynamic\_cell\_graph](Search_2D/gif/046_dynamic_cell_graph.gif)
 
 ## 三、基于采样的路径规划 (Sampling-Based Path Planning)
@@ -423,9 +423,9 @@ DEMO GIF      [################....]  78%   77/99
 
 |  #  | 算法 | 状态 |  #  | 算法 | 状态 |
 | :-: | :-- | :-: | :-: | :-- | :-: |
-| 042 | Quadrilateral Cell Graph | ✅ | 045 | Multilayer Cell Graph | ✅ |
+| 042 | Quadrilateral Cell Graph | ✅ | 045 | Hierarchical Cell Search | ✅ |
 | 043 | Hexagonal Cell Graph     | ✅ | 046 | Dynamic Cell Graph    | ✅ |
-| 044 | Polygon Cell Graph       | ✅ | | | |
+| 044 | NavMesh Cell Graph       | ✅ | | | |
 
 **三、基于采样的路径规划 (Sampling-Based)**
 
