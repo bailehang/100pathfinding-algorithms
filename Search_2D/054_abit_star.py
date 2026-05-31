@@ -86,13 +86,19 @@ class ABITStar(BitStar):
             if self.vertex_queue and self.should_expand_vertex():
                 vertex = self.vertex_queue.pop(0)
                 self.expand_vertex(vertex)
+                if expansions < 18 or expansions % 70 == 0:
+                    snapshots.append(self.snapshot(batch, "expand vertex with inflated key", focus=vertex))
             elif self.edge_queue:
                 _, _, parent, child = heapq.heappop(self.edge_queue)
-                self.accept_edge(parent, child, batch, snapshots)
+                accepted = self.accept_edge(parent, child, batch, snapshots)
+                if accepted and (len(self.edges) <= 36 or expansions % 55 == 0):
+                    edge = ((parent.x, parent.y), (child.x, child.y))
+                    snapshots.append(self.snapshot(batch, "accept adaptive edge", focus=child, highlight_edge=edge))
             expansions += 1
 
             if expansions % 125 == 0:
-                snapshots.append(self.snapshot(batch, f"batch {batch}: inflated edge ordering"))
+                focus = min(self.vertex_queue, key=lambda node: self.vertex_key(node)) if self.vertex_queue else None
+                snapshots.append(self.snapshot(batch, f"batch {batch}: inflated edge ordering", focus=focus))
 
     def expand_vertex(self, vertex):
         for node in self.nearby(vertex, self.samples + self.V):
@@ -108,11 +114,11 @@ class ABITStar(BitStar):
         edge_cost = self.line(parent, child)
         new_cost = parent.g + edge_cost
         if new_cost + 0.05 >= child.g:
-            return
+            return False
         if new_cost + self.heuristic(child) >= self.truncation_bound():
-            return
+            return False
         if self.utils.is_collision(parent, child):
-            return
+            return False
 
         child.parent = parent
         child.g = new_cost
@@ -125,9 +131,10 @@ class ABITStar(BitStar):
 
         if child is self.x_goal:
             self.update_best_path(child, batch, snapshots, "goal accepted: inflation schedule tightens")
-            return
+            return True
 
         self.try_connect_goal(child, batch, snapshots)
+        return True
 
     def try_connect_goal(self, node, batch, snapshots):
         if self.line(node, self.x_goal) > self.radius:
@@ -145,7 +152,10 @@ class ABITStar(BitStar):
         if cost + 0.05 < self.best_cost:
             self.path = route
             self.best_cost = cost
-            snapshots.append(self.snapshot(batch, phase))
+            highlight = None
+            if len(route) >= 2:
+                highlight = (route[-2], route[-1])
+            snapshots.append(self.snapshot(batch, phase, focus=node, highlight_edge=highlight))
 
     def prune(self):
         if not math.isfinite(self.best_cost):
@@ -176,8 +186,8 @@ class ABITStar(BitStar):
     def vertex_key(self, node):
         return node.g + self.current_inflation * self.heuristic(node)
 
-    def snapshot(self, batch, phase, final=False):
-        data = super().snapshot(batch, phase, final=final)
+    def snapshot(self, batch, phase, final=False, focus=None, highlight_edge=None):
+        data = super().snapshot(batch, phase, final=final, focus=focus, highlight_edge=highlight_edge)
         data["inflation"] = self.current_inflation
         data["truncation"] = self.current_truncation
         data["truncation_bound"] = self.truncation_bound() if math.isfinite(self.best_cost) else None
@@ -266,6 +276,10 @@ class ABITStar(BitStar):
             tree = LineCollection(snapshot["tree_edges"], colors="#5aa469", linewidths=0.65, alpha=0.62)
             ax.add_collection(tree)
 
+        if snapshot["highlight_edge"] is not None:
+            edge = LineCollection([snapshot["highlight_edge"]], colors="#f97316", linewidths=2.2, alpha=0.92)
+            ax.add_collection(edge)
+
         if snapshot["path"]:
             color = "#d62728" if snapshot["final"] else "#f97316"
             ax.plot(
@@ -282,9 +296,21 @@ class ABITStar(BitStar):
                 [p[0] for p in snapshot["best_path"]],
                 [p[1] for p in snapshot["best_path"]],
                 color="#d62728",
-                linewidth=2.8,
-                alpha=0.84,
+                linewidth=2.8 if snapshot["final"] else 1.8,
+                alpha=0.84 if snapshot["final"] else 0.32,
                 zorder=5,
+            )
+
+        if snapshot["current"] is not None:
+            ax.scatter(
+                [snapshot["current"][0]],
+                [snapshot["current"][1]],
+                marker="o",
+                s=58,
+                color="#f97316",
+                edgecolor="white",
+                linewidth=0.7,
+                zorder=6,
             )
 
         ax.scatter(self.x_start.x, self.x_start.y, marker="s", s=72, color="#2b6cb0", zorder=6)

@@ -267,13 +267,19 @@ class BitStar:
             if self.vertex_queue and self.should_expand_vertex():
                 vertex = self.vertex_queue.pop(0)
                 self.expand_vertex(vertex)
+                if expansions < 18 or expansions % 70 == 0:
+                    snapshots.append(self.snapshot(batch, "expand vertex into edge queue", focus=vertex))
             elif self.edge_queue:
                 _, _, parent, child = heapq.heappop(self.edge_queue)
-                self.accept_edge(parent, child, batch, snapshots)
+                accepted = self.accept_edge(parent, child, batch, snapshots)
+                if accepted and (len(self.edges) <= 36 or expansions % 55 == 0):
+                    edge = ((parent.x, parent.y), (child.x, child.y))
+                    snapshots.append(self.snapshot(batch, "accept collision-free edge", focus=child, highlight_edge=edge))
             expansions += 1
 
             if expansions % 115 == 0:
-                snapshots.append(self.snapshot(batch, f"batch {batch}: edge queue search"))
+                focus = min(self.vertex_queue, key=lambda node: self.vertex_key(node)) if self.vertex_queue else None
+                snapshots.append(self.snapshot(batch, f"batch {batch}: edge queue search", focus=focus))
 
     def should_expand_vertex(self):
         if not self.edge_queue:
@@ -293,11 +299,11 @@ class BitStar:
         edge_cost = self.line(parent, child)
         new_cost = parent.g + edge_cost
         if new_cost + 0.05 >= child.g:
-            return
+            return False
         if new_cost + self.heuristic(child) >= self.best_cost:
-            return
+            return False
         if self.utils.is_collision(parent, child):
-            return
+            return False
 
         child.parent = parent
         child.g = new_cost
@@ -315,10 +321,12 @@ class BitStar:
             if cost + 0.05 < self.best_cost:
                 self.path = route
                 self.best_cost = cost
-                snapshots.append(self.snapshot(batch, "goal accepted: informed ellipse shrinks"))
-            return
+                edge = ((parent.x, parent.y), (child.x, child.y))
+                snapshots.append(self.snapshot(batch, "goal accepted: informed ellipse shrinks", focus=child, highlight_edge=edge))
+            return True
 
         self.try_connect_goal(child, batch, snapshots)
+        return True
 
     def try_connect_goal(self, node, batch, snapshots):
         if self.line(node, self.x_goal) > self.radius:
@@ -332,7 +340,8 @@ class BitStar:
         if cost + 0.05 < self.best_cost:
             self.path = route
             self.best_cost = cost
-            snapshots.append(self.snapshot(batch, "solution improved: informed ellipse shrinks"))
+            edge = ((node.x, node.y), (self.x_goal.x, self.x_goal.y))
+            snapshots.append(self.snapshot(batch, "solution improved: informed ellipse shrinks", focus=self.x_goal, highlight_edge=edge))
 
     def prune(self):
         if not math.isfinite(self.best_cost):
@@ -414,9 +423,16 @@ class BitStar:
             current = current.parent
         return False
 
-    def snapshot(self, batch, phase, final=False):
+    def snapshot(self, batch, phase, final=False, focus=None, highlight_edge=None):
         queued_edges = [((item[2].x, item[2].y), (item[3].x, item[3].y)) for item in self.edge_queue[:90]]
-        display_path = self.path if final else (self.candidate_path or self.path)
+        if final:
+            display_path = self.path
+        elif focus is not None and focus.parent is not None:
+            display_path = self.extract_path(focus)
+        elif "goal accepted" in phase or "solution improved" in phase:
+            display_path = self.candidate_path or self.path
+        else:
+            display_path = []
         return {
             "batch": batch,
             "phase": phase,
@@ -427,6 +443,8 @@ class BitStar:
             "queued_edges": queued_edges,
             "path": list(display_path),
             "best_path": list(self.path),
+            "current": None if focus is None else (focus.x, focus.y),
+            "highlight_edge": highlight_edge,
             "cost": self.path_length(display_path) if display_path else None,
             "best_cost": self.best_cost if self.path else None,
             "ellipse": self.ellipse_parameters() if math.isfinite(self.best_cost) else None,
@@ -513,6 +531,10 @@ class BitStar:
             tree = LineCollection(snapshot["tree_edges"], colors="#5aa469", linewidths=0.65, alpha=0.62)
             ax.add_collection(tree)
 
+        if snapshot["highlight_edge"] is not None:
+            edge = LineCollection([snapshot["highlight_edge"]], colors="#f97316", linewidths=2.2, alpha=0.92)
+            ax.add_collection(edge)
+
         if snapshot["path"]:
             color = "#d62728" if snapshot["final"] else "#f97316"
             ax.plot(
@@ -529,9 +551,21 @@ class BitStar:
                 [p[0] for p in snapshot["best_path"]],
                 [p[1] for p in snapshot["best_path"]],
                 color="#d62728",
-                linewidth=2.8,
-                alpha=0.84,
+                linewidth=2.8 if snapshot["final"] else 1.8,
+                alpha=0.84 if snapshot["final"] else 0.32,
                 zorder=5,
+            )
+
+        if snapshot["current"] is not None:
+            ax.scatter(
+                [snapshot["current"][0]],
+                [snapshot["current"][1]],
+                marker="o",
+                s=58,
+                color="#f97316",
+                edgecolor="white",
+                linewidth=0.7,
+                zorder=6,
             )
 
         ax.scatter(self.x_start.x, self.x_start.y, marker="s", s=72, color="#2b6cb0", zorder=6)
