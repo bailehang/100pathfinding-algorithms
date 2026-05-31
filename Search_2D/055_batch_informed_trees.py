@@ -1,555 +1,423 @@
 """
-Batch Informed Trees (BIT*)
-Self-contained implementation
-@author: huiming zhou
+AIT* (Adaptively Informed Trees) 2D path planning demo.
+
+AIT* keeps the batch-informed forward search idea, but it also grows a lazy
+reverse search from the goal. The reverse tree provides an adaptive cost-to-go
+estimate, so forward edge ordering becomes more informed than plain Euclidean
+distance after each batch. The GIF shows the reverse heuristic wave in purple,
+the forward tree in green, accepted edges in orange, and the final path in red.
 """
 
 from metrics import install_metrics
 install_metrics()
 
+import heapq
+import importlib.util
+import io
 import math
+import os
 import random
-import numpy as np
+
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from scipy.spatial.transform import Rotation as Rot
+import numpy as np
+from matplotlib.collections import LineCollection
+from PIL import Image
 
 
-class Node:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.parent = None
+_BIT_STAR_PATH = os.path.join(os.path.dirname(__file__), "053_bit_star.py")
+_SPEC = importlib.util.spec_from_file_location("_bit_star_demo", _BIT_STAR_PATH)
+_BIT_STAR = importlib.util.module_from_spec(_SPEC)
+_SPEC.loader.exec_module(_BIT_STAR)
+
+Node = _BIT_STAR.Node
+Env = _BIT_STAR.Env
+Utils = _BIT_STAR.Utils
+BitStar = _BIT_STAR.BitStar
 
 
-class Tree:
-    def __init__(self, x_start, x_goal):
-        self.x_start = x_start
-        self.goal = x_goal
+class AITStar(BitStar):
+    def __init__(self, x_start, x_goal, batch_size=185, batches=12):
+        super().__init__(x_start, x_goal, batch_size=batch_size, batches=batches)
+        self.radius = 6.0
+        self.reverse_radius = 6.8
+        self.reverse_cost = {self.x_goal.id: 0.0}
+        self.reverse_parent = {}
+        self.reverse_edges = []
+        self.reverse_open = [(0.0, self.x_goal.id, self.x_goal)]
+        self.reverse_known = {self.x_goal.id: self.x_goal}
+        self.last_reverse_focus = None
 
-        self.r = 4.0
-        self.V = set()
-        self.E = set()
-        self.QE = set()
-        self.QV = set()
+    def planning(self, save_gif=False, gif_name="055_AIT_star"):
+        snapshots = [self.snapshot(0, "waiting for first adaptive heuristic batch")]
 
-        self.V_old = set()
+        for batch in range(1, self.batches + 1):
+            added = self.add_batch()
+            snapshots.append(self.snapshot(batch, f"batch {batch}: added {added} samples"))
 
+            self.update_reverse_heuristic(batch, snapshots)
 
-class Env:
-    def __init__(self):
-        self.x_range = (0, 50)
-        self.y_range = (0, 30)
-        self.obs_boundary = self.obs_boundary()
-        self.obs_circle = self.obs_circle()
-        self.obs_rectangle = self.obs_rectangle()
+            self.vertex_queue = list(self.V)
+            self.vertex_queue.sort(key=lambda node: self.vertex_key(node))
+            self.edge_queue = []
+            self.process_batch(batch, snapshots)
+            self.prune()
+            snapshots.append(self.snapshot(batch, f"batch {batch}: pruned with adaptive heuristic"))
 
-    @staticmethod
-    def obs_boundary():
-        obs_boundary = [
-            [0, 0, 1, 30],
-            [0, 30, 50, 1],
-            [1, 0, 50, 1],
-            [50, 1, 1, 30]
-        ]
-        return obs_boundary
+        if self.path:
+            snapshots.append(self.snapshot(self.batches, "final adaptively informed tree", final=True))
 
-    @staticmethod
-    def obs_rectangle():
-        obs_rectangle = [
-            [14, 12, 8, 2],
-            [18, 22, 8, 3],
-            [26, 7, 2, 12],
-            [32, 14, 10, 2]
-        ]
-        return obs_rectangle
+        if save_gif:
+            self.save_process_gif(snapshots, gif_name)
+        return self.path
 
-    @staticmethod
-    def obs_circle():
-        obs_cir = [
-            [7, 12, 3],
-            [46, 20, 2],
-            [15, 5, 2],
-            [37, 7, 3],
-            [37, 23, 3]
-        ]
-        return obs_cir
+    def update_reverse_heuristic(self, batch, snapshots):
+        nodes = self.samples + self.V + [self.x_goal]
+        for node in nodes:
+            self.reverse_known[node.id] = node
 
+        expansions = 0
+        while self.reverse_open and expansions < 170:
+            cost, _, node = heapq.heappop(self.reverse_open)
+            if cost > self.reverse_cost.get(node.id, math.inf) + 1e-9:
+                continue
+            self.last_reverse_focus = node
 
-class Utils:
-    def __init__(self):
-        self.env = Env()
+            for neighbor in self.nearby_reverse(node, nodes):
+                step = self.line(node, neighbor)
+                new_cost = cost + step
+                if new_cost + 0.05 >= self.reverse_cost.get(neighbor.id, math.inf):
+                    continue
+                if self.utils.is_collision(node, neighbor):
+                    continue
+                self.reverse_cost[neighbor.id] = new_cost
+                self.reverse_parent[neighbor.id] = node.id
+                self.reverse_known[neighbor.id] = neighbor
+                self.reverse_edges.append(((node.x, node.y), (neighbor.x, neighbor.y)))
+                heapq.heappush(self.reverse_open, (new_cost, neighbor.id, neighbor))
 
-        self.delta = 0.5
-        self.obs_circle = self.env.obs_circle
-        self.obs_rectangle = self.env.obs_rectangle
-        self.obs_boundary = self.env.obs_boundary
+            expansions += 1
+            if expansions in (1, 8, 28, 70, 130):
+                snapshots.append(self.snapshot(batch, "reverse heuristic wave expands", focus=node))
 
-    def update_obs(self, obs_cir, obs_bound, obs_rec):
-        self.obs_circle = obs_cir
-        self.obs_boundary = obs_bound
-        self.obs_rectangle = obs_rec
+    def process_batch(self, batch, snapshots):
+        expansions = 0
+        max_expansions = 740
+        while expansions < max_expansions and (self.vertex_queue or self.edge_queue):
+            if self.vertex_queue and self.should_expand_vertex():
+                vertex = self.vertex_queue.pop(0)
+                self.expand_vertex(vertex)
+                if expansions < 16 or expansions % 70 == 0:
+                    snapshots.append(self.snapshot(batch, "forward tree uses adaptive heuristic", focus=vertex))
+            elif self.edge_queue:
+                _, _, parent, child = heapq.heappop(self.edge_queue)
+                accepted = self.accept_edge(parent, child, batch, snapshots)
+                if accepted and (len(self.edges) <= 38 or expansions % 58 == 0):
+                    edge = ((parent.x, parent.y), (child.x, child.y))
+                    snapshots.append(self.snapshot(batch, "accept forward edge", focus=child, highlight_edge=edge))
+            expansions += 1
 
-    def get_obs_vertex(self):
-        delta = self.delta
-        obs_list = []
+            if expansions % 120 == 0:
+                focus = min(self.vertex_queue, key=lambda node: self.vertex_key(node)) if self.vertex_queue else None
+                snapshots.append(self.snapshot(batch, f"batch {batch}: forward edge queue search", focus=focus))
 
-        for (ox, oy, w, h) in self.obs_rectangle:
-            vertex_list = [[ox - delta, oy - delta],
-                           [ox + w + delta, oy - delta],
-                           [ox + w + delta, oy + h + delta],
-                           [ox - delta, oy + h + delta]]
-            obs_list.append(vertex_list)
+    def expand_vertex(self, vertex):
+        for node in self.nearby(vertex, self.samples + self.V):
+            if node is vertex or self.would_create_cycle(node, vertex):
+                continue
+            estimated = vertex.g + self.line(vertex, node) + self.adaptive_heuristic(node)
+            if estimated >= self.best_cost:
+                continue
+            heapq.heappush(self.edge_queue, (estimated, node.id, vertex, node))
 
-        return obs_list
-
-    def is_intersect_rec(self, start, end, o, d, a, b):
-        v1 = [o[0] - a[0], o[1] - a[1]]
-        v2 = [b[0] - a[0], b[1] - a[1]]
-        v3 = [-d[1], d[0]]
-
-        div = np.dot(v2, v3)
-
-        if div == 0:
+    def accept_edge(self, parent, child, batch, snapshots):
+        edge_cost = self.line(parent, child)
+        new_cost = parent.g + edge_cost
+        if new_cost + 0.05 >= child.g:
+            return False
+        if new_cost + self.adaptive_heuristic(child) >= self.best_cost:
+            return False
+        if self.utils.is_collision(parent, child):
             return False
 
-        t1 = np.linalg.norm(np.cross(v2, v1)) / div
-        t2 = np.dot(v1, v3) / div
+        child.parent = parent
+        child.g = new_cost
+        if child in self.samples:
+            self.samples.remove(child)
+            self.V.append(child)
+            self.vertex_queue.append(child)
+            self.vertex_queue.sort(key=lambda node: self.vertex_key(node))
+        self.edges.append(((parent.x, parent.y), (child.x, child.y)))
 
-        if t1 >= 0 and 0 <= t2 <= 1:
-            shot = Node(o[0] + t1 * d[0], o[1] + t1 * d[1])
-            dist_obs = self.get_dist(start, shot)
-            dist_seg = self.get_dist(start, end)
-            if dist_obs <= dist_seg:
-                return True
-
-        return False
-
-    def is_intersect_circle(self, o, d, a, r):
-        d2 = np.dot(d, d)
-        delta = self.delta
-
-        if d2 == 0:
-            return False
-
-        t = np.dot([a[0] - o[0], a[1] - o[1]], d) / d2
-
-        if 0 <= t <= 1:
-            shot = Node(o[0] + t * d[0], o[1] + t * d[1])
-            if self.get_dist(shot, Node(a[0], a[1])) <= r + delta:
-                return True
-
-        return False
-
-    def is_collision(self, start, end):
-        if self.is_inside_obs(start) or self.is_inside_obs(end):
+        if child is self.x_goal:
+            self.update_best_path(child, batch, snapshots, "goal accepted through adaptive heuristic")
             return True
 
-        o, d = self.get_ray(start, end)
-        obs_vertex = self.get_obs_vertex()
+        self.try_connect_goal(child, batch, snapshots)
+        return True
 
-        for (v1, v2, v3, v4) in obs_vertex:
-            if self.is_intersect_rec(start, end, o, d, v1, v2):
-                return True
-            if self.is_intersect_rec(start, end, o, d, v2, v3):
-                return True
-            if self.is_intersect_rec(start, end, o, d, v3, v4):
-                return True
-            if self.is_intersect_rec(start, end, o, d, v4, v1):
-                return True
+    def try_connect_goal(self, node, batch, snapshots):
+        if self.line(node, self.x_goal) > self.radius:
+            return
+        if self.utils.is_collision(node, self.x_goal):
+            return
+        self.x_goal.parent = node
+        self.x_goal.g = node.g + self.line(node, self.x_goal)
+        self.update_best_path(self.x_goal, batch, snapshots, "solution improved: reverse heuristic catches up")
 
-        for (x, y, r) in self.obs_circle:
-            if self.is_intersect_circle(o, d, [x, y], r):
-                return True
+    def update_best_path(self, node, batch, snapshots, phase):
+        route = self.extract_path(node)
+        cost = self.path_length(route)
+        self.candidate_path = route
+        if cost + 0.05 < self.best_cost:
+            self.path = route
+            self.best_cost = cost
+            highlight = None
+            if len(route) >= 2:
+                highlight = (route[-2], route[-1])
+            snapshots.append(self.snapshot(batch, phase, focus=node, highlight_edge=highlight))
 
-        return False
+    def prune(self):
+        if not math.isfinite(self.best_cost):
+            return
+        self.samples = [
+            sample for sample in self.samples
+            if self.heuristic_from_start(sample) + self.adaptive_heuristic(sample) < self.best_cost
+        ]
 
-    def is_inside_obs(self, node):
-        delta = self.delta
+    def sample(self):
+        if math.isfinite(self.best_cost):
+            return self.sample_informed()
+        if len(self.reverse_cost) > 24 and random.random() < 0.45:
+            return self.sample_near_reverse_tree()
+        return self.sample_free()
 
-        for (x, y, r) in self.obs_circle:
-            if math.hypot(node.x - x, node.y - y) <= r + delta:
-                return True
+    def sample_near_reverse_tree(self):
+        anchors = [
+            node for node_id, node in self.reverse_known.items()
+            if node_id in self.reverse_cost and node is not self.x_goal
+        ]
+        if not anchors:
+            return self.sample_free()
+        anchor = random.choice(anchors)
+        for _ in range(40):
+            angle = random.random() * 2.0 * math.pi
+            radius = random.uniform(0.2, 3.8)
+            node = Node((anchor.x + math.cos(angle) * radius, anchor.y + math.sin(angle) * radius))
+            if self.in_bounds(node) and not self.utils.is_inside_obs(node):
+                return node
+        return self.sample_free()
 
-        for (x, y, w, h) in self.obs_rectangle:
-            if 0 <= node.x - (x - delta) <= w + 2 * delta \
-                    and 0 <= node.y - (y - delta) <= h + 2 * delta:
-                return True
+    def vertex_key(self, node):
+        return node.g + self.adaptive_heuristic(node)
 
-        for (x, y, w, h) in self.obs_boundary:
-            if 0 <= node.x - (x - delta) <= w + 2 * delta \
-                    and 0 <= node.y - (y - delta) <= h + 2 * delta:
-                return True
+    def adaptive_heuristic(self, node):
+        reverse = self.reverse_cost.get(node.id, math.inf)
+        euclidean = self.heuristic(node)
+        if math.isfinite(reverse):
+            return max(euclidean, 0.82 * reverse)
+        return euclidean
 
-        return False
+    def nearby_reverse(self, vertex, nodes):
+        return [
+            node for node in nodes
+            if node is not vertex and self.line(vertex, node) <= self.reverse_radius
+        ]
+
+    def snapshot(self, batch, phase, final=False, focus=None, highlight_edge=None):
+        data = super().snapshot(batch, phase, final=final, focus=focus, highlight_edge=highlight_edge)
+        data["reverse_edges"] = list(self.reverse_edges[-1000:])
+        data["reverse_known"] = [
+            (node.x, node.y) for node_id, node in self.reverse_known.items()
+            if node_id in self.reverse_cost
+        ][-220:]
+        data["reverse_focus"] = (
+            None if self.last_reverse_focus is None
+            else (self.last_reverse_focus.x, self.last_reverse_focus.y)
+        )
+        data["adaptive_count"] = len(self.reverse_cost)
+        return data
+
+    def save_process_gif(self, snapshots, gif_name):
+        frames = [self.render_snapshot(snapshot) for snapshot in self.select_snapshots(snapshots)]
+        if frames:
+            frames.extend([frames[-1]] * 4)
+
+        gif_dir = os.path.join(os.path.dirname(__file__), "gif")
+        os.makedirs(gif_dir, exist_ok=True)
+        gif_path = os.path.join(gif_dir, f"{gif_name}.gif")
+        frames[0].save(
+            gif_path,
+            save_all=True,
+            append_images=frames[1:],
+            duration=380,
+            loop=0,
+            disposal=2,
+        )
+        print(f"Saved {gif_path} with {len(frames)} frames")
 
     @staticmethod
-    def get_ray(start, end):
-        orig = [start.x, start.y]
-        direc = [end.x - start.x, end.y - start.y]
-        return orig, direc
+    def select_snapshots(snapshots, max_frames=50):
+        if len(snapshots) <= max_frames:
+            return snapshots
+        indices = np.linspace(0, len(snapshots) - 1, max_frames, dtype=int)
+        return [snapshots[i] for i in indices]
+
+    def render_snapshot(self, snapshot):
+        fig, ax = plt.subplots(figsize=(7, 4.6), dpi=110)
 
-    @staticmethod
-    def get_dist(start, end):
-        return math.hypot(end.x - start.x, end.y - start.y)
-
-
-class BITStar:
-    def __init__(self, x_start, x_goal, eta, iter_max):
-        self.x_start = Node(x_start[0], x_start[1])
-        self.x_goal = Node(x_goal[0], x_goal[1])
-        self.eta = eta
-        self.iter_max = iter_max
-
-        self.env = Env()
-        self.utils = Utils()
-
-        self.fig, self.ax = plt.subplots()
-
-        self.delta = self.utils.delta
-        self.x_range = self.env.x_range
-        self.y_range = self.env.y_range
-
-        self.obs_circle = self.env.obs_circle
-        self.obs_rectangle = self.env.obs_rectangle
-        self.obs_boundary = self.env.obs_boundary
-
-        self.Tree = Tree(self.x_start, self.x_goal)
-        self.X_sample = set()
-        self.g_T = dict()
-
-    def init(self):
-        self.Tree.V.add(self.x_start)
-        self.X_sample.add(self.x_goal)
-
-        self.g_T[self.x_start] = 0.0
-        self.g_T[self.x_goal] = np.inf
-
-        cMin, theta = self.calc_dist_and_angle(self.x_start, self.x_goal)
-        C = self.RotationToWorldFrame(self.x_start, self.x_goal, cMin)
-        xCenter = np.array([[(self.x_start.x + self.x_goal.x) / 2.0],
-                            [(self.x_start.y + self.x_goal.y) / 2.0], [0.0]])
-
-        return theta, cMin, xCenter, C
-
-    def planning(self):
-        theta, cMin, xCenter, C = self.init()
-
-        for k in range(500):
-            if not self.Tree.QE and not self.Tree.QV:
-                if k == 0:
-                    m = 350
-                else:
-                    m = 200
-
-                if self.x_goal.parent is not None:
-                    path_x, path_y = self.ExtractPath()
-                    plt.plot(path_x, path_y, linewidth=2, color='r')
-                    plt.pause(0.5)
-
-                self.Prune(self.g_T[self.x_goal])
-                self.X_sample.update(self.Sample(m, self.g_T[self.x_goal], cMin, xCenter, C))
-                self.Tree.V_old = {v for v in self.Tree.V}
-                self.Tree.QV = {v for v in self.Tree.V}
-                # self.Tree.r = self.radius(len(self.Tree.V) + len(self.X_sample))
-
-            while self.BestVertexQueueValue() <= self.BestEdgeQueueValue():
-                self.ExpandVertex(self.BestInVertexQueue())
-
-            vm, xm = self.BestInEdgeQueue()
-            self.Tree.QE.remove((vm, xm))
-
-            if self.g_T[vm] + self.calc_dist(vm, xm) + self.h_estimated(xm) < self.g_T[self.x_goal]:
-                actual_cost = self.cost(vm, xm)
-                if self.g_estimated(vm) + actual_cost + self.h_estimated(xm) < self.g_T[self.x_goal]:
-                    if self.g_T[vm] + actual_cost < self.g_T[xm]:
-                        if xm in self.Tree.V:
-                            # remove edges
-                            edge_delete = set()
-                            for v, x in self.Tree.E:
-                                if x == xm:
-                                    edge_delete.add((v, x))
-
-                            for edge in edge_delete:
-                                self.Tree.E.remove(edge)
-                        else:
-                            self.X_sample.remove(xm)
-                            self.Tree.V.add(xm)
-                            self.Tree.QV.add(xm)
-
-                        self.g_T[xm] = self.g_T[vm] + actual_cost
-                        self.Tree.E.add((vm, xm))
-                        xm.parent = vm
-
-                        set_delete = set()
-                        for v, x in self.Tree.QE:
-                            if x == xm and self.g_T[v] + self.calc_dist(v, xm) >= self.g_T[xm]:
-                                set_delete.add((v, x))
-
-                        for edge in set_delete:
-                            self.Tree.QE.remove(edge)
-            else:
-                self.Tree.QE = set()
-                self.Tree.QV = set()
-
-            if k % 5 == 0:
-                self.animation(xCenter, self.g_T[self.x_goal], cMin, theta)
-
-        path_x, path_y = self.ExtractPath()
-        plt.plot(path_x, path_y, linewidth=2, color='r')
-        plt.pause(0.01)
-        plt.show()
-
-    def ExtractPath(self):
-        node = self.x_goal
-        path_x, path_y = [node.x], [node.y]
-
-        while node.parent:
-            node = node.parent
-            path_x.append(node.x)
-            path_y.append(node.y)
-
-        return path_x, path_y
-
-    def Prune(self, cBest):
-        self.X_sample = {x for x in self.X_sample if self.f_estimated(x) < cBest}
-        self.Tree.V = {v for v in self.Tree.V if self.f_estimated(v) <= cBest}
-        self.Tree.E = {(v, w) for v, w in self.Tree.E
-                       if self.f_estimated(v) <= cBest and self.f_estimated(w) <= cBest}
-        self.X_sample.update({v for v in self.Tree.V if self.g_T[v] == np.inf})
-        self.Tree.V = {v for v in self.Tree.V if self.g_T[v] < np.inf}
-
-    def cost(self, start, end):
-        if self.utils.is_collision(start, end):
-            return np.inf
-
-        return self.calc_dist(start, end)
-
-    def f_estimated(self, node):
-        return self.g_estimated(node) + self.h_estimated(node)
-
-    def g_estimated(self, node):
-        return self.calc_dist(self.x_start, node)
-
-    def h_estimated(self, node):
-        return self.calc_dist(node, self.x_goal)
-
-    def Sample(self, m, cMax, cMin, xCenter, C):
-        if cMax < np.inf:
-            return self.SampleEllipsoid(m, cMax, cMin, xCenter, C)
-        else:
-            return self.SampleFreeSpace(m)
-
-    def SampleEllipsoid(self, m, cMax, cMin, xCenter, C):
-        r = [cMax / 2.0,
-             math.sqrt(cMax ** 2 - cMin ** 2) / 2.0,
-             math.sqrt(cMax ** 2 - cMin ** 2) / 2.0]
-        L = np.diag(r)
-
-        ind = 0
-        delta = self.delta
-        Sample = set()
-
-        while ind < m:
-            xBall = self.SampleUnitNBall()
-            x_rand = np.dot(np.dot(C, L), xBall) + xCenter
-            node = Node(x_rand[(0, 0)], x_rand[(1, 0)])
-            in_obs = self.utils.is_inside_obs(node)
-            in_x_range = self.x_range[0] + delta <= node.x <= self.x_range[1] - delta
-            in_y_range = self.y_range[0] + delta <= node.y <= self.y_range[1] - delta
-
-            if not in_obs and in_x_range and in_y_range:
-                Sample.add(node)
-                ind += 1
-
-        return Sample
-
-    def SampleFreeSpace(self, m):
-        delta = self.utils.delta
-        Sample = set()
-
-        ind = 0
-        while ind < m:
-            node = Node(random.uniform(self.x_range[0] + delta, self.x_range[1] - delta),
-                        random.uniform(self.y_range[0] + delta, self.y_range[1] - delta))
-            if self.utils.is_inside_obs(node):
-                continue
-            else:
-                Sample.add(node)
-                ind += 1
-
-        return Sample
-
-    def radius(self, q):
-        cBest = self.g_T[self.x_goal]
-        lambda_X = len([1 for v in self.Tree.V if self.f_estimated(v) <= cBest])
-        radius = 2 * self.eta * (1.5 * lambda_X / math.pi * math.log(q) / q) ** 0.5
-
-        return radius
-
-    def ExpandVertex(self, v):
-        self.Tree.QV.remove(v)
-        X_near = {x for x in self.X_sample if self.calc_dist(x, v) <= self.Tree.r}
-
-        for x in X_near:
-            if self.g_estimated(v) + self.calc_dist(v, x) + self.h_estimated(x) < self.g_T[self.x_goal]:
-                self.g_T[x] = np.inf
-                self.Tree.QE.add((v, x))
-
-        if v not in self.Tree.V_old:
-            V_near = {w for w in self.Tree.V if self.calc_dist(w, v) <= self.Tree.r}
-
-            for w in V_near:
-                if (v, w) not in self.Tree.E and \
-                        self.g_estimated(v) + self.calc_dist(v, w) + self.h_estimated(w) < self.g_T[self.x_goal] and \
-                        self.g_T[v] + self.calc_dist(v, w) < self.g_T[w]:
-                    self.Tree.QE.add((v, w))
-                    if w not in self.g_T:
-                        self.g_T[w] = np.inf
-
-    def BestVertexQueueValue(self):
-        if not self.Tree.QV:
-            return np.inf
-
-        return min(self.g_T[v] + self.h_estimated(v) for v in self.Tree.QV)
-
-    def BestEdgeQueueValue(self):
-        if not self.Tree.QE:
-            return np.inf
-
-        return min(self.g_T[v] + self.calc_dist(v, x) + self.h_estimated(x)
-                   for v, x in self.Tree.QE)
-
-    def BestInVertexQueue(self):
-        if not self.Tree.QV:
-            print("QV is Empty!")
-            return None
-
-        v_value = {v: self.g_T[v] + self.h_estimated(v) for v in self.Tree.QV}
-
-        return min(v_value, key=v_value.get)
-
-    def BestInEdgeQueue(self):
-        if not self.Tree.QE:
-            print("QE is Empty!")
-            return None
-
-        e_value = {(v, x): self.g_T[v] + self.calc_dist(v, x) + self.h_estimated(x)
-                   for v, x in self.Tree.QE}
-
-        return min(e_value, key=e_value.get)
-
-    @staticmethod
-    def SampleUnitNBall():
-        while True:
-            x, y = random.uniform(-1, 1), random.uniform(-1, 1)
-            if x ** 2 + y ** 2 < 1:
-                return np.array([[x], [y], [0.0]])
-
-    @staticmethod
-    def RotationToWorldFrame(x_start, x_goal, L):
-        a1 = np.array([[(x_goal.x - x_start.x) / L],
-                       [(x_goal.y - x_start.y) / L], [0.0]])
-        e1 = np.array([[1.0], [0.0], [0.0]])
-        M = a1 @ e1.T
-        U, _, V_T = np.linalg.svd(M, True, True)
-        C = U @ np.diag([1.0, 1.0, np.linalg.det(U) * np.linalg.det(V_T.T)]) @ V_T
-
-        return C
-
-    @staticmethod
-    def calc_dist(start, end):
-        return math.hypot(start.x - end.x, start.y - end.y)
-
-    @staticmethod
-    def calc_dist_and_angle(node_start, node_end):
-        dx = node_end.x - node_start.x
-        dy = node_end.y - node_start.y
-        return math.hypot(dx, dy), math.atan2(dy, dx)
-
-    def animation(self, xCenter, cMax, cMin, theta):
-        plt.cla()
-        self.plot_grid("Batch Informed Trees (BIT*)")
-
-        plt.gcf().canvas.mpl_connect(
-            'key_release_event',
-            lambda event: [exit(0) if event.key == 'escape' else None])
-
-        for v in self.X_sample:
-            plt.plot(v.x, v.y, marker='.', color='lightgrey', markersize='2')
-
-        if cMax < np.inf:
-            self.draw_ellipse(xCenter, cMax, cMin, theta)
-
-        for v, w in self.Tree.E:
-            plt.plot([v.x, w.x], [v.y, w.y], '-g')
-
-        plt.pause(0.001)
-
-    def plot_grid(self, name):
         for (ox, oy, w, h) in self.obs_boundary:
-            self.ax.add_patch(
-                patches.Rectangle(
-                    (ox, oy), w, h,
-                    edgecolor='black',
-                    facecolor='black',
-                    fill=True
-                )
-            )
-
+            ax.add_patch(patches.Rectangle((ox, oy), w, h, edgecolor="black", facecolor="black"))
         for (ox, oy, w, h) in self.obs_rectangle:
-            self.ax.add_patch(
-                patches.Rectangle(
-                    (ox, oy), w, h,
-                    edgecolor='black',
-                    facecolor='gray',
-                    fill=True
-                )
-            )
-
+            ax.add_patch(patches.Rectangle((ox, oy), w, h, edgecolor="#444444", facecolor="#9da3a6"))
         for (ox, oy, r) in self.obs_circle:
-            self.ax.add_patch(
-                patches.Circle(
-                    (ox, oy), r,
-                    edgecolor='black',
-                    facecolor='gray',
-                    fill=True
+            ax.add_patch(patches.Circle((ox, oy), r, edgecolor="#444444", facecolor="#9da3a6"))
+
+        if snapshot["ellipse"] is not None:
+            ellipse = snapshot["ellipse"]
+            ax.add_patch(
+                patches.Ellipse(
+                    ellipse["center"],
+                    ellipse["width"],
+                    ellipse["height"],
+                    angle=ellipse["angle"],
+                    edgecolor="#f59e0b",
+                    facecolor="#fbbf24",
+                    alpha=0.12,
+                    linewidth=2.0,
+                    linestyle="--",
+                    zorder=1,
                 )
             )
 
-        plt.plot(self.x_start.x, self.x_start.y, "bs", linewidth=3)
-        plt.plot(self.x_goal.x, self.x_goal.y, "rs", linewidth=3)
+        if snapshot["samples"]:
+            ax.scatter(
+                [p[0] for p in snapshot["samples"]],
+                [p[1] for p in snapshot["samples"]],
+                s=8,
+                color="#94a3b8",
+                alpha=0.48,
+                zorder=2,
+            )
 
-        plt.title(name)
-        plt.axis("equal")
+        if snapshot["reverse_edges"]:
+            reverse = LineCollection(snapshot["reverse_edges"], colors="#8b5cf6", linewidths=0.58, alpha=0.44)
+            ax.add_collection(reverse)
 
-    @staticmethod
-    def draw_ellipse(x_center, c_best, dist, theta):
-        a = math.sqrt(c_best ** 2 - dist ** 2) / 2.0
-        b = c_best / 2.0
-        angle = math.pi / 2.0 - theta
-        cx = x_center[0]
-        cy = x_center[1]
-        t = np.arange(0, 2 * math.pi + 0.1, 0.2)
-        x = [a * math.cos(it) for it in t]
-        y = [b * math.sin(it) for it in t]
-        rot = Rot.from_euler('z', -angle).as_matrix()[0:2, 0:2]
-        fx = rot @ np.array([x, y])
-        px = np.array(fx[0, :] + cx).flatten()
-        py = np.array(fx[1, :] + cy).flatten()
-        plt.plot(cx, cy, marker='.', color='darkorange')
-        plt.plot(px, py, linestyle='--', color='darkorange', linewidth=2)
+        if snapshot["reverse_known"]:
+            ax.scatter(
+                [p[0] for p in snapshot["reverse_known"]],
+                [p[1] for p in snapshot["reverse_known"]],
+                s=13,
+                color="#a855f7",
+                alpha=0.58,
+                zorder=3,
+            )
+
+        if snapshot["queued_edges"]:
+            queue_lines = LineCollection(snapshot["queued_edges"], colors="#2563eb", linewidths=0.45, alpha=0.34)
+            ax.add_collection(queue_lines)
+
+        if snapshot["tree_edges"]:
+            tree = LineCollection(snapshot["tree_edges"], colors="#5aa469", linewidths=0.65, alpha=0.64)
+            ax.add_collection(tree)
+
+        if snapshot["highlight_edge"] is not None:
+            edge = LineCollection([snapshot["highlight_edge"]], colors="#f97316", linewidths=2.2, alpha=0.92)
+            ax.add_collection(edge)
+
+        if snapshot["path"]:
+            color = "#d62728" if snapshot["final"] else "#f97316"
+            ax.plot(
+                [p[0] for p in snapshot["path"]],
+                [p[1] for p in snapshot["path"]],
+                color=color,
+                linewidth=3.0 if snapshot["final"] else 2.3,
+                alpha=0.94,
+                zorder=6,
+            )
+
+        if snapshot["best_path"] and snapshot["best_path"] != snapshot["path"]:
+            ax.plot(
+                [p[0] for p in snapshot["best_path"]],
+                [p[1] for p in snapshot["best_path"]],
+                color="#d62728",
+                linewidth=2.8 if snapshot["final"] else 1.8,
+                alpha=0.84 if snapshot["final"] else 0.30,
+                zorder=6,
+            )
+
+        if snapshot["reverse_focus"] is not None:
+            ax.scatter(
+                [snapshot["reverse_focus"][0]],
+                [snapshot["reverse_focus"][1]],
+                marker="D",
+                s=48,
+                color="#7c3aed",
+                edgecolor="white",
+                linewidth=0.6,
+                zorder=7,
+            )
+
+        if snapshot["current"] is not None:
+            ax.scatter(
+                [snapshot["current"][0]],
+                [snapshot["current"][1]],
+                marker="o",
+                s=58,
+                color="#f97316",
+                edgecolor="white",
+                linewidth=0.7,
+                zorder=8,
+            )
+
+        ax.scatter(self.x_start.x, self.x_start.y, marker="s", s=72, color="#2b6cb0", zorder=9)
+        ax.scatter(self.x_goal.x, self.x_goal.y, marker="s", s=72, color="#2f855a", zorder=9)
+
+        mode = "adaptive informed" if snapshot["ellipse"] is not None else "global"
+        cost_text = "searching" if snapshot["cost"] is None else f"route {snapshot['cost']:.1f}"
+        if snapshot["best_cost"] is not None:
+            cost_text += f" best {snapshot['best_cost']:.1f}"
+        ax.text(
+            1.5,
+            28.4,
+            (
+                f"AIT* batch {snapshot['batch']:2d}  nodes {snapshot['nodes']:4d}  "
+                f"adaptive h {snapshot['adaptive_count']:3d}\n"
+                f"{mode}  {snapshot['phase']}  {cost_text}"
+            ),
+            fontsize=8.5,
+            color="#1f2933",
+            bbox={"facecolor": "white", "edgecolor": "#c7d0d9", "alpha": 0.88, "pad": 3},
+        )
+
+        ax.set_xlim(self.x_range[0], self.x_range[1])
+        ax.set_ylim(self.y_range[0], self.y_range[1])
+        ax.set_aspect("equal", adjustable="box")
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_title("055 AIT* - reverse adaptive heuristic and forward search")
+        fig.tight_layout(pad=0.4)
+
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", dpi=110)
+        plt.close(fig)
+        buf.seek(0)
+        frame = Image.open(buf).convert("RGB")
+        buf.close()
+        return frame
 
 
 def main():
-    x_start = (18, 8)  # Starting node
-    x_goal = (37, 18)  # Goal node
-    eta = 2
-    iter_max = 200
-    print("Batch Informed Trees (BIT*) Planning")
-    bit = BITStar(x_start, x_goal, eta, iter_max)
-    bit.planning()
+    random.seed(55)
+    np.random.seed(55)
+    planner = AITStar((18, 8), (37, 18), batch_size=185, batches=12)
+    path = planner.planning(save_gif=True)
+    if not path:
+        raise RuntimeError("AIT* did not reach the goal")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

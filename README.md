@@ -8,11 +8,11 @@ I am very interested in further summarizing all the pathfinding algorithms.
 
 > This repository is progressing toward the long-term goal of implementing **100 pathfinding algorithms**.
 
-**总进度：65 / 94 已实现（约 69%），其中 58 个附带演示动图。**
+**总进度：65 / 94 已实现（约 69%），其中 59 个附带演示动图。**
 
 ```text
 IMPLEMENTED   [##############......]  69%   65/94
-DEMO GIF      [############........]  62%   58/94
+DEMO GIF      [#############.......]  63%   59/94
 ```
 
 ## Contents
@@ -242,6 +242,7 @@ DEMO GIF      [############........]  62%   58/94
     - ![054\_ABIT\_star](Search_2D/gif/054_ABIT_star.gif)
   - **055 AIT\* (Adaptively Informed Trees)**
     - Strub & Gammell (2020)
+    - ![055\_AIT\_star](Search_2D/gif/055_AIT_star.gif)
   - **056 Anytime-RRT\***
     - Karaman, Walter, Perez, Frazzoli & Teller (2011)
   - **057 Closed-loop RRT\* (CL-RRT\*)**
@@ -394,7 +395,7 @@ DEMO GIF      [############........]  62%   58/94
 | 042 | RPP           |  TODO | 052 | FMT\*          |  ✅ |
 | 043 | Basic RRT     |  ✅  | 053 | BIT\*          |  ✅ |
 | 044 | Goal-bias RRT |  ✅  | 054 | ABIT\*         |  ✅ |
-| 045 | RRT-Connect   |  ✅  | 055 | AIT\*          |  WIP |
+| 045 | RRT-Connect   |  ✅  | 055 | AIT\*          |  ✅ |
 | 046 | Dynamic RRT   |  WIP | 056 | Anytime-RRT\*  |  TODO |
 | 047 | RRT-Dubins    |  WIP | 057 | CL-RRT\*       |  TODO |
 | 048 | RRT\*         |  ✅ | 058 | Spline-RRT\*   |  TODO |
