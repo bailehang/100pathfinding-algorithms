@@ -8,11 +8,11 @@ I am very interested in further summarizing all the pathfinding algorithms.
 
 > This repository is progressing toward the long-term goal of implementing **100 pathfinding algorithms**.
 
-**总进度：63 / 94 已实现（约 67%），其中 55 个附带演示动图。**
+**总进度：64 / 94 已实现（约 68%），其中 56 个附带演示动图。**
 
 ```text
-IMPLEMENTED   [#############.......]  67%   63/94
-DEMO GIF      [############........]  59%   55/94
+IMPLEMENTED   [##############......]  68%   64/94
+DEMO GIF      [############........]  60%   56/94
 ```
 
 ## Contents
@@ -235,6 +235,7 @@ DEMO GIF      [############........]  59%   55/94
     - Janson, Schmerling, Clark & Pavone (2015)
   - **053 BIT\* batch informed trees**
     - Gammell, Srinivasa & Barfoot (2015)
+    - ![053\_BIT\_star](Search_2D/gif/053_BIT_star.gif)
   - **054 ABIT\* advanced batch informed trees**
     - Strub & Gammell (2020)
   - **055 AIT\* (Adaptively Informed Trees)**
@@ -389,7 +390,7 @@ DEMO GIF      [############........]  59%   55/94
 |  #  | 算法            |  状态 |  #  | 算法             |  状态 |
 | :-: | :------------ | :-: | :-: | :------------- | :-: |
 | 042 | RPP           |  TODO | 052 | FMT\*          |  WIP |
-| 043 | Basic RRT     |  ✅  | 053 | BIT\*          |  TODO |
+| 043 | Basic RRT     |  ✅  | 053 | BIT\*          |  ✅ |
 | 044 | Goal-bias RRT |  ✅  | 054 | ABIT\*         |  TODO |
 | 045 | RRT-Connect   |  ✅  | 055 | AIT\*          |  WIP |
 | 046 | Dynamic RRT   |  WIP | 056 | Anytime-RRT\*  |  TODO |
