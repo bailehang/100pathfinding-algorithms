@@ -8,11 +8,11 @@ I am very interested in further summarizing all the pathfinding algorithms.
 
 > This repository is progressing toward the long-term goal of implementing **99 pathfinding algorithms**.
 
-**总进度：91 / 99 已实现（约 92%），其中 91 个附带演示动图。**
+**总进度：93 / 99 已实现（约 94%），其中 93 个附带演示动图。**
 
 ```text
-IMPLEMENTED   [##################..]  92%   91/99
-DEMO GIF      [##################..]  92%   91/99
+IMPLEMENTED   [###################.]  94%   93/99
+DEMO GIF      [###################.]  94%   93/99
 ```
 
 ## Contents
@@ -383,8 +383,16 @@ DEMO GIF      [##################..]  92%   91/99
     PID 路径跟踪把规划出的参考路径转成连续控制问题，比例项快速修正朝向误差，积分项消除稳态偏差，微分项抑制转向振荡。
 - **085 线性二次型调节器 (Linear Quadratic Regulator - LQR)**
   - Kalman (1960)
+  - ![085\_LQR](Search_2D/gif/085_LQR.gif)
+  - Path length: 51.781; Algorithm time: 16.529 ms
+  - 算法心得：
+    LQR 将横向误差和航向误差写成线性状态反馈，通过二次代价权衡跟踪精度与转向输入，适合展示稳定、平滑的最优反馈控制。
 - **086 模型预测控制 (Model Predictive Control - MPC)**
   - Cutler & Ramaker (1980), Garcia, Prett, Morari (1989)
+  - ![086\_MPC](Search_2D/gif/086_MPC.gif)
+  - Path length: 53.911; Algorithm time: 1956.238 ms
+  - 算法心得：
+    MPC 每一步都向前滚动预测多个候选控制序列，用有限时域代价选择当前控制，能把跟踪误差、控制平滑度和未来约束放在同一个优化框架里。
 
 ## 八、多智能体路径规划 (Multi-Agent Path Finding - MAPF)
 
@@ -527,8 +535,8 @@ DEMO GIF      [##################..]  92%   91/99
 
 |  #  | 算法  |  状态 |    #   | 算法     |   状态   |
 | :-: | :-- | :-: | :----: | :----- | :----: |
-| 084 | PID |  ✅ |   086  | MPC    |   TODO   |
-| 085 | LQR |  TODO | | | |
+| 084 | PID |  ✅ |   086  | MPC    |   ✅   |
+| 085 | LQR |  ✅ | | | |
 
 **八、多智能体路径规划 (Multi-Agent / MAPF)**
 
