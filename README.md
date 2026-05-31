@@ -8,11 +8,11 @@ I am very interested in further summarizing all the pathfinding algorithms.
 
 > This repository is progressing toward the long-term goal of implementing **99 pathfinding algorithms**.
 
-**总进度：86 / 99 已实现（约 87%），其中 86 个附带演示动图。**
+**总进度：90 / 99 已实现（约 91%），其中 90 个附带演示动图。**
 
 ```text
-IMPLEMENTED   [#################...]  87%   86/99
-DEMO GIF      [#################...]  87%   86/99
+IMPLEMENTED   [##################..]  91%   90/99
+DEMO GIF      [##################..]  91%   90/99
 ```
 
 ## Contents
@@ -26,51 +26,51 @@ DEMO GIF      [#################...]  87%   86/99
   - **001 广度优先搜索 (Breadth-First Searching - BFS)**
     - Moore (1959), Lee (1961)
     - ![001\_bfs](Search_2D/gif/001_bfs.gif)
-    - Path length: 54.047; Algorithm time: 13.405 ms (Algorithm-only, no animation/GIF)
+    - Path length: 54.047; Algorithm time: 13.405 ms
     - 算法心得：
       逐层扩展的搜索策略，它从起始节点开始，逐层向外扩展，直到找到目标节点或遍历完整个搜索空间。
   - **002 深度优先搜索 (Depth-First Search - DFS)**
     - Trémaux (1882), Hopcroft & Tarjan (1973)
     - ![002\_dfs](Search_2D/gif/002_dfs.gif)
-    - Path length: 89.218; Algorithm time: 1.342 ms (Algorithm-only, no animation/GIF)
+    - Path length: 89.218; Algorithm time: 1.342 ms
     - 算法心得：
       从起始节点开始，沿着一条路径尽可能深入，直到无法继续前进，然后回溯到上一个节点，继续探索其他路径。
 - **最短路径与启发式搜索 (Shortest Path & Heuristic Search)**
   - **003 贪婪最佳优先搜索 (Greedy Best-First Search - GBFS)**
     - Doran & Michie (1966), Pearl (1984)
     - ![003\_GBFS](Search_2D/gif/003_GBFS.gif)
-    - Path length: 67.260; Algorithm time: 5.040 ms (Algorithm-only, no animation/GIF)
+    - Path length: 67.260; Algorithm time: 5.040 ms
     - 算法心得：
       从起始节点开始，每次选择与目标节点最近的节点进行扩展，直到找到目标节点或遍历完整个搜索空间。
   - **004 Dijkstra 算法**
     - Dijkstra (1959)
     - ![004\_Dijkstra](Search_2D/gif/004_Dijkstra.gif)
-    - Path length: 54.047; Algorithm time: 9.103 ms (Algorithm-only, no animation/GIF)
+    - Path length: 54.047; Algorithm time: 9.103 ms
     - 算法心得：
       Dijkstra 算法是一种用于寻找最短路径的算法，它通过维护一个距离表来记录从起始节点到其他节点的最短距离。
       算法从起始节点开始，每次选择距离表中距离最小的节点进行扩展，更新其相邻节点的距离表，直到找到目标节点或遍历完整个搜索空间。
   - **005 Bellman-Ford 算法**
     - Bellman (1958), Ford (1956)
     - ![005\_Bellman\_Ford](Search_2D/gif/005_Bellman_Ford.gif)
-    - Path length: 54.047; Algorithm time: 19.293 ms (Algorithm-only, no animation/GIF)
+    - Path length: 54.047; Algorithm time: 19.293 ms
     - 算法心得：
       Bellman-Ford 通过反复松弛所有边来求单源最短路径，速度通常慢于 Dijkstra，但可以处理负权边并检测负权环。
   - **006 SPFA 算法**
     - Moore (1959), Bellman-Ford queue optimization
     - ![006\_SPFA](Search_2D/gif/006_SPFA.gif)
-    - Path length: 54.047; Algorithm time: 7.176 ms (Algorithm-only, no animation/GIF)
+    - Path length: 54.047; Algorithm time: 7.176 ms
     - 算法心得：
       SPFA 使用队列只传播距离发生变化的节点，是 Bellman-Ford 的常见队列优化版本，在许多稀疏图上能减少无效松弛。
   - **007 Flow Fields（流场寻路）**
     - Treuille, Cooper, Popović (2006), 常用于 RTS/Game AI 群体寻路
     - ![007\_Flow\_Fields](Search_2D/gif/007_Flow_Fields.gif)
-    - Path length: 54.047; Algorithm time: 13.754 ms (Algorithm-only, no animation/GIF)
+    - Path length: 54.047; Algorithm time: 13.754 ms
     - 算法心得：
       Flow Fields 先从目标点反向传播总代价，得到 integration field，再让每个可行格子指向代价最低的邻居。多个智能体共享同一目标时，只需复用这张方向场即可快速前进。
   - **008 A\* 算法 (A\* Algorithm)**
     - Hart, Nilsson, Raphael (1968)
     - ![008\_Astar](Search_2D/gif/008_Astar.gif)
-    - Path length: 54.047; Algorithm time: 4.961 ms (Algorithm-only, no animation/GIF)
+    - Path length: 54.047; Algorithm time: 4.961 ms
     - 算法心得：
       A\* 算法是一种启发式搜索算法，它结合了广度优先搜索和贪婪最佳优先搜索的优点。
       算法从起始节点开始，每次选择距离表中距离最小的节点进行扩展，更新其相邻节点的距离表，直到找到目标节点或遍历完整个搜索空间。
@@ -78,25 +78,25 @@ DEMO GIF      [#################...]  87%   86/99
     - **009 双向 A\* (Bidirectional A\*)**
       - Pohl (1971)
       - ![009\_Bidirectional\_a\_star](Search_2D/gif/009_Bidirectional_a_star.gif)
-      - Path length: 54.047; Algorithm time: 3.563 ms (Algorithm-only, no animation/GIF)
+      - Path length: 54.047; Algorithm time: 3.563 ms
       - 算法心得：
         它从起始节点和目标节点同时开始进行搜索，直到两个搜索方向相遇。
     - **010 加权 A\* (Weighted A\*)**
       - Pohl (1970)
       - ![010\_Weighted\_Astar\_w2.0](Search_2D/gif/010_Weighted_Astar_w2.0.gif)
-      - Path length: 57.360; Algorithm time: 6.076 ms (Algorithm-only, no animation/GIF)
+      - Path length: 57.360; Algorithm time: 6.076 ms
       - 算法心得：
         加权 A\* 算法是 A\* 算法的一种变体，它通过对每个节点的代价进行加权来调整搜索过程。
     - **011 分层 A\* (Hierarchical A\* - HPA\*)**
       - Botea, Müller, Schaeffer (2004)
       - ![011\_Hierarchical\_Astar](Search_2D/gif/011_Hierarchical_Astar.gif)
-      - Path length: 51.637; Algorithm time: 2.379 ms (Algorithm-only, no animation/GIF)
+      - Path length: 51.637; Algorithm time: 2.379 ms
       - 算法心得：
         分层 A\* 算法是 A\* 算法的一种变体，它将搜索空间划分为多个层次，每个层次使用 A\* 算法进行搜索。这里展示两个层次。
     - **012 并行 A\* (Parallel A\*)**
       - Zhou & Zeng (2015)
       - ![012\_Parallel\_Astar](Search_2D/gif/012_Parallel_Astar.gif)
-      - Path length: total 147.088, avg 47.366, n=3; Algorithm time: 60.810 ms (Algorithm-only, no animation/GIF)
+      - Path length: total 147.088, avg 47.366, n=3; Algorithm time: 60.810 ms
       - 算法心得：
         并行 A\* 算法的优点是可以利用多核处理器的并行计算能力，加快搜索速度。这里难以展示这种并行改为展示多个终点复用查询路径的情况
     - **013 Hybrid A\***
@@ -232,7 +232,7 @@ DEMO GIF      [#################...]  87%   86/99
 - **047 随机路径规划 (Random Path Planning - RPP)**
   - Barraquand & Latombe (1991)
   - ![047\_random\_path\_planning](Search_2D/gif/047_random_path_planning.gif)
-  - Path length: 63.051; Algorithm time: 3734.890 ms (Algorithm-only, no animation/GIF)
+  - Path length: 63.051; Algorithm time: 3734.890 ms
   - 算法心得：
     通过随机采样自由空间节点并连接可见邻居，逐步形成随机路网；随后在路网上搜索可行路径，适合展示随机采样如何绕开复杂障碍。
 - **快速扩展随机树 (Rapidly-Exploring Random Trees - RRT)**
@@ -248,13 +248,13 @@ DEMO GIF      [#################...]  87%   86/99
   - **051 动态 RRT (Dynamic RRT)**
     - Ferguson, Howard, Likhachev (2008)
     - ![051\_dynamic\_rrt](Search_2D/gif/051_dynamic_rrt.gif)
-    - Path length: 78.887; Algorithm time: 3870.116 ms (Algorithm-only, no animation/GIF)
+    - Path length: 78.887; Algorithm time: 3870.116 ms
     - 算法心得：
       Dynamic RRT 先保留旧地图中的随机树和路径，环境变化后标记被新障碍截断的边，剪掉失效子树，再从剩余有效树继续修复到目标。
   - **052 RRT-Dubins (考虑运动学约束)**
     - LaValle & Kuffner (2001) (Dubins with RRT)
     - ![052\_dubins\_rrt](Search_2D/gif/052_dubins_rrt.gif)
-    - Path length: 63.973; Algorithm time: 7890.028 ms (Algorithm-only, no animation/GIF)
+    - Path length: 63.973; Algorithm time: 7890.028 ms
     - 算法心得：
       RRT-Dubins 将节点扩展到 `(x, y, yaw)` 状态空间，每条边必须满足最大曲率约束，因此路径会呈现连续转向而不是任意折线。
 - **最优快速扩展随机树 (Optimal RRTs)**
@@ -323,12 +323,28 @@ DEMO GIF      [#################...]  87%   86/99
     - ![071\_voronoi](Search_2D/gif/071_voronoi.gif)
   - **072 Voronoi 场 (Voronoi Field)**
     - Okabe, Boots, Sugihara, Chiu (2000)
+    - ![072\_voronoi\_field](Search_2D/gif/072_voronoi_field.gif)
+    - Path length: 55.698; Algorithm time: 3786.940 ms
+    - 算法心得：
+      Voronoi Field 用障碍距离场和 Voronoi ridge 构造连续代价，路径不会只贴最短线，而会主动远离障碍边界。
   - **073 加权 Voronoi 图 (Weighted Voronoi Diagram)**
     - Aurenhammer & Edelsbrunner (1984)
+    - ![073\_weighted\_voronoi](Search_2D/gif/073_weighted_voronoi.gif)
+    - Path length: 55.698; Algorithm time: 4063.387 ms
+    - 算法心得：
+      Weighted Voronoi 为不同区域赋予不同障碍影响权重，使路径在同样的 Voronoi 结构上偏向代价更低、更安全的通道。
   - **074 模糊 Voronoi 图 (Fuzzy Voronoi Diagram)**
     - Jooyandeh, Mohades Khorasani (2008)
+    - ![074\_fuzzy\_voronoi](Search_2D/gif/074_fuzzy_voronoi.gif)
+    - Path length: 57.698; Algorithm time: 3838.347 ms
+    - 算法心得：
+      Fuzzy Voronoi 用软隶属度混合“离障碍远”和“靠近 Voronoi ridge”，避免硬阈值导致路径突然切换。
   - **075 自适应 Voronoi 场 (Adaptive Voronoi Field)**
     - Garrido, Moreno, Blanco, Medina (2010)
+    - ![075\_adaptive\_voronoi\_field](Search_2D/gif/075_adaptive_voronoi_field.gif)
+    - Path length: 55.698; Algorithm time: 3961.134 ms
+    - 算法心得：
+      Adaptive Voronoi Field 根据局部通道宽度调整 ridge 吸引力，在狭窄区域更强调居中通过，在开阔区域允许更直接地朝目标推进。
 
 ## 六、基于曲线与运动学的规划 (Curve-Based & Kinematic Planning)
 
@@ -372,37 +388,37 @@ DEMO GIF      [#################...]  87%   86/99
   - **087 速度障碍 (VO)**
     - Fiorini & Shiller (1998)
     - ![087\_velocity\_obstacle](Search_2D/gif/087_velocity_obstacle.gif)
-    - Path length: total 448.059, avg 44.806, n=10; Algorithm time: 7960.935 ms (Algorithm-only, no animation/GIF)
+    - Path length: total 448.059, avg 44.806, n=10; Algorithm time: 7960.935 ms
     - 算法心得：
       10 个智能体左右相向穿越同一通道，VO 让每个智能体独立避开预测速度障碍，适合作为后续 reciprocal 方法的基线对比。
   - **088 相互速度障碍 (Reciprocal Velocity Obstacles - RVO)**
     - van den Berg, Lin, Manocha (2008)
     - ![088\_reciprocal\_velocity\_obstacle](Search_2D/gif/088_reciprocal_velocity_obstacle.gif)
-    - Path length: total 441.718, avg 44.172, n=10; Algorithm time: 7834.005 ms (Algorithm-only, no animation/GIF)
+    - Path length: total 441.718, avg 44.172, n=10; Algorithm time: 7834.005 ms
     - 算法心得：
       RVO 将避让责任在相向智能体之间分摊，比单边 VO 更容易形成双方同时让行的轨迹。
   - **089 混合相互速度障碍 (Hybrid Reciprocal Velocity Obstacles - HRVO)**
     - Snape, van den Berg, Guy, Manocha (2011)
     - ![089\_hybrid\_reciprocal\_velocity\_obstacle](Search_2D/gif/089_hybrid_reciprocal_velocity_obstacle.gif)
-    - Path length: total 430.937, avg 43.094, n=10; Algorithm time: 8445.856 ms (Algorithm-only, no animation/GIF)
+    - Path length: total 430.937, avg 43.094, n=10; Algorithm time: 8445.856 ms
     - 算法心得：
       HRVO 在 reciprocal 思路上加入混合侧向选择，减少双方对称避让时的左右摇摆。
   - **090 最优相互碰撞避免 (Optimal Reciprocal Collision Avoidance - ORCA)**
     - van den Berg, Guy, Lin, Manocha (2008, 2011)
     - ![090\_orca](Search_2D/gif/090_orca.gif)
-    - Path length: total 446.853, avg 44.685, n=10; Algorithm time: 7746.566 ms (Algorithm-only, no animation/GIF)
+    - Path length: total 446.853, avg 44.685, n=10; Algorithm time: 7746.566 ms
     - 算法心得：
       ORCA 用近似半平面约束筛选速度，在中间障碍和迎面人流叠加时保持更稳定的安全间距。
   - **091 行人最优相互碰撞避免 (Pedestrian ORCA - PORCA)**
     - Luo, Cai, Bera, Hsu, Lee, Manocha (2018)
     - ![091\_porca](Search_2D/gif/091_porca.gif)
-    - Path length: total 422.992, avg 42.299, n=10; Algorithm time: 8686.551 ms (Algorithm-only, no animation/GIF)
+    - Path length: total 422.992, avg 42.299, n=10; Algorithm time: 8686.551 ms
     - 算法心得：
       PORCA 加入行人式侧向偏好和速度调制，更像人群在窄通道里自然分流通过。
   - **092 椭圆相互速度障碍 (Elliptical Reciprocal Velocity Obstacles - ERVO / EORCA)**
     - Best, Narang, Manocha (2016)
     - ![092\_elliptical\_reciprocal\_velocity\_obstacle](Search_2D/gif/092_elliptical_reciprocal_velocity_obstacle.gif)
-    - Path length: total 425.009, avg 42.501, n=10; Algorithm time: 8299.813 ms (Algorithm-only, no animation/GIF)
+    - Path length: total 425.009, avg 42.501, n=10; Algorithm time: 8299.813 ms
     - 算法心得：
       ERVO 用椭圆速度障碍表达迎面运动的非圆形风险区，能更早对正面会车做出侧向避让。
 - **基于搜索的冲突解决 (Search-Based Conflict Resolution)**
@@ -488,11 +504,11 @@ DEMO GIF      [#################...]  87%   86/99
 
 |  #  | 算法            |  状态 |    #   | 算法                     |   状态   |
 | :-: | :------------ | :-: | :----: | :--------------------- | :----: |
-| 068 | APF           |   ✅   |   073  | Weighted Voronoi       |   TODO   |
-| 069 | DWA           |   ✅   |   074  | Fuzzy Voronoi          |   TODO   |
-| 070 | VFH           |  TODO |   075  | Adaptive Voronoi Field |   TODO   |
+| 068 | APF           |   ✅   |   073  | Weighted Voronoi       |   ✅   |
+| 069 | DWA           |   ✅   |   074  | Fuzzy Voronoi          |   ✅   |
+| 070 | VFH           |  TODO |   075  | Adaptive Voronoi Field |   ✅   |
 | 071 | Basic Voronoi |  ✅  | | | |
-| 072 | Voronoi Field |  TODO | | | |
+| 072 | Voronoi Field |  ✅ | | | |
 
 **六、基于曲线与运动学的规划 (Curve-Based & Kinematic)**
 
