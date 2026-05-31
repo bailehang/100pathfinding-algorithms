@@ -218,7 +218,7 @@ DEMO GIF      [################....]  78%   77/99
   - A* over tightly packed six-neighbor hexagonal cells
   - ![043\_hex\_cell\_graph](Search_2D/gif/043_hex_cell_graph.gif)
 - **044 NavMesh 多边形搜索 (NavMesh Cell Graph Search)**
-  - A* over precomputed convex navmesh polygons and portal adjacency
+  - Delaunay triangulation around two circular obstacles, then merge triangles into 3-6 sided convex navmesh polygons
   - ![044\_navmesh\_cell\_graph](Search_2D/gif/044_navmesh_cell_graph.gif)
 - **045 层级格子搜索 (Hierarchical Cell Search)**
   - Aggregate cells into cluster/region graph, search regions first, then refine cells

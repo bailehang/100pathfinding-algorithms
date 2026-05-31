@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
 from PIL import Image
+from scipy.spatial import Delaunay
 
 
 class PrecomputedCellGraph:
@@ -30,6 +31,9 @@ class PrecomputedCellGraph:
         self.region_centers = {}
         self.region_edges = {}
         self.changed_cells = set()
+        self.obstacles = []
+        self.navmesh_points = []
+        self.navmesh_triangles = []
         self.build()
 
     def build(self):
@@ -41,7 +45,6 @@ class PrecomputedCellGraph:
             self.start, self.goal = "h_0_2", "h_11_5"
         elif self.mode == "navmesh":
             self.build_navmesh_cells()
-            self.start, self.goal = "n_0_1", "n_8_1"
         elif self.mode == "hier":
             self.build_hierarchical_cells()
             self.start, self.goal = "r_0_1", "r_11_6"
@@ -88,30 +91,140 @@ class PrecomputedCellGraph:
                 )
 
     def build_navmesh_cells(self):
-        blocked = {(3, 1), (4, 1), (6, 0)}
-        xs = [3.0, 7.7, 12.5, 17.1, 22.2, 27.0, 32.2, 37.2, 42.5, 47.0]
-        lower = [3.0, 3.6, 3.2, 4.0, 3.3, 3.8, 3.2, 3.7, 3.1, 3.5]
-        mid_a = [10.3, 10.9, 10.0, 11.2, 10.4, 11.0, 10.1, 10.8, 10.2, 10.7]
-        mid_b = [17.4, 16.7, 17.9, 17.0, 18.1, 17.2, 18.0, 16.9, 17.8, 17.1]
-        upper = [25.5, 25.0, 25.8, 25.2, 26.0, 25.4, 26.2, 25.3, 25.9, 25.1]
-        bands = [lower, mid_a, mid_b, upper]
-        for col in range(len(xs) - 1):
-            for row in range(3):
-                polygon = [
-                    (xs[col], bands[row][col]),
-                    (xs[col + 1], bands[row][col + 1]),
-                    (xs[col + 1], bands[row + 1][col + 1]),
-                    (xs[col], bands[row + 1][col]),
-                ]
-                center = self.centroid(polygon)
-                self.add_cell(
-                    f"n_{col}_{row}",
-                    center,
-                    polygon,
-                    "navmesh",
-                    (col, row) in blocked,
-                    coord=(col, row),
+        self.navmesh_bounds = (2.0, 47.0, 3.0, 25.0)
+        self.obstacles = [
+            {"center": (16.4, 14.0), "radius": 3.15},
+            {"center": (31.0, 13.0), "radius": 3.45},
+        ]
+        points, tags = self.navmesh_sample_points()
+        self.navmesh_points = points
+        triangles = self.filtered_delaunay_triangles(points, tags)
+        self.navmesh_triangles = [[tuple(points[index]) for index in tri] for tri in triangles]
+        merged = self.merge_navmesh_triangles(self.navmesh_triangles)
+        for index, polygon in enumerate(merged):
+            self.add_cell(f"n_{index}", self.centroid(polygon), polygon, "navmesh")
+        self.start = self.pick_cell_containing((4.8, 8.6))
+        self.goal = self.pick_cell_containing((43.8, 19.7))
+
+    def navmesh_sample_points(self):
+        xmin, xmax, ymin, ymax = self.navmesh_bounds
+        points = []
+        tags = []
+
+        def add(point, tag):
+            if any(self.same_point(point, existing) for existing in points):
+                return
+            points.append(point)
+            tags.append(tag)
+
+        for x in np.linspace(xmin, xmax, 10):
+            add((float(x), ymin), ("outer", 0))
+            add((float(x), ymax), ("outer", 1))
+        for y in np.linspace(ymin, ymax, 6):
+            add((xmin, float(y)), ("outer", 2))
+            add((xmax, float(y)), ("outer", 3))
+        for x in np.linspace(xmin + 4.5, xmax - 4.5, 8):
+            for y in np.linspace(ymin + 3.0, ymax - 3.0, 5):
+                point = (float(x), float(y))
+                if not self.inside_any_circle(point, margin=1.15):
+                    add(point, ("field", 0))
+        for obstacle_index, obstacle in enumerate(self.obstacles):
+            cx, cy = obstacle["center"]
+            radius = obstacle["radius"]
+            for sample_index in range(18):
+                angle = 2.0 * math.pi * sample_index / 18.0
+                add(
+                    (cx + radius * math.cos(angle), cy + radius * math.sin(angle)),
+                    ("circle", obstacle_index, sample_index, 18),
                 )
+        return np.array(points, dtype=float), tags
+
+    def filtered_delaunay_triangles(self, points, tags):
+        delaunay = Delaunay(points)
+        triangles = []
+        for tri in delaunay.simplices:
+            polygon = [tuple(points[index]) for index in tri]
+            if abs(self.polygon_area(polygon)) < 0.1:
+                continue
+            if self.triangle_hits_obstacle(tri, points, tags):
+                continue
+            triangles.append(tuple(tri))
+        return triangles
+
+    def triangle_hits_obstacle(self, tri, points, tags):
+        polygon = [tuple(points[index]) for index in tri]
+        center = self.centroid(polygon)
+        if self.inside_any_circle(center, margin=0.98):
+            return True
+        for local_index in range(3):
+            a_index = tri[local_index]
+            b_index = tri[(local_index + 1) % 3]
+            a = tuple(points[a_index])
+            b = tuple(points[b_index])
+            for obstacle_index, obstacle in enumerate(self.obstacles):
+                if self.is_circle_boundary_edge(tags[a_index], tags[b_index], obstacle_index):
+                    continue
+                if self.distance_point_to_segment(obstacle["center"], a, b) < obstacle["radius"] * 0.985:
+                    return True
+        return False
+
+    @staticmethod
+    def is_circle_boundary_edge(a_tag, b_tag, obstacle_index):
+        if a_tag[0] != "circle" or b_tag[0] != "circle":
+            return False
+        if a_tag[1] != obstacle_index or b_tag[1] != obstacle_index:
+            return False
+        samples = a_tag[3]
+        delta = abs(a_tag[2] - b_tag[2])
+        return delta == 1 or delta == samples - 1
+
+    def merge_navmesh_triangles(self, triangles):
+        polygons = [
+            {"points": self.sort_polygon(triangle), "area": abs(self.polygon_area(triangle))}
+            for triangle in triangles
+        ]
+        changed = True
+        while changed:
+            changed = False
+            for left in range(len(polygons)):
+                if changed:
+                    break
+                for right in range(left + 1, len(polygons)):
+                    merged = self.try_merge_polygons(polygons[left], polygons[right])
+                    if not merged:
+                        continue
+                    polygons[left] = merged
+                    del polygons[right]
+                    changed = True
+                    break
+        return [polygon["points"] for polygon in polygons]
+
+    def try_merge_polygons(self, left, right):
+        if len(self.shared_vertex_keys(left["points"], right["points"])) < 2:
+            return None
+        unique_points = []
+        seen = set()
+        for point in left["points"] + right["points"]:
+            key = self.point_key(point)
+            if key in seen:
+                continue
+            seen.add(key)
+            unique_points.append(point)
+        if len(unique_points) > 6:
+            return None
+        ordered = self.sort_polygon(unique_points)
+        area = abs(self.polygon_area(ordered))
+        if not self.is_convex_polygon(ordered):
+            return None
+        if abs(area - left["area"] - right["area"]) > 0.04:
+            return None
+        return {"points": ordered, "area": area}
+
+    def pick_cell_containing(self, point):
+        for cell_id, cell in self.cells.items():
+            if self.point_in_polygon(point, cell["polygon"]):
+                return cell_id
+        return min(self.cells, key=lambda cell_id: math.hypot(self.cells[cell_id]["center"][0] - point[0], self.cells[cell_id]["center"][1] - point[1]))
 
     def build_hierarchical_cells(self):
         blocked = {(3, 3), (4, 3), (5, 3), (6, 1), (7, 4), (8, 4), (8, 5)}
@@ -146,6 +259,8 @@ class PrecomputedCellGraph:
         self.edges = {cell_id: [] for cell_id in self.cells}
         if self.mode == "hex":
             self.build_hex_edges()
+        elif self.mode == "navmesh":
+            self.build_navmesh_edges()
         else:
             self.build_grid_edges()
 
@@ -171,8 +286,22 @@ class PrecomputedCellGraph:
                 if neighbor:
                     self.connect(cell_id, neighbor)
 
+    def build_navmesh_edges(self):
+        portal_index = {}
+        for cell_id, cell in self.cells.items():
+            for edge in self.polygon_edges(cell["polygon"]):
+                portal_index.setdefault(self.edge_key(edge), []).append(cell_id)
+        for shared_cells in portal_index.values():
+            if len(shared_cells) < 2:
+                continue
+            for i, a in enumerate(shared_cells):
+                for b in shared_cells[i + 1:]:
+                    self.connect(a, b)
+
     def connect(self, a, b):
         if self.cells[a]["blocked"] or self.cells[b]["blocked"]:
+            return
+        if any(neighbor == b for neighbor, _ in self.edges[a]):
             return
         cost = self.distance(a, b) * 0.5 * (self.cells[a]["cost"] + self.cells[b]["cost"])
         self.edges[a].append((b, cost))
@@ -202,6 +331,8 @@ class PrecomputedCellGraph:
             path, snapshots = self.search_hierarchical()
         elif self.mode == "dynamic":
             path, snapshots = self.search_dynamic()
+        elif self.mode == "navmesh":
+            path, snapshots = self.search_navmesh()
         else:
             path, snapshots = self.search_cells(initial_phase="precomputed cells loaded")
         if not path:
@@ -249,6 +380,20 @@ class PrecomputedCellGraph:
         if self.path:
             snapshots.append(self.snapshot(len(self.closed), "final cell route", final=True, old_path=old_path))
         return self.path, snapshots
+
+    def search_navmesh(self):
+        self.open_set = set()
+        self.closed = []
+        self.closed_set = set()
+        self.parent = {}
+        self.g = {}
+        self.path = []
+        process = [
+            self.snapshot(0, "Delaunay triangles generated around circular obstacles", show_triangles=True),
+            self.snapshot(0, "adjacent triangles merged into 3-6 sided convex polygons"),
+        ]
+        path, snapshots = self.search_cells(initial_phase="search merged convex navmesh polygons")
+        return path, process + snapshots
 
     def search_hierarchical(self):
         start_region = self.cells[self.start]["cluster"]
@@ -358,7 +503,7 @@ class PrecomputedCellGraph:
         if self.mode == "hex":
             return "A* follows six-neighbor hexagonal cells"
         if self.mode == "navmesh":
-            return "A* crosses convex navmesh polygons through portals"
+            return "A* crosses 3-6 sided convex navmesh polygons through portals"
         return "dynamic repair expands around changed blocked/cost cells"
 
     def heuristic(self, cell_id):
@@ -398,7 +543,7 @@ class PrecomputedCellGraph:
             current = previous
         return list(reversed(path))
 
-    def snapshot(self, step, phase, final=False, old_path=None, region_open=None, region_closed=None, region_path=None):
+    def snapshot(self, step, phase, final=False, old_path=None, region_open=None, region_closed=None, region_path=None, show_triangles=False):
         hint = self.extract_path(self.closed[-1]) if self.closed else []
         return {
             "step": step,
@@ -412,6 +557,7 @@ class PrecomputedCellGraph:
             "region_open": list(region_open or []),
             "region_closed": list(region_closed or []),
             "region_path": list(region_path or []),
+            "show_triangles": show_triangles,
         }
 
     def save_gif(self, snapshots, gif_name, max_frames=48):
@@ -443,6 +589,20 @@ class PrecomputedCellGraph:
                     linewidth=1.0,
                     alpha=0.98,
                     zorder=1,
+                )
+            )
+        if snapshot["show_triangles"]:
+            self.draw_navmesh_triangles(ax)
+        for obstacle in self.obstacles:
+            ax.add_patch(
+                patches.Circle(
+                    obstacle["center"],
+                    obstacle["radius"],
+                    edgecolor="#111827",
+                    facecolor="#1f2937",
+                    linewidth=1.1,
+                    alpha=0.98,
+                    zorder=3,
                 )
             )
         self.draw_cluster_overlays(ax, snapshot)
@@ -519,6 +679,18 @@ class PrecomputedCellGraph:
                     zorder=2,
                 )
 
+    def draw_navmesh_triangles(self, ax):
+        for triangle in self.navmesh_triangles:
+            closed = triangle + [triangle[0]]
+            ax.plot(
+                [point[0] for point in closed],
+                [point[1] for point in closed],
+                color="#f97316",
+                linewidth=0.7,
+                alpha=0.52,
+                zorder=4,
+            )
+
     def draw_cluster_overlays(self, ax, snapshot):
         if self.mode != "hier":
             return
@@ -568,6 +740,80 @@ class PrecomputedCellGraph:
         ys = [self.cells[cell_id]["center"][1] for cell_id in cell_ids]
         return (sum(xs) / len(xs), sum(ys) / len(ys))
 
+    def inside_any_circle(self, point, margin=1.0):
+        px, py = point
+        for obstacle in self.obstacles:
+            cx, cy = obstacle["center"]
+            if math.hypot(px - cx, py - cy) < obstacle["radius"] * margin:
+                return True
+        return False
+
+    @staticmethod
+    def same_point(a, b):
+        return abs(a[0] - b[0]) < 1e-6 and abs(a[1] - b[1]) < 1e-6
+
+    @staticmethod
+    def point_key(point):
+        return (round(point[0], 5), round(point[1], 5))
+
+    @staticmethod
+    def shared_vertex_keys(a_points, b_points):
+        a_keys = {PrecomputedCellGraph.point_key(point) for point in a_points}
+        b_keys = {PrecomputedCellGraph.point_key(point) for point in b_points}
+        return a_keys & b_keys
+
+    @staticmethod
+    def distance_point_to_segment(point, a, b):
+        px, py = point
+        ax, ay = a
+        bx, by = b
+        dx = bx - ax
+        dy = by - ay
+        denom = dx * dx + dy * dy
+        if denom <= 1e-12:
+            return math.hypot(px - ax, py - ay)
+        t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / denom))
+        closest = (ax + t * dx, ay + t * dy)
+        return math.hypot(px - closest[0], py - closest[1])
+
+    @staticmethod
+    def sort_polygon(points):
+        cx = sum(point[0] for point in points) / len(points)
+        cy = sum(point[1] for point in points) / len(points)
+        return sorted(points, key=lambda point: math.atan2(point[1] - cy, point[0] - cx))
+
+    @staticmethod
+    def polygon_area(points):
+        area = 0.0
+        for index, point in enumerate(points):
+            next_point = points[(index + 1) % len(points)]
+            area += point[0] * next_point[1] - next_point[0] * point[1]
+        return 0.5 * area
+
+    @staticmethod
+    def is_convex_polygon(points):
+        if len(points) < 3:
+            return False
+        signs = []
+        for index in range(len(points)):
+            a = points[index]
+            b = points[(index + 1) % len(points)]
+            c = points[(index + 2) % len(points)]
+            cross = (b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0])
+            if abs(cross) > 1e-7:
+                signs.append(cross > 0)
+        return bool(signs) and all(sign == signs[0] for sign in signs)
+
+    @staticmethod
+    def point_in_polygon(point, polygon):
+        x, y = point
+        inside = False
+        for index, a in enumerate(polygon):
+            b = polygon[(index + 1) % len(polygon)]
+            if ((a[1] > y) != (b[1] > y)) and (x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]):
+                inside = not inside
+        return inside
+
     def bounds(self, pad=0.0):
         xs, ys = [], []
         for cell in self.cells.values():
@@ -602,3 +848,19 @@ class PrecomputedCellGraph:
             sum(point[0] for point in polygon) / len(polygon),
             sum(point[1] for point in polygon) / len(polygon),
         )
+
+    @staticmethod
+    def polygon_edges(polygon):
+        return [
+            (polygon[index], polygon[(index + 1) % len(polygon)])
+            for index in range(len(polygon))
+        ]
+
+    @staticmethod
+    def edge_key(edge):
+        a, b = edge
+        points = (
+            (round(a[0], 5), round(a[1], 5)),
+            (round(b[0], 5), round(b[1], 5)),
+        )
+        return tuple(sorted(points))
