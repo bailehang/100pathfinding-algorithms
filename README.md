@@ -8,11 +8,11 @@ I am very interested in further summarizing all the pathfinding algorithms.
 
 > This repository is progressing toward the long-term goal of implementing **100 pathfinding algorithms**.
 
-**总进度：69 / 94 已实现（约 73%），其中 63 个附带演示动图。**
+**总进度：73 / 94 已实现（约 78%），其中 71 个附带演示动图。**
 
 ```text
-IMPLEMENTED   [###############.....]  73%   69/94
-DEMO GIF      [#############.......]  67%   63/94
+IMPLEMENTED   [################....]  78%   73/94
+DEMO GIF      [###############.....]  76%   71/94
 ```
 
 ## Contents
@@ -184,19 +184,27 @@ DEMO GIF      [#############.......]  67%   63/94
         - ![032\_JPS](Search_2D/gif/032_JPS.gif)
       - **033 JPS+**
         - Harabor & Grastien (2012)
+        - ![033\_JPS\_plus](Search_2D/gif/033_JPS_plus.gif)
       - **034 JPS++**
         - Pochter, Zohar, Rosenschein, Sturtevant (2012)
+        - ![034\_Bidirectional\_JPS\_Plus](Search_2D/gif/034_Bidirectional_JPS_Plus.gif)
       - **035 欧几里得 JPS (Euclidean JPS - EJPS)**
         - Strasser, Botea, Harabor (2016)
+        - ![035\_Euclidean\_JPS](Search_2D/gif/035_Euclidean_JPS.gif)
       - **036 分层 JPS (Hierarchical JPS - HJPS)**
         - Harabor & Grastien (2014)
+        - ![036\_Hierarchical\_JPS](Search_2D/gif/036_Hierarchical_JPS.gif)
       - **037 动态 JPS (Dynamic JPS)**
         - Papadakis (2013)
+        - ![037\_dynamic\_jps](Search_2D/gif/037_dynamic_jps.gif)
       - **038 JPS-Lite**
         - Gong, Zhang, Wang, Wang (2019)
+        - ![038\_jps\_lite](Search_2D/gif/038_jps_lite.gif)
       - **039 _(预留 JPS 变体 / Reserved JPS-family slot)_**
+        - ![039\_reserved\_jps\_variant](Search_2D/gif/039_reserved_jps_variant.gif)
       - **040 自适应 JPS (Adaptive JPS)**
         - Su, Hsueh (2016)
+        - ![040\_adaptive\_jps](Search_2D/gif/040_adaptive_jps.gif)
   - **041 格网规划 (Lattice Planning)**
     - Pivtoraiko, Kelly (2005), Likhachev & Ferguson (2009)
 
@@ -381,14 +389,14 @@ DEMO GIF      [#############.......]  67%   63/94
 | 009 | Bidirectional A\*        |  ✅  |   030  | Adaptive Theta\*           |    ✅   |
 | 010 | Weighted A\*             |  ✅  |   031  | Polyanya                   |    ✅   |
 | 011 | Hierarchical A\* (HPA\*) |  ✅  |   032  | JPS                        |    ✅   |
-| 012 | Parallel A\*             |  ✅  |   033  | JPS+                       |   WIP   |
-| 013 | Hybrid A\*               |  ✅  |   034  | JPS++ / Bidirectional JPS+ |   WIP   |
-| 014 | LRTA\*                   |  ✅  |   035  | Euclidean JPS (EJPS)       |   WIP   |
-| 015 | Repairing A\*            |  ✅  |   036  | Hierarchical JPS (HJPS)    |   WIP   |
-| 016 | LPA\*                    |  ✅  |   037  | Dynamic JPS                |   TODO   |
-| 017 | ARA\*                    |  ✅  |   038  | JPS-Lite                   |   TODO   |
-| 018 | RTAA\*                   |  ✅  |   039  | Reserved JPS  |   TODO   |
-| 019 | D\*                      |  ✅  |   040  | Adaptive JPS               |   TODO   |
+| 012 | Parallel A\*             |  ✅  |   033  | JPS+                       |   ✅   |
+| 013 | Hybrid A\*               |  ✅  |   034  | JPS++ / Bidirectional JPS+ |   ✅   |
+| 014 | LRTA\*                   |  ✅  |   035  | Euclidean JPS (EJPS)       |   ✅   |
+| 015 | Repairing A\*            |  ✅  |   036  | Hierarchical JPS (HJPS)    |   ✅   |
+| 016 | LPA\*                    |  ✅  |   037  | Dynamic JPS                |   ✅   |
+| 017 | ARA\*                    |  ✅  |   038  | JPS-Lite                   |   ✅   |
+| 018 | RTAA\*                   |  ✅  |   039  | Reserved JPS  |   ✅   |
+| 019 | D\*                      |  ✅  |   040  | Adaptive JPS               |   ✅   |
 | 020 | Lazy D\*                 |  ✅  |   041  | Lattice Planning           |   TODO   |
 | 021 | Focused D\*              |  ✅  | |                     | |
 
