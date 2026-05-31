@@ -8,11 +8,11 @@ I am very interested in further summarizing all the pathfinding algorithms.
 
 > This repository is progressing toward the long-term goal of implementing **99 pathfinding algorithms**.
 
-**总进度：93 / 99 已实现（约 94%），其中 93 个附带演示动图。**
+**总进度：99 / 99 已实现（100%），其中 99 个附带演示动图。**
 
 ```text
-IMPLEMENTED   [###################.]  94%   93/99
-DEMO GIF      [###################.]  94%   93/99
+IMPLEMENTED   [####################] 100%   99/99
+DEMO GIF      [####################] 100%   99/99
 ```
 
 ## Contents
@@ -317,6 +317,10 @@ DEMO GIF      [###################.]  94%   93/99
   - ![069\_DWA](Search_2D/gif/069_DWA.gif)
 - **070 向量场直方图 (Vector Field Histogram - VFH)**
   - Borenstein & Koren (1991)
+  - ![070\_VFH](Search_2D/gif/070_VFH.gif)
+  - Path length: 53.450; Algorithm time: 24.365 ms
+  - 算法心得：
+    VFH 将局部障碍投影成极坐标直方图，在可通行扇区中选择最接近局部目标的方向，适合展示反应式避障和全局引导的结合。
 - **Voronoi 图方法 (Voronoi Diagram Methods)**
   - **071 基础 Voronoi 图 (Basic Voronoi Diagram)**
     - Voronoi (1908), Shamos & Hoey (1975)
@@ -372,6 +376,10 @@ DEMO GIF      [###################.]  94%   93/99
   - ![082\_Reeds\_Shepp\_Curves](Search_2D/gif/082_Reeds_Shepp_Curves.gif)
 - **083 车辆路径问题 (Vehicle Routing Problem - VRP)**
   - Dantzig & Ramser (1959)
+  - ![083\_VRP](Search_2D/gif/083_VRP.gif)
+  - Path length: total 199.023, avg 66.341, n=3; Algorithm time: 0.113 ms
+  - 算法心得：
+    VRP 在单条最短路之外加入车辆容量和客户分配约束，Clarke-Wright savings 合并过程直观展示了从单客户路线到多车配送方案的构造。
 
 ## 七、基于模型的控制与规划 (Model-Based Control & Planning)
 
@@ -440,9 +448,17 @@ DEMO GIF      [###################.]  94%   93/99
     - Silver (2005)
   - **095 窗口化分层协作 A\* (Windowed HCA\* - WHCA\*)**
     - Silver (2005)
+    - ![095\_WHCA\_star](Search_2D/gif/095_WHCA_star.gif)
+    - Path length: total 199.196, avg 49.799, n=4; Algorithm time: 18.867 ms
+    - 算法心得：
+      WHCA\* 在上层 guide 的约束下只规划有限时间窗，并把近期 cell/edge 写入预约表，适合把多智能体冲突处理拆成反复滚动的小问题。
 - **基于社会力模型 (Social Force) 的方法**
   - **096 UE5 AI Avoidance**
     - UE5 MassAI MassAvoidanceProcessors (2023)
+    - ![096\_UE5\_AI\_Avoidance](Search_2D/gif/096_UE5_AI_Avoidance.gif)
+    - Path length: total 439.950, avg 43.995, n=10; Algorithm time: 8219.779 ms
+    - 算法心得：
+      UE5 AI Avoidance 风格的局部转向把目标速度、分离力、障碍避让和速度平滑组合在一起，更贴近运行时大量智能体的连续避让管线。
 
 ## 九、其他规划方法 (Other Planning Methods)
 
@@ -451,8 +467,16 @@ DEMO GIF      [###################.]  94%   93/99
   - ![097\_Graph\_of\_Convex\_Sets](Search_2D/gif/097_Graph_of_Convex_Sets.gif)
 - **098 多智能体凸集图规划 (Multi-Agent Graph of Convex Sets - MGCS / MGCS\*)**
   - Marcucci, Tedrake (2019), Chia, Jiang, Graesdal, Kaelbling, Tedrake (2024)
+  - ![098\_MGCS](Search_2D/gif/098_MGCS.gif)
+  - Path length: total 169.456, avg 56.485, n=3; Algorithm time: 0.058 ms
+  - 算法心得：
+    MGCS 将每个智能体的连续运动约束映射到凸区域图上，并通过共享区域惩罚让多条路线在同一凸集网络内分流。
 - **099 多智能体多目标规划 (Multi-Agent Multi-Objective Planning - MAMOP)**
   - Chia, Jiang, Graesdal, Kaelbling, Tedrake (2024)
+  - ![099\_MAMOP](Search_2D/gif/099_MAMOP.gif)
+  - Path length: total 176.012, avg 58.671, n=3; Algorithm time: 0.274 ms
+  - 算法心得：
+    MAMOP 把距离、安全风险和共享区域拥堵放入同一个多目标比较过程，演示了从候选 Pareto 方案中选择折中解的流程。
 
 ---
 ### 逐算法实现状态明细 (per-algorithm status)
@@ -518,7 +542,7 @@ DEMO GIF      [###################.]  94%   93/99
 | :-: | :------------ | :-: | :----: | :--------------------- | :----: |
 | 068 | APF           |   ✅   |   073  | Weighted Voronoi       |   ✅   |
 | 069 | DWA           |   ✅   |   074  | Fuzzy Voronoi          |   ✅   |
-| 070 | VFH           |  TODO |   075  | Adaptive Voronoi Field |   ✅   |
+| 070 | VFH           |  ✅ |   075  | Adaptive Voronoi Field |   ✅   |
 | 071 | Basic Voronoi |  ✅  | | | |
 | 072 | Voronoi Field |  ✅ | | | |
 
@@ -529,7 +553,7 @@ DEMO GIF      [###################.]  94%   93/99
 | 076 | Polynomial Curves |   ✅   | 080 | TEB                |   ✅   |
 | 077 | Bezier Curves     |   ✅   | 081 | Dubins Curves      |   ✅   |
 | 078 | Cubic Spline      |   ✅   | 082 | Reeds-Shepp Curves |   ✅   |
-| 079 | B-Spline          |   ✅   | 083 | VRP                |  TODO |
+| 079 | B-Spline          |   ✅   | 083 | VRP                |  ✅ |
 
 **七、基于模型的控制与规划 (Model-Based Control)**
 
@@ -544,8 +568,8 @@ DEMO GIF      [###################.]  94%   93/99
 | :-: | :----------- | :-: | :----: | :--------------- | :----: |
 | 087 | VO           |  ✅ |   093  | CBS              |    ✅   |
 | 088 | RVO          |  ✅ |   094  | HCA\*            |    ✅   |
-| 089 | HRVO         |  ✅ |   095  | WHCA\*           |   TODO   |
-| 090 | ORCA         |  ✅ |   096  | UE5 AI Avoidance |   TODO   |
+| 089 | HRVO         |  ✅ |   095  | WHCA\*           |   ✅   |
+| 090 | ORCA         |  ✅ |   096  | UE5 AI Avoidance |   ✅   |
 | 091 | PORCA        |  ✅ | | | |
 | 092 | ERVO / EORCA |  ✅ | | | |
 
@@ -553,8 +577,8 @@ DEMO GIF      [###################.]  94%   93/99
 
 |  #  | 算法            |  状态 |    #   | 算法     |   状态   |
 | :-: | :------------ | :-: | :----: | :----- | :----: |
-| 097 | GCS / GCS\*   |  ✅  |   099  | MAMOP  |   TODO   |
-| 098 | MGCS / MGCS\* |  TODO | | | |
+| 097 | GCS / GCS\*   |  ✅  |   099  | MAMOP  |   ✅   |
+| 098 | MGCS / MGCS\* |  ✅ | | | |
 
 # Quick Start
 
