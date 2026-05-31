@@ -221,11 +221,11 @@ DEMO GIF      [####################] 100%   100/100
   - Delaunay triangulation around two circular obstacles, then merge triangles into 3-6 sided convex navmesh polygons
   - ![044\_navmesh\_cell\_graph](Search_2D/gif/044_navmesh_cell_graph.gif)
 - **045 Havok AI 通道图寻路 (Havok AI Corridor Map Pathfinding)**
-  - Havok AI style navmesh corridor, portal sequence, and funnel/string-pulling path extraction
+  - Havok AI style corridor samples with per-node clearance width and circle-based passage selection
   - ![045\_havok\_ai\_corridor\_map](Search_2D/gif/045_havok_ai_corridor_map.gif)
-  - Path length: 47.513; Algorithm time: 13.523 ms
+  - Path length: 56.113; Algorithm time: 18.524 ms
   - 算法心得：
-    Corridor Map 不直接在每个点上搜索，而是先在 NavMesh 多边形之间找到一串 corridor cells，再通过共享 portal 和 funnel/string-pulling 得到贴合通道的连续路径。
+    Corridor Map 的核心不是 portal 拉直，而是给通道样本记录可通行宽度；搜索时按 agent radius 过滤窄通道，并倾向选择 clearance 更大的圆形走廊。
 - **046 层级格子搜索 (Hierarchical Cell Search)**
   - Aggregate cells into cluster/region graph, search regions first, then refine cells
   - ![046\_hierarchical\_cell\_search](Search_2D/gif/046_hierarchical_cell_search.gif)
