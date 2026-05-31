@@ -8,11 +8,11 @@ I am very interested in further summarizing all the pathfinding algorithms.
 
 > This repository is progressing toward the long-term goal of implementing **100 pathfinding algorithms**.
 
-**总进度：65 / 94 已实现（约 69%），其中 59 个附带演示动图。**
+**总进度：69 / 94 已实现（约 73%），其中 63 个附带演示动图。**
 
 ```text
-IMPLEMENTED   [##############......]  69%   65/94
-DEMO GIF      [#############.......]  63%   59/94
+IMPLEMENTED   [###############.....]  73%   69/94
+DEMO GIF      [#############.......]  67%   63/94
 ```
 
 ## Contents
@@ -245,12 +245,16 @@ DEMO GIF      [#############.......]  63%   59/94
     - ![055\_AIT\_star](Search_2D/gif/055_AIT_star.gif)
   - **056 Anytime-RRT\***
     - Karaman, Walter, Perez, Frazzoli & Teller (2011)
+    - ![056\_anytime\_rrt\_star](Search_2D/gif/056_anytime_rrt_star.gif)
   - **057 Closed-loop RRT\* (CL-RRT\*)**
     - Luders, Kothari & How (2010)
+    - ![057\_closed\_loop\_rrt\_star](Search_2D/gif/057_closed_loop_rrt_star.gif)
   - **058 Spline-RRT\***
     - Lee, Song & Shim (2014)
+    - ![058\_spline\_rrt\_star](Search_2D/gif/058_spline_rrt_star.gif)
   - **059 LQR-RRT\***\*
     - Perez, Platt, Konidaris, Kaelbling & Lozano-Perez (2012)
+    - ![059\_lqr\_rrt\_star](Search_2D/gif/059_lqr_rrt_star.gif)
 
 ## 三、智能优化算法 (Intelligent Optimization Algorithms)
 
@@ -396,10 +400,10 @@ DEMO GIF      [#############.......]  63%   59/94
 | 043 | Basic RRT     |  ✅  | 053 | BIT\*          |  ✅ |
 | 044 | Goal-bias RRT |  ✅  | 054 | ABIT\*         |  ✅ |
 | 045 | RRT-Connect   |  ✅  | 055 | AIT\*          |  ✅ |
-| 046 | Dynamic RRT   |  WIP | 056 | Anytime-RRT\*  |  TODO |
-| 047 | RRT-Dubins    |  WIP | 057 | CL-RRT\*       |  TODO |
-| 048 | RRT\*         |  ✅ | 058 | Spline-RRT\*   |  TODO |
-| 049 | RRT\*-Smart   |  ✅ | 059 | LQR-RRT\*      |  TODO |
+| 046 | Dynamic RRT   |  WIP | 056 | Anytime-RRT\*  |  ✅ |
+| 047 | RRT-Dubins    |  WIP | 057 | CL-RRT\*       |  ✅ |
+| 048 | RRT\*         |  ✅ | 058 | Spline-RRT\*   |  ✅ |
+| 049 | RRT\*-Smart   |  ✅ | 059 | LQR-RRT\*      |  ✅ |
 | 050 | RRT#          |  ✅ | 051 | Informed RRT\* |  ✅ |
 
 **三、智能优化算法 (Intelligent Optimization)**
