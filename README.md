@@ -8,11 +8,11 @@ I am very interested in further summarizing all the pathfinding algorithms.
 
 > This repository is progressing toward the long-term goal of implementing **99 pathfinding algorithms**.
 
-**总进度：90 / 99 已实现（约 91%），其中 90 个附带演示动图。**
+**总进度：91 / 99 已实现（约 92%），其中 91 个附带演示动图。**
 
 ```text
-IMPLEMENTED   [##################..]  91%   90/99
-DEMO GIF      [##################..]  91%   90/99
+IMPLEMENTED   [##################..]  92%   91/99
+DEMO GIF      [##################..]  92%   91/99
 ```
 
 ## Contents
@@ -377,6 +377,10 @@ DEMO GIF      [##################..]  91%   90/99
 
 - **084 PID 控制器 (PID Controller - for path following)**
   - Minorsky (1922), Ziegler & Nichols (1942)
+  - ![084\_PID\_Controller](Search_2D/gif/084_PID_Controller.gif)
+  - Path length: 50.297; Algorithm time: 16.358 ms
+  - 算法心得：
+    PID 路径跟踪把规划出的参考路径转成连续控制问题，比例项快速修正朝向误差，积分项消除稳态偏差，微分项抑制转向振荡。
 - **085 线性二次型调节器 (Linear Quadratic Regulator - LQR)**
   - Kalman (1960)
 - **086 模型预测控制 (Model Predictive Control - MPC)**
@@ -523,7 +527,7 @@ DEMO GIF      [##################..]  91%   90/99
 
 |  #  | 算法  |  状态 |    #   | 算法     |   状态   |
 | :-: | :-- | :-: | :----: | :----- | :----: |
-| 084 | PID |  TODO |   086  | MPC    |   TODO   |
+| 084 | PID |  ✅ |   086  | MPC    |   TODO   |
 | 085 | LQR |  TODO | | | |
 
 **八、多智能体路径规划 (Multi-Agent / MAPF)**
