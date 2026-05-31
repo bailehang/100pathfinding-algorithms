@@ -383,7 +383,7 @@ DEMO GIF      [####################] 100%   100/100
 - **084 车辆路径问题 (Vehicle Routing Problem - VRP)**
   - Dantzig & Ramser (1959)
   - ![084\_VRP](Search_2D/gif/084_VRP.gif)
-  - Path length: total 199.023, avg 66.341, n=3; Algorithm time: 0.113 ms
+  - Path length: total 199.023, avg 66.341, n=3; Algorithm time: 0.119 ms
   - 算法心得：
     VRP 在单条最短路之外加入车辆容量和客户分配约束，Clarke-Wright savings 合并过程直观展示了从单客户路线到多车配送方案的构造。
 
