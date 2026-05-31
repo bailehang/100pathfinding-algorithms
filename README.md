@@ -8,11 +8,11 @@ I am very interested in further summarizing all the pathfinding algorithms.
 
 > This repository is progressing toward the long-term goal of implementing **99 pathfinding algorithms**.
 
-**总进度：80 / 99 已实现（约 81%），其中 78 个附带演示动图。**
+**总进度：86 / 99 已实现（约 87%），其中 84 个附带演示动图。**
 
 ```text
-IMPLEMENTED   [################....]  81%   80/99
-DEMO GIF      [################....]  79%   78/99
+IMPLEMENTED   [#################...]  87%   86/99
+DEMO GIF      [#################...]  85%   84/99
 ```
 
 ## Contents
@@ -363,16 +363,40 @@ DEMO GIF      [################....]  79%   78/99
 - **基于速度障碍 (Velocity Obstacle - VO) 的方法**
   - **087 速度障碍 (VO)**
     - Fiorini & Shiller (1998)
+    - ![087\_velocity\_obstacle](Search_2D/gif/087_velocity_obstacle.gif)
+    - Path length: total 448.059, avg 44.806, n=10; Algorithm time: 7960.935 ms (Algorithm-only, no animation/GIF)
+    - 算法心得：
+      10 个智能体左右相向穿越同一通道，VO 让每个智能体独立避开预测速度障碍，适合作为后续 reciprocal 方法的基线对比。
   - **088 相互速度障碍 (Reciprocal Velocity Obstacles - RVO)**
     - van den Berg, Lin, Manocha (2008)
+    - ![088\_reciprocal\_velocity\_obstacle](Search_2D/gif/088_reciprocal_velocity_obstacle.gif)
+    - Path length: total 441.718, avg 44.172, n=10; Algorithm time: 7834.005 ms (Algorithm-only, no animation/GIF)
+    - 算法心得：
+      RVO 将避让责任在相向智能体之间分摊，比单边 VO 更容易形成双方同时让行的轨迹。
   - **089 混合相互速度障碍 (Hybrid Reciprocal Velocity Obstacles - HRVO)**
     - Snape, van den Berg, Guy, Manocha (2011)
+    - ![089\_hybrid\_reciprocal\_velocity\_obstacle](Search_2D/gif/089_hybrid_reciprocal_velocity_obstacle.gif)
+    - Path length: total 430.937, avg 43.094, n=10; Algorithm time: 8445.856 ms (Algorithm-only, no animation/GIF)
+    - 算法心得：
+      HRVO 在 reciprocal 思路上加入混合侧向选择，减少双方对称避让时的左右摇摆。
   - **090 最优相互碰撞避免 (Optimal Reciprocal Collision Avoidance - ORCA)**
     - van den Berg, Guy, Lin, Manocha (2008, 2011)
+    - ![090\_orca](Search_2D/gif/090_orca.gif)
+    - Path length: total 446.853, avg 44.685, n=10; Algorithm time: 7746.566 ms (Algorithm-only, no animation/GIF)
+    - 算法心得：
+      ORCA 用近似半平面约束筛选速度，在中间障碍和迎面人流叠加时保持更稳定的安全间距。
   - **091 行人最优相互碰撞避免 (Pedestrian ORCA - PORCA)**
     - Luo, Cai, Bera, Hsu, Lee, Manocha (2018)
+    - ![091\_porca](Search_2D/gif/091_porca.gif)
+    - Path length: total 422.992, avg 42.299, n=10; Algorithm time: 8686.551 ms (Algorithm-only, no animation/GIF)
+    - 算法心得：
+      PORCA 加入行人式侧向偏好和速度调制，更像人群在窄通道里自然分流通过。
   - **092 椭圆相互速度障碍 (Elliptical Reciprocal Velocity Obstacles - ERVO / EORCA)**
     - Best, Narang, Manocha (2016)
+    - ![092\_elliptical\_reciprocal\_velocity\_obstacle](Search_2D/gif/092_elliptical_reciprocal_velocity_obstacle.gif)
+    - Path length: total 425.009, avg 42.501, n=10; Algorithm time: 8299.813 ms (Algorithm-only, no animation/GIF)
+    - 算法心得：
+      ERVO 用椭圆速度障碍表达迎面运动的非圆形风险区，能更早对正面会车做出侧向避让。
 - **基于搜索的冲突解决 (Search-Based Conflict Resolution)**
   - **093 冲突驱动搜索 (Conflict-Based Search - CBS)**
     - Sharon, Stern, Felner, Sturtevant (2012, 2015)
@@ -482,12 +506,12 @@ DEMO GIF      [################....]  79%   78/99
 
 |  #  | 算法           |  状态 |    #   | 算法               |   状态   |
 | :-: | :----------- | :-: | :----: | :--------------- | :----: |
-| 087 | VO           |  TODO |   093  | CBS              |    ✅   |
-| 088 | RVO          |  TODO |   094  | HCA\*            |    ✅   |
-| 089 | HRVO         |  TODO |   095  | WHCA\*           |   TODO   |
-| 090 | ORCA         |  TODO |   096  | UE5 AI Avoidance |   TODO   |
-| 091 | PORCA        |  TODO | | | |
-| 092 | ERVO / EORCA |  TODO | | | |
+| 087 | VO           |  ✅ |   093  | CBS              |    ✅   |
+| 088 | RVO          |  ✅ |   094  | HCA\*            |    ✅   |
+| 089 | HRVO         |  ✅ |   095  | WHCA\*           |   TODO   |
+| 090 | ORCA         |  ✅ |   096  | UE5 AI Avoidance |   TODO   |
+| 091 | PORCA        |  ✅ | | | |
+| 092 | ERVO / EORCA |  ✅ | | | |
 
 **九、其他规划方法 (Other Methods)**
 
