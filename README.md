@@ -659,7 +659,7 @@ Some code references
 
 AI assistance has been used in this article
 
-Claude 3.7/4, Doubao, ChatGPT for in-depth research and Manus.
+2025-05-10 Claude 3.7/4, Doubao, ChatGPT for in-depth research and Manus.
 
 2026-05-17 iteration: updated with Codex and ChatGPT 5.5.
 
