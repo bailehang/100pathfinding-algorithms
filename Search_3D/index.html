@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3D Swarm Pathfinding Lab</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.166.1/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <canvas id="scene"></canvas>
+
+      <section class="control-surface" aria-label="3D 群体无人机寻路与避让控制台">
+        <header class="brand-row">
+          <div>
+            <p class="eyebrow">3D Swarm Pathfinding</p>
+            <h1>群体无人机寻路与避让</h1>
+          </div>
+          <button class="icon-button" id="pauseButton" type="button" title="暂停 / 继续" aria-label="暂停 / 继续">
+            <span id="pauseIcon">||</span>
+          </button>
+        </header>
+
+        <div class="metric-strip" aria-label="性能指标">
+          <div>
+            <span id="fpsValue">--</span>
+            <small>FPS</small>
+          </div>
+          <div>
+            <span id="conflictValue">0</span>
+            <small>近距冲突</small>
+          </div>
+          <div>
+            <span id="distanceValue">--</span>
+            <small>平均间距</small>
+          </div>
+        </div>
+
+        <section class="control-group" aria-label="单位数量">
+          <div class="group-title">单位数量</div>
+          <div class="segmented" id="countButtons">
+            <button type="button" data-count="1">1</button>
+            <button type="button" data-count="10">10</button>
+            <button type="button" data-count="50">50</button>
+            <button type="button" data-count="100" class="active">100</button>
+            <button type="button" data-count="500">500</button>
+            <button type="button" data-count="1000">1000</button>
+          </div>
+        </section>
+
+        <section class="control-group" aria-label="方法族">
+          <div class="group-title">方法族</div>
+          <div class="mode-list" id="modeButtons">
+            <button type="button" class="mode-button active" data-mode="search">
+              <span>1. 搜索 / 采样</span>
+              <small>3D A* / JPS / RRT* / Kinodynamic</small>
+            </button>
+            <button type="button" class="mode-button" data-mode="optimize">
+              <span>2. 轨迹优化</span>
+              <small>Minimum Snap / SFC / MINCO</small>
+            </button>
+            <button type="button" class="mode-button" data-mode="avoid">
+              <span>3. 分布式避让</span>
+              <small>3D ORCA / HRVO / BVC / MADER</small>
+            </button>
+            <button type="button" class="mode-button" data-mode="field">
+              <span>4. 反应式 / 场方法</span>
+              <small>APF / 3D Boids / 社会力 / Flocking</small>
+            </button>
+            <button type="button" class="mode-button" data-mode="learning">
+              <span>5. 学习类</span>
+              <small>GLAS / PRIMAL / CBF / RL</small>
+            </button>
+            <button type="button" class="mode-button" data-mode="central">
+              <span>6. 集中式协调</span>
+              <small>MAPF / CBS / SCP / 目标分配</small>
+            </button>
+          </div>
+        </section>
+
+        <section class="control-group" aria-label="算法编号">
+          <div class="group-title algorithm-title-row">
+            <span>算法编号</span>
+            <span id="algorithmFamilyLabel">搜索 / 采样</span>
+          </div>
+          <div class="algorithm-list" id="algorithmButtons"></div>
+        </section>
+
+        <section class="control-group compact" aria-label="场景">
+          <label for="sceneSelect" class="group-title">场景</label>
+          <select id="sceneSelect">
+            <option value="urban">城市障碍空域</option>
+            <option value="canyon">瓶颈通道</option>
+            <option value="forest">树林穿越</option>
+            <option value="multilevel">多层空域</option>
+          </select>
+        </section>
+
+        <section class="control-group" aria-label="显示层">
+          <div class="group-title">显示层</div>
+          <div class="toggle-grid">
+            <label><input type="checkbox" id="togglePaths" checked /> 路径线</label>
+            <label><input type="checkbox" id="toggleCorridor" checked /> 安全走廊</label>
+            <label><input type="checkbox" id="toggleVectors" checked /> 速度向量</label>
+            <label><input type="checkbox" id="toggleSafety" /> 安全半径</label>
+            <label><input type="checkbox" id="toggleGrid" /> 3D 网格</label>
+            <label><input type="checkbox" id="toggleTrails" checked /> 轨迹尾迹</label>
+          </div>
+        </section>
+
+        <section class="control-group selected-panel" aria-label="选中单位">
+          <div class="group-title">选中单位</div>
+          <div class="selected-readout">
+            <span id="selectedId">#000</span>
+            <span id="selectedMode">A01 3D A*</span>
+            <span id="selectedSpeed">0.0 m/s</span>
+          </div>
+          <button class="wide-button" id="resetButton" type="button">重置场景</button>
+        </section>
+      </section>
+
+      <section class="legend-surface" aria-label="算法视觉图例">
+        <span><i class="legend-dot path"></i>全局路径</span>
+        <span><i class="legend-dot smooth"></i>平滑轨迹</span>
+        <span><i class="legend-dot avoid"></i>避让速度</span>
+        <span><i class="legend-dot danger"></i>安全约束</span>
+      </section>
+    </main>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
