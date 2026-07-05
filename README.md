@@ -1,4 +1,4 @@
-﻿# 100pathfinding-algorithms
+# 100pathfinding-algorithms
 
 [![CI](https://github.com/bailehang/100pathfinding-algorithms/actions/workflows/ci.yml/badge.svg)](https://github.com/bailehang/100pathfinding-algorithms/actions/workflows/ci.yml)
 
@@ -21,17 +21,17 @@ DEMO GIF      [####################] 100%   100/100
 
 该部分对应 `Search_3D/` 的 Three.js 3D 群体无人机寻路与避让展示，覆盖全局搜索 / 采样、轨迹优化、分布式避让、反应式场方法、学习类与集中式协调等 37 个 3D 空中算法编号。
 
-**当前进度：37 个 3D 空中算法条目已建档，其中 22 个已实现、15 个近似实现。**
+**当前进度：37 个 3D 空中算法条目已建档，其中 37 个已实现、0 个近似实现。**
 
 ```text
-3D IMPLEMENTED      [############--------]  59%   22/37
-3D APPROXIMATE      [########------------]  41%   15/37
+3D IMPLEMENTED      [####################] 100%   37/37
+3D APPROXIMATE      [--------------------]   0%   0/37
 ```
 
 | 状态 | 数量 | 代表算法 |
 |---|---:|---|
-| 已实现 | 22 | A01、B01-B03、C01-C08、D01-D05、F01-F05 |
-| 近似实现 | 15 | A02-A08、B04-B06、E01-E05 |
+| 已实现 | 37 | A01-A08、B01-B06、C01-C08、D01-D05、E01-E05、F01-F05 |
+| 近似实现 | 0 | - |
 
 ## Contents
 
@@ -693,8 +693,6 @@ the copyright notice, the `LICENSE` file, and the `NOTICE` attribution file as
 required by Apache-2.0.
 
 Required attribution: `100pathfinding-algorithms by bailehang`.
-
-
 
 
 

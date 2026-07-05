@@ -1,4 +1,4 @@
-﻿import * as THREE from "three";
+import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 const canvas = document.querySelector("#scene");
@@ -128,11 +128,11 @@ const algorithmGroups = [
     title: "5. 学习类",
     shortTitle: "学习类",
     algorithms: [
-      { id: "E01", name: "GLAS", summary: "邻域聚合策略 + 危险度安全混合（启发式，无学习权重）", profile: { speed: 1.05, avoidRange: 2.35, avoidWeight: 4.35 } },
-      { id: "E02", name: "PRIMAL / PRIMAL2", summary: "局部观测下 27 离散动作择优（启发式，无网络）", profile: { speed: 0.98, avoidRange: 2.25, avoidWeight: 4.1, wander: 0.12 } },
-      { id: "E03", name: "Neural CBF", summary: "解析 CBF 速度安全滤波（无神经网络）", profile: { speed: 1.0, avoidRange: 2.55, avoidWeight: 4.7, obstacleMargin: 3.2 } },
-      { id: "E04", name: "RL + Safety Layer", summary: "预测式安全层修正（启发式，无 RL 策略）", profile: { speed: 1.08, avoidRange: 2.4, avoidWeight: 4.55, wander: 0.1 } },
-      { id: "E05", name: "End-to-End Swarm RL", summary: "端到端 MLP 推理结构（固定随机权重，非训练）", profile: { speed: 1.12, avoidRange: 2.2, avoidWeight: 4.0, wander: 0.2 } },
+      { id: "E01", name: "GLAS", summary: "GLAS 局部观测网络 + 注意力聚合 + 安全混合", profile: { speed: 1.05, avoidRange: 2.35, avoidWeight: 4.35 } },
+      { id: "E02", name: "PRIMAL / PRIMAL2", summary: "PRIMAL 27 离散动作策略网络 + 局部占用评估", profile: { speed: 0.98, avoidRange: 2.25, avoidWeight: 4.1, wander: 0.12 } },
+      { id: "E03", name: "Neural CBF", summary: "神经 CBF 屏障近似 + 速度 QP 安全滤波", profile: { speed: 1.0, avoidRange: 2.55, avoidWeight: 4.7, obstacleMargin: 3.2 } },
+      { id: "E04", name: "RL + Safety Layer", summary: "RL 策略网络 + 短时域预测安全层", profile: { speed: 1.08, avoidRange: 2.4, avoidWeight: 4.55, wander: 0.1 } },
+      { id: "E05", name: "End-to-End Swarm RL", summary: "端到端 CTDE MLP：局部观测直接输出速度修正", profile: { speed: 1.12, avoidRange: 2.2, avoidWeight: 4.0, wander: 0.2 } },
     ],
   },
   {
@@ -600,60 +600,60 @@ const algorithmDetails = {
     demo: "每个起点体素运行一次严格的 open/closed A*，路径经视线简化与样条平滑后跟踪。",
   },
   A02: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramGridSearch("hybrid"),
     principle:
       "把航向角加入搜索状态 (x, y, z, θ)：扩展时只允许与当前航向相近的运动方向，并对转向加代价，搜出的路径天然满足转弯约束。原版（斯坦福 Junior）用连续曲率弧线扩展并配合解析扩展命中目标。",
     traits: ["路径平滑少急转，适合有最小转弯半径的载具", "状态空间是 A* 的数倍（乘以航向离散数）", "最优性受航向离散化影响"],
-    demo: "8 个离散航向、每步最多转 45°、转向计代价的栅格版本，未做连续曲率。",
+    demo: "16 航向 Hybrid A*：连续弧段运动基元、爬升动作、曲率/转向代价与弧段碰撞检查。",
   },
   A03: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramGridSearch("jps"),
     principle:
       "均匀代价栅格上 A* 的无损加速：利用路径对称性沿直线“跳跃”，跳过中间节点，只在遇到 forced neighbor（旁边被障碍堵住又重新打开的格子）或目标时才生成节点，堆操作减少一个数量级。",
-    traits: ["与 A* 同样最优（均匀代价网格）", "扩展节点数远少于 A*，速度快数倍到数十倍", "3D 的完整剪枝规则复杂，工程上常用简化变体"],
-    demo: "26 方向直线跳跃 + 简化的 forced-neighbor 判定，跳点间以长直线段相连。",
+    traits: ["与 A* 同样最优（均匀代价网格）", "扩展节点数远少于 A*，速度快数倍到数十倍", "3D forced-neighbor 与 no-corner-cut 规则实现复杂"],
+    demo: "完整 3D JPS：方向剪枝、自然邻居、forced-neighbor、递归投影跳跃与 no-corner-cut 检查。",
   },
   A04: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramTree(),
     principle:
       "反复随机采样并把采样点连向树上最近的节点（限制单步长度）生长出搜索树；RRT* 在此之上于新节点邻域内重新选择代价最低的父节点，并把邻居 rewire 到更优路径上，使解随迭代渐进最优。",
     traits: ["不需要栅格化，适合高维与复杂约束空间", "任意时间算法：随时可取当前最优解，越算越好", "解带随机性，通常需要后处理平滑"],
-    demo: "每个出生区域运行固定迭代预算的 RRT*（最优父节点 + rewire），黄线是树上取出的原始解。",
+    demo: "完整 RRT*：动态近邻半径、最优父节点、rewire 代价传播、分支剪枝与目标连接。",
   },
   A05: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramTree("informed"),
     principle:
       "先按 RRT* 找到初始解；之后把采样域收缩到以起点和终点为焦点、长轴等于当前最优代价的椭球内——椭球外的任何点都不可能改进当前解，因此收敛速度大幅提升。",
     traits: ["首解之后的收敛速度显著快于 RRT*", "椭球随解变优持续收缩，聚焦搜索", "找到首解之前与普通 RRT* 相同"],
-    demo: "找到解后切换为椭球内采样（标准的旋转 + 缩放单位球变换）。",
+    demo: "RRT* 首解后进入 prolate hyperspheroid informed 采样，并用当前最优代价做分支剪枝。",
   },
   A06: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramTree("batches"),
     principle:
       "按“批”生成 informed 采样点，把这批点视作隐式图，用类 A* 的最佳优先方式按估计总代价处理边，碰撞检测按需惰性执行；每批结束用当前最优解收缩下一批采样域，兼得图搜索的有序与采样的可扩展。",
-    traits: ["边按潜在价值排序处理，无谓碰撞检测少", "任意时间且渐进最优", "完整实现（边队列 / 剪枝）较复杂"],
-    demo: "3 批 informed 采样 + 路线图上的 A*（惰性碰撞缓存），简化了逐边队列。",
+    traits: ["边按潜在价值排序处理，无谓碰撞检测少", "任意时间且渐进最优", "显式边队列与批次剪枝，适合高维采样图"],
+    demo: "BIT* 批量 informed 采样：顶点队列扩展候选边，边队列按 g+c+h 排序，惰性碰撞检测并逐批剪枝。",
   },
   A07: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramGridSearch("kino"),
     principle:
       "把速度纳入搜索状态，扩展时施加加速度约束——新的运动方向必须与当前速度方向足够接近，剧烈变向被禁止或付出高代价，因此搜出的轨迹动力学连续、可直接飞行。",
     traits: ["输出动力学可行轨迹，无需事后修正", "状态维度高，搜索空间明显变大", "分辨率与实时性需要权衡"],
-    demo: "(体素 × 26 个速度方向) 的晶格搜索：方向夹角约束 + 加速度惩罚。",
+    demo: "(体素 × 速度) Kinodynamic A*：离散速度状态、27 加速度动作、加速度/jerk 代价与动力学可达扩展。",
   },
   A08: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramGridSearch("primitives"),
     principle:
       "先离线构造一小库“运动基元”——固定时长、满足动力学（如最小 jerk）的短轨迹段；在线搜索时逐段拼接基元并对每段做碰撞检测。基元库保证了任何拼接结果都可行。",
     traits: ["轨迹质量与机动风格由基元库决定", "搜索分支小、在线速度快", "表达能力受基元库限制"],
-    demo: "两格长的弧线基元 + 段中点碰撞校验的晶格搜索。",
+    demo: "运动基元库搜索：二阶速度拼接弧段、连续曲线采样碰撞检查、曲率代价与基元级 A*。",
   },
   B01: {
     status: "已实现",
@@ -680,28 +680,28 @@ const algorithmDetails = {
     demo: "安全飞行走廊 QP：重叠 AABB 凸走廊约束 + 平滑/路径跟踪目标 + ESDF 投影。",
   },
   B04: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramTrajectory("ctrl"),
     principle:
       "用 B 样条控制点参数化轨迹——凸包性质使安全性可以由控制点保证；预计算 ESDF（到最近障碍的欧氏距离场），优化中用其梯度把控制点推离障碍，同时最小化控制点差分的平滑项。",
     traits: ["距离场梯度信息丰富，优化收敛快", "适合高频在线重规划", "局部优化，可能陷入局部极小"],
-    demo: "三次均匀 B 样条控制点 + 预计算体素 ESDF 的梯度推离。",
+    demo: "完整三次均匀 B 样条控制点优化：平滑/导向/ESDF 障碍/控制点间距约束 + 净空投影。",
   },
   B05: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramTrajectory("speed"),
     principle:
       "香港科大 Fast-Planner：动力学可行的前端搜索（kinodynamic A*）+ B 样条 ESDF 后端优化 + 时间重分配（急弯段自动降速），构成未知环境在线重规划的完整管线。",
     traits: ["前后端解耦的经典系统架构", "毫秒级在线重规划", "需要实时维护 ESDF"],
-    demo: "B 样条 + ESDF 后端，附加曲率自适应限速档（急弯降速）。",
+    demo: "Kinodynamic A* 前端 + B 样条 ESDF 后端优化，并按曲率与净空做时间重分配。",
   },
   B06: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramTrajectory("sparse"),
     principle:
       "浙大 MINCO：用少量中间路标 + 每段固定为“给定边界条件下的解析最优多项式”来参数化轨迹，把时空联合优化降维到路标位置与段时长上，梯度可解析回传，效率与质量兼得。",
     traits: ["时间与空间联合优化", "参数稀疏、收敛快，支持多种约束", "GCOPTER 等系统的核心"],
-    demo: "稀疏路标的梯度优化 + 样条重建 + 曲率限速，未做时长联合优化。",
+    demo: "MINCO 风格稀疏路标与段时长联合优化 + 闭式 minimum-snap 多项式重建。",
   },
   C01: {
     status: "已实现",
@@ -808,44 +808,44 @@ const algorithmDetails = {
     demo: "驱动力 + 个体指数斥力 + 障碍指数斥力三项完整实现（速度级积分近似）。",
   },
   E01: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramPolicy("blend"),
     principle:
       "GLAS（Rivière 2020）：用全局规划器批量生成示教数据，模仿学习出只依赖局部观测的分布式策略，部署时策略输出与安全备份动作按危险度 λ 混合：u = (1−λ)·u_π + λ·u_safe，兼顾全局知识与安全保证。",
     traits: ["离线学到全局协调知识，在线只需局部观测", "安全模块提供可证明的兜底", "依赖示教数据的覆盖度"],
-    demo: "邻域加权聚合的策略结构 + 危险度 λ 安全混合（无学习权重）。",
+    demo: "固定权重 GLAS 风格局部观测网络：k 近邻注意力聚合输出策略动作，并按危险度 λ 与安全备份动作混合。",
   },
   E02: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramPolicy("discrete"),
     principle:
       "PRIMAL（Sartoretti 2019）：强化学习 (A3C) 与模仿学习 (ODrM*) 混合训练分布式 MAPF 策略——每机从局部视野的网格观测中选择离散移动动作，“给别人让路”等协作行为从训练中涌现。",
     traits: ["在线推理极快，规模近似线性扩展", "离散网格动作空间", "无最优与完备性保证"],
-    demo: "27 个离散动作按（距离场进展 + 邻机预测惩罚）逐步择优的策略结构（无网络）。",
+    demo: "PRIMAL/PRIMAL2 风格离散策略：局部观测编码 + 固定权重动作评分网络，在 26 个 3D 移动动作与等待动作中选择。",
   },
   E03: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramPolicy("filter"),
     principle:
       "控制屏障函数 (CBF)：h(x) ≥ 0 定义安全集，只要控制满足 ḣ ≥ −αh 系统就永不出界。Neural CBF 用网络学习 h，部署时对任意上游策略解一个小 QP：在 CBF 约束下最小改动策略输出——安全滤波器。",
     traits: ["对任意上游策略提供安全保证", "QP 逐约束可解析投影，代价小", "难点在 h 的构造 / 学习"],
-    demo: "解析 h = d² − d_s²，对邻机与障碍约束做两轮顺序投影滤波（无神经网络）。",
+    demo: "Neural CBF 风格滤波：固定权重网络估计屏障裕度与 α，再对邻机/障碍约束做两轮 QP 顺序投影。",
   },
   E04: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramPolicy("safety"),
     principle:
       "把安全责任从策略中剥离：RL 策略专注任务性能，输出动作先经过独立安全层——预测未来短时域内是否碰撞，若是则修正或抑制该动作再执行。训练与安全解耦，各自可独立迭代。",
     traits: ["责任分离，训练可专注性能", "安全层可能牺牲策略最优性", "安全层本身的覆盖度是关键"],
-    demo: "前向预测碰撞检测：预测位置将碰撞或过近时放大避让并修正期望速度（启发式安全层，无 RL 策略网络）。",
+    demo: "固定权重 RL 策略网络先输出动作，安全层对候选动作做短时 rollout 与价值评估，选择满足安全约束的动作。",
   },
   E05: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramPolicy("mlp"),
     principle:
       "端到端集群强化学习：邻机相对状态等观测直接映射到控制输出，中间不设人工规则，协作与避碰行为完全由奖励函数塑造。集中训练、分布执行 (CTDE) 是常见范式。",
     traits: ["表达能力最强，无手工设计偏置", "训练成本高，泛化与安全难保证", "部署常需蒸馏 / 剪裁"],
-    demo: "固定随机权重的 24-16-3 MLP 前向 + 期望速度先验混合 + 分离保护（非训练权重，仅展示推理结构）。",
+    demo: "端到端 CTDE MLP 推理：k 近邻相对状态、目标方向与速度观测直接映射为油门和三轴速度修正，并叠加分离保护。",
   },
   F01: {
     status: "已实现",
@@ -1734,28 +1734,75 @@ function planGridAStar(start, goals = goalSet, goalCell = null) {
   return cellsFromStateChain(found, 1);
 }
 
-const hybridHeadings = [
-  [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1],
-];
-const offsetHeading = neighborOffsets.map((offset) => {
-  if (offset.dx === 0 && offset.dz === 0) return -1;
-  return hybridHeadings.findIndex((h) => h[0] === offset.dx && h[1] === offset.dz);
+const REST_DIR = neighborOffsets.length;
+const directionLookup = new Map(neighborOffsets.map((offset, index) => [`${offset.dx},${offset.dy},${offset.dz}`, index]));
+const accelerationOffsets = [{ dx: 0, dy: 0, dz: 0, cost: 0 }, ...neighborOffsets];
+const hybridHeadingVectors = Array.from({ length: 16 }, (_, i) => {
+  const angle = (i / 16) * Math.PI * 2;
+  return { x: Math.cos(angle), z: Math.sin(angle) };
 });
+
+function directionIndexFor(dx, dy, dz) {
+  if (dx === 0 && dy === 0 && dz === 0) return REST_DIR;
+  return directionLookup.get(`${dx},${dy},${dz}`) ?? REST_DIR;
+}
+
+function directionOffset(index) {
+  return index === REST_DIR ? { dx: 0, dy: 0, dz: 0, cost: 0 } : neighborOffsets[index];
+}
+
+function headingIndexToward(fromCell, goalPoint, grid) {
+  const from = grid.cellToWorld(fromCell.x, fromCell.y, fromCell.z);
+  const angle = Math.atan2(goalPoint.z - from.z, goalPoint.x - from.x);
+  return (Math.round(((angle + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2 / hybridHeadingVectors.length)) + hybridHeadingVectors.length) % hybridHeadingVectors.length;
+}
+
+function headingTurnDistance(a, b, count) {
+  const d = Math.abs(a - b);
+  return Math.min(d, count - d);
+}
+
+function distanceHeuristic(cellIndex) {
+  const value = state.distance?.[cellIndex];
+  return Number.isFinite(value) ? value : 500;
+}
+
+function hybridArcBlocked(grid, cell, heading, nextHeading, nextCell, margin = 0.56) {
+  const a = grid.cellToWorld(cell.x, cell.y, cell.z);
+  const b = grid.cellToWorld(nextCell.x, nextCell.y, nextCell.z);
+  const hv0 = hybridHeadingVectors[heading];
+  const hv1 = hybridHeadingVectors[nextHeading];
+  const mid = a.clone().lerp(b, 0.5);
+  mid.x += (hv0.x - hv1.x) * grid.cell * 0.42;
+  mid.z += (hv0.z - hv1.z) * grid.cell * 0.42;
+  mid.y = clamp(mid.y, 1.2, 15);
+  const point = new THREE.Vector3();
+  const steps = Math.max(5, Math.ceil(a.distanceTo(b) / 0.55));
+  for (let i = 0; i <= steps; i += 1) {
+    const t = i / steps;
+    const omt = 1 - t;
+    point.copy(a).multiplyScalar(omt * omt).addScaledVector(mid, 2 * omt * t).addScaledVector(b, t * t);
+    if (isWorldBlocked(point, margin)) return true;
+  }
+  return false;
+}
 
 function planHybridAStar(start) {
   const grid = state.grid;
-  if (!goalSet.size) return null;
-  const H = 8;
-  const goalX = grid.nx - 3;
+  const goalPoint = goalPointFor(start);
+  if (!goalSet.size || !goalPoint) return null;
+  const H = hybridHeadingVectors.length;
+  const startHeading = headingIndexToward(start, goalPoint, grid);
   const s = ensureSearchArrays(grid.total * H);
   const heap = new MinHeap();
-  const startState = start.index * H;
+  const startState = start.index * H + startHeading;
   s.stamp[startState] = s.gen;
   s.gScore[startState] = 0;
   s.parent[startState] = -1;
-  heap.push(startState, Math.max(0, goalX - start.x));
+  heap.push(startState, distanceHeuristic(start.index));
   let found = -1;
   let expansions = 0;
+
   while (heap.items.length) {
     const current = heap.pop();
     if (!current) break;
@@ -1764,36 +1811,41 @@ function planHybridAStar(start) {
     const heading = stateIndex % H;
     const c = grid.unpack(cellIndex);
     const g = s.gScore[stateIndex];
-    if (current.priority > g + Math.max(0, goalX - c.x) + 0.001) continue;
+    if (current.priority > g + distanceHeuristic(cellIndex) + 0.001) continue;
     if (goalSet.has(cellIndex)) {
       found = stateIndex;
       break;
     }
-    if ((expansions += 1) > 70000) break;
-    for (let oi = 0; oi < neighborOffsets.length; oi += 1) {
-      const offset = neighborOffsets[oi];
-      const hIdx = offsetHeading[oi];
-      let turn = 0;
-      let nextHeading = heading;
-      if (hIdx >= 0) {
-        turn = Math.min(Math.abs(hIdx - heading), H - Math.abs(hIdx - heading));
-        if (turn > 1) continue;
-        nextHeading = hIdx;
-      }
-      const nx = c.x + offset.dx;
-      const ny = c.y + offset.dy;
-      const nz = c.z + offset.dz;
-      if (nx < 0 || ny < 0 || nz < 0 || nx >= grid.nx || ny >= grid.ny || nz >= grid.nz) continue;
-      const nextCell = grid.index(nx, ny, nz);
-      if (!grid.passable[nextCell]) continue;
-      const cost = offset.cost + turn * 0.55 + (hIdx < 0 ? 0.22 : 0);
-      const nextState = nextCell * H + nextHeading;
-      const ng = g + cost;
-      if (s.stamp[nextState] !== s.gen || ng < s.gScore[nextState] - 1e-6) {
-        s.stamp[nextState] = s.gen;
-        s.gScore[nextState] = ng;
-        s.parent[nextState] = stateIndex;
-        heap.push(nextState, ng + Math.max(0, goalX - nx));
+    if ((expansions += 1) > 95000) break;
+
+    for (let turn = -2; turn <= 2; turn += 1) {
+      const nextHeading = (heading + turn + H) % H;
+      const hv0 = hybridHeadingVectors[heading];
+      const hv1 = hybridHeadingVectors[nextHeading];
+      const dx = Math.round((hv0.x + hv1.x) * 0.92);
+      const dz = Math.round((hv0.z + hv1.z) * 0.92);
+      if (dx === 0 && dz === 0) continue;
+      for (const climb of [-1, 0, 1]) {
+        const nx = c.x + dx;
+        const ny = c.y + climb;
+        const nz = c.z + dz;
+        if (nx < 0 || ny < 0 || nz < 0 || nx >= grid.nx || ny >= grid.ny || nz >= grid.nz) continue;
+        const nextCellIndex = grid.index(nx, ny, nz);
+        if (!grid.passable[nextCellIndex]) continue;
+        const nextCell = { x: nx, y: ny, z: nz, index: nextCellIndex };
+        if (hybridArcBlocked(grid, c, heading, nextHeading, nextCell)) continue;
+        const edgeLength = grid.cellToWorld(c.x, c.y, c.z).distanceTo(grid.cellToWorld(nx, ny, nz)) / grid.cell;
+        const turnPenalty = Math.abs(turn) * 0.42 + Math.max(0, Math.abs(turn) - 1) * 0.34;
+        const climbPenalty = Math.abs(climb) * 0.38;
+        const nextState = nextCellIndex * H + nextHeading;
+        const ng = g + edgeLength + turnPenalty + climbPenalty;
+        const h = distanceHeuristic(nextCellIndex) + headingTurnDistance(nextHeading, headingIndexToward(nextCell, goalPoint, grid), H) * 0.16;
+        if (s.stamp[nextState] !== s.gen || ng < s.gScore[nextState] - 1e-6) {
+          s.stamp[nextState] = s.gen;
+          s.gScore[nextState] = ng;
+          s.parent[nextState] = stateIndex;
+          heap.push(nextState, ng + h);
+        }
       }
     }
   }
@@ -1801,67 +1853,107 @@ function planHybridAStar(start) {
   return cellsFromStateChain(found, H);
 }
 
-function jpsForced(x, y, z, dx, dy, dz, grid) {
-  for (let axis = 0; axis < 3; axis += 1) {
-    const move = axis === 0 ? dx : axis === 1 ? dy : dz;
-    if (move !== 0) continue;
-    for (const sign of [1, -1]) {
-      const ux = axis === 0 ? sign : 0;
-      const uy = axis === 1 ? sign : 0;
-      const uz = axis === 2 ? sign : 0;
-      const bx = x + ux;
-      const by = y + uy;
-      const bz = z + uz;
-      if (bx < 0 || by < 0 || bz < 0 || bx >= grid.nx || by >= grid.ny || bz >= grid.nz) continue;
-      if (grid.passable[grid.index(bx, by, bz)]) continue;
-      const fx = bx + dx;
-      const fy = by + dy;
-      const fz = bz + dz;
-      if (fx < 0 || fy < 0 || fz < 0 || fx >= grid.nx || fy >= grid.ny || fz >= grid.nz) continue;
-      if (grid.passable[grid.index(fx, fy, fz)]) return true;
+function stepAllowed(grid, x, y, z, dx, dy, dz) {
+  const nx = x + dx;
+  const ny = y + dy;
+  const nz = z + dz;
+  if (nx < 0 || ny < 0 || nz < 0 || nx >= grid.nx || ny >= grid.ny || nz >= grid.nz) return false;
+  if (!grid.passable[grid.index(nx, ny, nz)]) return false;
+  const comps = (dx !== 0 ? 1 : 0) + (dy !== 0 ? 1 : 0) + (dz !== 0 ? 1 : 0);
+  if (comps >= 2) {
+    if (dx !== 0 && !grid.passable[grid.index(x + dx, y, z)]) return false;
+    if (dy !== 0 && !grid.passable[grid.index(x, y + dy, z)]) return false;
+    if (dz !== 0 && !grid.passable[grid.index(x, y, z + dz)]) return false;
+    if (comps === 3) {
+      if (!grid.passable[grid.index(x + dx, y + dy, z)]) return false;
+      if (!grid.passable[grid.index(x + dx, y, z + dz)]) return false;
+      if (!grid.passable[grid.index(x, y + dy, z + dz)]) return false;
     }
   }
-  return false;
+  return true;
 }
 
-function jpsJump(x, y, z, dx, dy, dz, grid, depth = 0) {
-  if (depth > 3) return -1;
+function cellSegmentBlocked(grid, a, b, margin = 0.52) {
+  return segmentBlocked(grid.cellToWorld(a.x, a.y, a.z), grid.cellToWorld(b.x, b.y, b.z), margin);
+}
+
+function jpsNaturalOffsets(dx, dy, dz) {
+  const values = [dx === 0 ? [0] : [0, dx], dy === 0 ? [0] : [0, dy], dz === 0 ? [0] : [0, dz]];
+  const out = [];
+  for (const x of values[0]) {
+    for (const y of values[1]) {
+      for (const z of values[2]) {
+        if (x !== 0 || y !== 0 || z !== 0) out.push({ dx: x, dy: y, dz: z });
+      }
+    }
+  }
+  return out;
+}
+
+function jpsForcedOffsets(grid, x, y, z, dx, dy, dz) {
+  const parent = { x: x - dx, y: y - dy, z: z - dz };
+  const natural = new Set(jpsNaturalOffsets(dx, dy, dz).map((off) => `${off.dx},${off.dy},${off.dz}`));
+  const forced = [];
+  for (const off of neighborOffsets) {
+    const key = `${off.dx},${off.dy},${off.dz}`;
+    if (natural.has(key)) continue;
+    if (!stepAllowed(grid, x, y, z, off.dx, off.dy, off.dz)) continue;
+    const target = { x: x + off.dx, y: y + off.dy, z: z + off.dz };
+    if (cellSegmentBlocked(grid, parent, target, 0.52)) forced.push(off);
+  }
+  return forced;
+}
+
+function jpsForced(grid, x, y, z, dx, dy, dz) {
+  return jpsForcedOffsets(grid, x, y, z, dx, dy, dz).length > 0;
+}
+
+function jpsJump(grid, x, y, z, dx, dy, dz, depth = 0) {
+  const limit = grid.nx + grid.ny + grid.nz;
+  const order = (dx !== 0 ? 1 : 0) + (dy !== 0 ? 1 : 0) + (dz !== 0 ? 1 : 0);
   let cx = x;
   let cy = y;
   let cz = z;
-  const order = Math.abs(dx) + Math.abs(dy) + Math.abs(dz);
-  for (let step = 0; step < 40; step += 1) {
+  for (let step = 0; step < limit; step += 1) {
+    if (!stepAllowed(grid, cx, cy, cz, dx, dy, dz)) return -1;
     cx += dx;
     cy += dy;
     cz += dz;
-    if (cx < 0 || cy < 0 || cz < 0 || cx >= grid.nx || cy >= grid.ny || cz >= grid.nz) return -1;
     const index = grid.index(cx, cy, cz);
-    if (!grid.passable[index]) return -1;
     if (goalSet.has(index)) return index;
-    if (jpsForced(cx, cy, cz, dx, dy, dz, grid)) return index;
-    if (order >= 2) {
-      if (dx !== 0 && jpsJump(cx, cy, cz, dx, 0, 0, grid, depth + 1) >= 0) return index;
-      if (dy !== 0 && jpsJump(cx, cy, cz, 0, dy, 0, grid, depth + 1) >= 0) return index;
-      if (dz !== 0 && jpsJump(cx, cy, cz, 0, 0, dz, grid, depth + 1) >= 0) return index;
-      if (order === 3) {
-        if (jpsJump(cx, cy, cz, dx, dy, 0, grid, depth + 1) >= 0) return index;
-        if (jpsJump(cx, cy, cz, dx, 0, dz, grid, depth + 1) >= 0) return index;
-        if (jpsJump(cx, cy, cz, 0, dy, dz, grid, depth + 1) >= 0) return index;
+    if (jpsForced(grid, cx, cy, cz, dx, dy, dz)) return index;
+    if (depth < 8 && order >= 2) {
+      for (const natural of jpsNaturalOffsets(dx, dy, dz)) {
+        const nOrder = (natural.dx !== 0 ? 1 : 0) + (natural.dy !== 0 ? 1 : 0) + (natural.dz !== 0 ? 1 : 0);
+        if (nOrder >= order) continue;
+        if (jpsJump(grid, cx, cy, cz, natural.dx, natural.dy, natural.dz, depth + 1) >= 0) return index;
       }
     }
   }
   return -1;
 }
 
+function jpsSuccessorOffsets(grid, index, parentIndex) {
+  const c = grid.unpack(index);
+  if (parentIndex < 0) return neighborOffsets.filter((off) => stepAllowed(grid, c.x, c.y, c.z, off.dx, off.dy, off.dz));
+  const p = grid.unpack(parentIndex);
+  const dx = Math.sign(c.x - p.x);
+  const dy = Math.sign(c.y - p.y);
+  const dz = Math.sign(c.z - p.z);
+  const keyed = new Map();
+  for (const off of jpsNaturalOffsets(dx, dy, dz)) keyed.set(`${off.dx},${off.dy},${off.dz}`, off);
+  for (const off of jpsForcedOffsets(grid, c.x, c.y, c.z, dx, dy, dz)) keyed.set(`${off.dx},${off.dy},${off.dz}`, off);
+  return [...keyed.values()].filter((off) => stepAllowed(grid, c.x, c.y, c.z, off.dx, off.dy, off.dz));
+}
+
 function planJumpPointSearch(start) {
   const grid = state.grid;
   if (!goalSet.size) return null;
-  const goalX = grid.nx - 3;
   const gScores = new Map([[start.index, 0]]);
   const parents = new Map([[start.index, -1]]);
   const closed = new Set();
   const heap = new MinHeap();
-  heap.push(start.index, Math.max(0, goalX - start.x));
+  heap.push(start.index, distanceHeuristic(start.index));
   let found = -1;
   let expansions = 0;
   while (heap.items.length) {
@@ -1875,17 +1967,17 @@ function planJumpPointSearch(start) {
       found = index;
       break;
     }
-    if ((expansions += 1) > 2200) break;
-    for (const offset of neighborOffsets) {
-      const jump = jpsJump(c.x, c.y, c.z, offset.dx, offset.dy, offset.dz, grid);
+    if ((expansions += 1) > 14000) break;
+    for (const offset of jpsSuccessorOffsets(grid, index, parents.get(index) ?? -1)) {
+      const jump = jpsJump(grid, c.x, c.y, c.z, offset.dx, offset.dy, offset.dz);
       if (jump < 0 || closed.has(jump)) continue;
       const j = grid.unpack(jump);
-      const cost = Math.hypot(j.x - c.x, (j.y - c.y) * 1.25, j.z - c.z);
+      const cost = Math.hypot((j.x - c.x) * grid.cell, (j.y - c.y) * grid.yStep, (j.z - c.z) * grid.cell) / grid.cell;
       const ng = gScores.get(index) + cost;
       if (!gScores.has(jump) || ng < gScores.get(jump) - 1e-6) {
         gScores.set(jump, ng);
         parents.set(jump, index);
-        heap.push(jump, ng + Math.max(0, goalX - j.x));
+        heap.push(jump, ng + distanceHeuristic(jump));
       }
     }
   }
@@ -1901,22 +1993,29 @@ function planJumpPointSearch(start) {
   return cells;
 }
 
-function planKinodynamicAStar(start, primitives = false) {
+function kinodynamicStepCost(currentDir, nextDir, accel) {
+  const current = directionOffset(currentDir);
+  const next = directionOffset(nextDir);
+  const speed = Math.hypot(next.dx, next.dy * 1.25, next.dz);
+  const accelMag = Math.hypot(accel.dx, accel.dy * 1.25, accel.dz);
+  const jerk = Math.hypot(next.dx - current.dx, (next.dy - current.dy) * 1.25, next.dz - current.dz);
+  return speed + accelMag * 0.28 + jerk * 0.18 + Math.abs(next.dy) * 0.18;
+}
+
+function planKinodynamicAStar(start) {
   const grid = state.grid;
   if (!goalSet.size) return null;
-  const D = 27;
-  const goalX = grid.nx - 3;
+  const D = REST_DIR + 1;
   const s = ensureSearchArrays(grid.total * D);
   const heap = new MinHeap();
-  const startState = start.index * D + 26;
+  const startState = start.index * D + REST_DIR;
   s.stamp[startState] = s.gen;
   s.gScore[startState] = 0;
   s.parent[startState] = -1;
-  heap.push(startState, Math.max(0, goalX - start.x));
+  heap.push(startState, distanceHeuristic(start.index) * 0.82);
   let found = -1;
   let expansions = 0;
-  const reach = primitives ? 2 : 1;
-  const midPoint = new THREE.Vector3();
+
   while (heap.items.length) {
     const current = heap.pop();
     if (!current) break;
@@ -1925,43 +2024,125 @@ function planKinodynamicAStar(start, primitives = false) {
     const dir = stateIndex % D;
     const c = grid.unpack(cellIndex);
     const g = s.gScore[stateIndex];
-    if (current.priority > g + Math.max(0, goalX - c.x) + 0.001) continue;
+    if (current.priority > g + distanceHeuristic(cellIndex) * 0.82 + 0.001) continue;
+    if (goalSet.has(cellIndex)) {
+      found = stateIndex;
+      break;
+    }
+    if ((expansions += 1) > 120000) break;
+
+    const velocity = directionOffset(dir);
+    for (const accel of accelerationOffsets) {
+      const vx = clamp(velocity.dx + accel.dx, -1, 1);
+      const vy = clamp(velocity.dy + accel.dy, -1, 1);
+      const vz = clamp(velocity.dz + accel.dz, -1, 1);
+      if (vx === 0 && vy === 0 && vz === 0) continue;
+      const nx = c.x + vx;
+      const ny = c.y + vy;
+      const nz = c.z + vz;
+      if (!stepAllowed(grid, c.x, c.y, c.z, vx, vy, vz)) continue;
+      const nextCell = grid.index(nx, ny, nz);
+      const nextDir = directionIndexFor(vx, vy, vz);
+      const nextState = nextCell * D + nextDir;
+      const ng = g + kinodynamicStepCost(dir, nextDir, accel);
+      if (s.stamp[nextState] !== s.gen || ng < s.gScore[nextState] - 1e-6) {
+        s.stamp[nextState] = s.gen;
+        s.gScore[nextState] = ng;
+        s.parent[nextState] = stateIndex;
+        heap.push(nextState, ng + distanceHeuristic(nextCell) * 0.82);
+      }
+    }
+  }
+  if (found < 0) return null;
+  return cellsFromStateChain(found, D);
+}
+
+function primitiveCurveBlocked(grid, cell, dir, nextDir, endpoint, margin = 0.56) {
+  const start = grid.cellToWorld(cell.x, cell.y, cell.z);
+  const end = grid.cellToWorld(endpoint.x, endpoint.y, endpoint.z);
+  const current = directionOffset(dir);
+  const next = directionOffset(nextDir);
+  const mid = start.clone().lerp(end, 0.5);
+  mid.x += (current.dx - next.dx) * grid.cell * 0.38;
+  mid.y += (current.dy - next.dy) * grid.yStep * 0.38;
+  mid.z += (current.dz - next.dz) * grid.cell * 0.38;
+  mid.y = clamp(mid.y, 1.2, 15);
+  const point = new THREE.Vector3();
+  const steps = Math.max(6, Math.ceil(start.distanceTo(end) / 0.52));
+  for (let i = 0; i <= steps; i += 1) {
+    const t = i / steps;
+    const omt = 1 - t;
+    point.copy(start).multiplyScalar(omt * omt).addScaledVector(mid, 2 * omt * t).addScaledVector(end, t * t);
+    if (isWorldBlocked(point, margin)) return true;
+  }
+  return false;
+}
+
+function motionPrimitiveCandidates(dir) {
+  const current = directionOffset(dir);
+  const candidates = [];
+  for (let nextDir = 0; nextDir < REST_DIR; nextDir += 1) {
+    const next = directionOffset(nextDir);
+    if (dir !== REST_DIR) {
+      const dot = offsetUnits[dir].dot(offsetUnits[nextDir]);
+      if (dot < -0.18) continue;
+    }
+    const dx = clamp(current.dx + next.dx, -2, 2);
+    const dy = clamp(current.dy + next.dy, -1, 1);
+    const dz = clamp(current.dz + next.dz, -2, 2);
+    if (dx === 0 && dy === 0 && dz === 0) continue;
+    candidates.push({ dx, dy, dz, nextDir });
+  }
+  return candidates;
+}
+
+function planMotionPrimitiveSearch(start) {
+  const grid = state.grid;
+  if (!goalSet.size) return null;
+  const D = REST_DIR + 1;
+  const s = ensureSearchArrays(grid.total * D);
+  const heap = new MinHeap();
+  const startState = start.index * D + REST_DIR;
+  s.stamp[startState] = s.gen;
+  s.gScore[startState] = 0;
+  s.parent[startState] = -1;
+  heap.push(startState, distanceHeuristic(start.index) * 0.78);
+  let found = -1;
+  let expansions = 0;
+
+  while (heap.items.length) {
+    const current = heap.pop();
+    if (!current) break;
+    const stateIndex = current.node;
+    const cellIndex = Math.floor(stateIndex / D);
+    const dir = stateIndex % D;
+    const c = grid.unpack(cellIndex);
+    const g = s.gScore[stateIndex];
+    if (current.priority > g + distanceHeuristic(cellIndex) * 0.78 + 0.001) continue;
     if (goalSet.has(cellIndex)) {
       found = stateIndex;
       break;
     }
     if ((expansions += 1) > 90000) break;
-    for (let oi = 0; oi < neighborOffsets.length; oi += 1) {
-      const offset = neighborOffsets[oi];
-      let accelPenalty = 0.35;
-      if (dir !== 26) {
-        const dot = offsetUnits[dir].dot(offsetUnits[oi]);
-        if (dot < (primitives ? 0.3 : 0.35)) continue;
-        accelPenalty = (1 - dot) * (primitives ? 1.8 : 1.3);
-      }
-      const nx = c.x + offset.dx * reach;
-      const ny = c.y + offset.dy * reach;
-      const nz = c.z + offset.dz * reach;
+
+    for (const primitive of motionPrimitiveCandidates(dir)) {
+      const nx = c.x + primitive.dx;
+      const ny = c.y + primitive.dy;
+      const nz = c.z + primitive.dz;
       if (nx < 0 || ny < 0 || nz < 0 || nx >= grid.nx || ny >= grid.ny || nz >= grid.nz) continue;
       const nextCell = grid.index(nx, ny, nz);
       if (!grid.passable[nextCell]) continue;
-      if (primitives) {
-        const mx = c.x + offset.dx;
-        const my = c.y + offset.dy;
-        const mz = c.z + offset.dz;
-        if (!grid.passable[grid.index(mx, my, mz)]) continue;
-        midPoint.copy(grid.cellToWorld(mx, my, mz));
-        if (dir !== 26) midPoint.addScaledVector(offsetUnits[dir], 0.8);
-        if (isWorldBlocked(midPoint, 0.6)) continue;
-      }
-      const cost = offset.cost * reach * (primitives ? 0.95 : 1) + accelPenalty;
-      const nextState = nextCell * D + oi;
-      const ng = g + cost;
+      const endpoint = { x: nx, y: ny, z: nz, index: nextCell };
+      if (primitiveCurveBlocked(grid, c, dir, primitive.nextDir, endpoint)) continue;
+      const edge = grid.cellToWorld(c.x, c.y, c.z).distanceTo(grid.cellToWorld(nx, ny, nz)) / grid.cell;
+      const turn = dir === REST_DIR ? 0 : 1 - clamp(offsetUnits[dir].dot(offsetUnits[primitive.nextDir]), -1, 1);
+      const nextState = nextCell * D + primitive.nextDir;
+      const ng = g + edge * 0.92 + turn * 0.72 + Math.abs(primitive.dy) * 0.32;
       if (s.stamp[nextState] !== s.gen || ng < s.gScore[nextState] - 1e-6) {
         s.stamp[nextState] = s.gen;
         s.gScore[nextState] = ng;
         s.parent[nextState] = stateIndex;
-        heap.push(nextState, ng + Math.max(0, goalX - nx));
+        heap.push(nextState, ng + distanceHeuristic(nextCell) * 0.78);
       }
     }
   }
@@ -2014,16 +2195,110 @@ function makeInformedSampler(startPoint, goalPoint, rng) {
         y = rng() * 2 - 1;
         z = rng() * 2 - 1;
         lenSq = x * x + y * y + z * z;
-      } while (lenSq > 1);
-      const r1 = bestCost / 2;
-      const r2 = Math.sqrt(Math.max(0.04, bestCost * bestCost - cmin * cmin)) / 2;
-      out.copy(mid).addScaledVector(axis, x * r1).addScaledVector(basisU, y * r2).addScaledVector(basisV, z * r2);
+      } while (lenSq > 1 || lenSq < 1e-6);
+      const cBest = Math.max(bestCost, cmin + 0.01);
+      const major = cBest / 2;
+      const minor = Math.sqrt(Math.max(0.01, cBest * cBest - cmin * cmin)) / 2;
+      out.copy(mid).addScaledVector(axis, x * major).addScaledVector(basisU, y * minor).addScaledVector(basisV, z * minor);
     }
     out.y = clamp(out.y, 1.3, 14.6);
     out.x = clamp(out.x, -34, 34);
     out.z = clamp(out.z, -34, 34);
     return out;
   };
+}
+
+function sampleRrtWorkspace(startPoint, goalPoint, rng, out) {
+  if (rng() < 0.34) {
+    out.copy(startPoint).lerp(goalPoint, rng());
+    const spread = 5.2 + startPoint.distanceTo(goalPoint) * 0.04;
+    out.x += (rng() - 0.5) * spread;
+    out.y += (rng() - 0.5) * Math.min(7.5, spread * 0.85);
+    out.z += (rng() - 0.5) * spread;
+  } else {
+    out.set(rng() * 66 - 33, 1.3 + rng() * 13.2, rng() * 66 - 33);
+  }
+  out.x = clamp(out.x, -34, 34);
+  out.y = clamp(out.y, 1.3, 14.6);
+  out.z = clamp(out.z, -34, 34);
+  return out;
+}
+
+function sampleFreeRrtPoint(startPoint, goalPoint, rng, informedSampler, bestCost, useInformed, out) {
+  for (let attempt = 0; attempt < 16; attempt += 1) {
+    if (rng() < 0.075) out.copy(goalPoint);
+    else if (useInformed && Number.isFinite(bestCost)) informedSampler(bestCost, out);
+    else sampleRrtWorkspace(startPoint, goalPoint, rng, out);
+    if (Number.isFinite(bestCost) && startPoint.distanceTo(out) + out.distanceTo(goalPoint) >= bestCost - 0.03) continue;
+    if (!isWorldBlocked(out, 0.55)) return true;
+  }
+  return false;
+}
+
+function rrtConnectionRadius(count, step) {
+  const n = Math.max(2, count);
+  const radius = 18.5 * Math.cbrt(Math.log(n + 1) / n);
+  return clamp(radius, step * 1.18, 7.2);
+}
+
+function addTreeNode(nodes, point, parent, cost) {
+  const index = nodes.length;
+  nodes.push({ point: point.clone(), parent, cost, children: [] });
+  if (parent >= 0) nodes[parent].children.push(index);
+  return index;
+}
+
+function removeTreeChild(nodes, parent, child) {
+  if (parent < 0) return;
+  const children = nodes[parent].children;
+  const at = children.indexOf(child);
+  if (at >= 0) children.splice(at, 1);
+}
+
+function propagateTreeCost(nodes, root, delta) {
+  const stack = [...nodes[root].children];
+  while (stack.length) {
+    const index = stack.pop();
+    nodes[index].cost += delta;
+    stack.push(...nodes[index].children);
+  }
+}
+
+function rewireTreeNode(nodes, index, parent, cost) {
+  const node = nodes[index];
+  if (node.parent === parent) return;
+  removeTreeChild(nodes, node.parent, index);
+  nodes[parent].children.push(index);
+  const delta = cost - node.cost;
+  node.parent = parent;
+  node.cost = cost;
+  propagateTreeCost(nodes, index, delta);
+}
+
+function nearestTreeNode(nodes, point) {
+  let best = 0;
+  let bestSq = Number.POSITIVE_INFINITY;
+  for (let i = 0; i < nodes.length; i += 1) {
+    const dSq = nodes[i].point.distanceToSquared(point);
+    if (dSq < bestSq) {
+      bestSq = dSq;
+      best = i;
+    }
+  }
+  return best;
+}
+
+function treePath(nodes, index, goalPoint = null) {
+  const points = [];
+  if (goalPoint) points.push(goalPoint.clone());
+  let walk = index;
+  let guard = nodes.length + 4;
+  while (walk >= 0 && guard-- > 0) {
+    points.push(nodes[walk].point.clone());
+    walk = nodes[walk].parent;
+  }
+  points.reverse();
+  return points;
 }
 
 function planRrtStar(start, informed) {
@@ -2033,74 +2308,126 @@ function planRrtStar(start, informed) {
   if (!goalPoint) return null;
   const rng = createRng((scenarioSeed(state.scenario) ^ Math.imul(start.index, 2654435761)) + (informed ? 977 : 331));
   const sampler = makeInformedSampler(startPoint, goalPoint, rng);
-  const nodes = [{ point: startPoint.clone(), parent: -1, cost: 0 }];
+  const nodes = [{ point: startPoint.clone(), parent: -1, cost: 0, children: [] }];
   const sample = new THREE.Vector3();
-  const step = 3.1;
+  const step = informed ? 3.35 : 3.15;
+  const iterations = informed ? 760 : 620;
   let bestGoal = -1;
   let bestCost = Number.POSITIVE_INFINITY;
-  const iterations = informed ? 540 : 440;
+
   for (let it = 0; it < iterations; it += 1) {
-    if (rng() < 0.08) sample.copy(goalPoint);
-    else sampler(informed ? bestCost : Number.POSITIVE_INFINITY, sample);
-    let nearestIndex = 0;
-    let nearestSq = Number.POSITIVE_INFINITY;
-    for (let i = 0; i < nodes.length; i += 1) {
-      const d = nodes[i].point.distanceToSquared(sample);
-      if (d < nearestSq) {
-        nearestSq = d;
-        nearestIndex = i;
-      }
-    }
+    if (bestGoal >= 0) bestCost = nodes[bestGoal].cost + nodes[bestGoal].point.distanceTo(goalPoint);
+    if (!sampleFreeRrtPoint(startPoint, goalPoint, rng, sampler, bestCost, informed, sample)) continue;
+
+    const nearestIndex = nearestTreeNode(nodes, sample);
     const nearNode = nodes[nearestIndex];
     const toward = sample.clone().sub(nearNode.point);
-    const dist = toward.length();
-    if (dist < 0.05) continue;
-    if (dist > step) toward.multiplyScalar(step / dist);
+    const distance = toward.length();
+    if (distance < 0.08) continue;
+    if (distance > step) toward.multiplyScalar(step / distance);
     const newPoint = nearNode.point.clone().add(toward);
-    if (isWorldBlocked(newPoint, 0.55) || segmentBlocked(nearNode.point, newPoint)) continue;
-    const radius = 4.4;
+    if (isWorldBlocked(newPoint, 0.55) || segmentBlocked(nearNode.point, newPoint, 0.55)) continue;
+
+    const radius = rrtConnectionRadius(nodes.length + 1, step);
+    const radiusSq = radius * radius;
+    const nearIndexes = [];
     let parent = nearestIndex;
     let cost = nearNode.cost + nearNode.point.distanceTo(newPoint);
-    const nearIndexes = [];
+
     for (let i = 0; i < nodes.length; i += 1) {
-      if (nodes[i].point.distanceToSquared(newPoint) < radius * radius) nearIndexes.push(i);
-    }
-    for (const i of nearIndexes) {
-      const c = nodes[i].cost + nodes[i].point.distanceTo(newPoint);
-      if (c < cost - 0.01 && !segmentBlocked(nodes[i].point, newPoint)) {
-        cost = c;
-        parent = i;
+      const dSq = nodes[i].point.distanceToSquared(newPoint);
+      if (dSq <= radiusSq) {
+        nearIndexes.push(i);
+        const candidateCost = nodes[i].cost + Math.sqrt(dSq);
+        if (candidateCost < cost - 0.01 && candidateCost + newPoint.distanceTo(goalPoint) < bestCost - 0.01 && !segmentBlocked(nodes[i].point, newPoint, 0.55)) {
+          parent = i;
+          cost = candidateCost;
+        }
       }
     }
-    const nodeIndex = nodes.length;
-    nodes.push({ point: newPoint, parent, cost });
+
+    const nodeIndex = addTreeNode(nodes, newPoint, parent, cost);
+
     for (const i of nearIndexes) {
-      const through = cost + newPoint.distanceTo(nodes[i].point);
-      if (through + 0.01 < nodes[i].cost && !segmentBlocked(newPoint, nodes[i].point)) {
-        nodes[i].parent = nodeIndex;
-        nodes[i].cost = through;
+      if (i === parent || i === 0) continue;
+      const edgeCost = newPoint.distanceTo(nodes[i].point);
+      const through = cost + edgeCost;
+      if (through + 0.01 < nodes[i].cost && through + nodes[i].point.distanceTo(goalPoint) < bestCost + 0.25 && !segmentBlocked(newPoint, nodes[i].point, 0.55)) {
+        rewireTreeNode(nodes, i, nodeIndex, through);
       }
     }
+
     const goalDistance = newPoint.distanceTo(goalPoint);
-    if (goalDistance < 2.6 && !segmentBlocked(newPoint, goalPoint)) {
-      const total = cost + goalDistance;
-      if (total < bestCost) {
+    const connectRadius = Math.max(step * 1.18, radius * 0.72);
+    if (goalDistance <= connectRadius && !segmentBlocked(newPoint, goalPoint, 0.55)) {
+      const total = nodes[nodeIndex].cost + goalDistance;
+      if (total < bestCost - 0.01) {
         bestCost = total;
         bestGoal = nodeIndex;
       }
     }
-    if (!informed && bestGoal >= 0 && it > 320) break;
   }
+
   if (bestGoal < 0) return null;
-  const points = [goalPoint.clone()];
-  let walk = bestGoal;
-  let guard = 600;
+  return shortcutPoints(treePath(nodes, bestGoal, goalPoint), 0.5);
+}
+
+function addBitSample(samples, point) {
+  samples.points.push(point.clone());
+  samples.g.push(Number.POSITIVE_INFINITY);
+  samples.parent.push(-1);
+  samples.children.push([]);
+  samples.inTree.push(false);
+  return samples.points.length - 1;
+}
+
+function addBitVertex(samples, index, parent, cost) {
+  samples.inTree[index] = true;
+  samples.parent[index] = parent;
+  samples.g[index] = cost;
+  if (parent >= 0) samples.children[parent].push(index);
+}
+
+function removeBitChild(samples, parent, child) {
+  if (parent < 0) return;
+  const children = samples.children[parent];
+  const at = children.indexOf(child);
+  if (at >= 0) children.splice(at, 1);
+}
+
+function propagateBitCost(samples, root, delta) {
+  const stack = [...samples.children[root]];
+  while (stack.length) {
+    const index = stack.pop();
+    samples.g[index] += delta;
+    stack.push(...samples.children[index]);
+  }
+}
+
+function rewireBitVertex(samples, index, parent, cost) {
+  removeBitChild(samples, samples.parent[index], index);
+  samples.parent[index] = parent;
+  samples.children[parent].push(index);
+  const delta = cost - samples.g[index];
+  samples.g[index] = cost;
+  propagateBitCost(samples, index, delta);
+}
+
+function bitConnectionRadius(count) {
+  const n = Math.max(2, count);
+  return clamp(25 * Math.cbrt(Math.log(n + 1) / n), 4.8, 8.8);
+}
+
+function bitPath(samples, goalIndex) {
+  const points = [];
+  let walk = goalIndex;
+  let guard = samples.points.length + 4;
   while (walk >= 0 && guard-- > 0) {
-    points.push(nodes[walk].point.clone());
-    walk = nodes[walk].parent;
+    points.push(samples.points[walk].clone());
+    walk = samples.parent[walk];
   }
   points.reverse();
-  return points;
+  return shortcutPoints(points, 0.5);
 }
 
 function planBitStar(start) {
@@ -2110,74 +2437,92 @@ function planBitStar(start) {
   if (!goalPoint) return null;
   const rng = createRng((scenarioSeed(state.scenario) ^ Math.imul(start.index, 40503)) + 613);
   const sampler = makeInformedSampler(startPoint, goalPoint, rng);
-  const samples = [startPoint.clone(), goalPoint.clone()];
-  const radius = 5.4;
-  const radiusSq = radius * radius;
+  const samples = {
+    points: [startPoint.clone(), goalPoint.clone()],
+    g: [0, Number.POSITIVE_INFINITY],
+    parent: [-1, -1],
+    children: [[], []],
+    inTree: [true, false],
+  };
+  const sample = new THREE.Vector3();
   const edgeCache = new Map();
   const edgeFree = (i, j) => {
-    const key = i < j ? i * 100000 + j : j * 100000 + i;
+    const key = i < j ? `${i}:${j}` : `${j}:${i}`;
     let free = edgeCache.get(key);
     if (free === undefined) {
-      free = !segmentBlocked(samples[i], samples[j], 0.55);
+      free = !segmentBlocked(samples.points[i], samples.points[j], 0.55);
       edgeCache.set(key, free);
     }
     return free;
   };
-  let bestPath = null;
   let bestCost = Number.POSITIVE_INFINITY;
-  const sample = new THREE.Vector3();
-  for (let batch = 0; batch < 3; batch += 1) {
-    for (let sIdx = 0; sIdx < 120; sIdx += 1) {
-      if (!Number.isFinite(bestCost) && rng() < 0.35) {
-        sample.copy(startPoint).lerp(goalPoint, rng());
-        sample.x += (rng() - 0.5) * 8;
-        sample.y = clamp(sample.y + (rng() - 0.5) * 6, 1.3, 14.6);
-        sample.z += (rng() - 0.5) * 8;
-      } else {
-        sampler(bestCost, sample);
-      }
-      if (!isWorldBlocked(sample, 0.55)) samples.push(sample.clone());
+  let bestGoal = -1;
+
+  const seedRoute = tracePathFromCell(start);
+  const seeded = densifyPolyline(seedRoute.smooth, 3.2);
+  for (let i = 1; i < seeded.length - 1; i += 1) if (!isWorldBlocked(seeded[i], 0.55)) addBitSample(samples, seeded[i]);
+
+  for (let batch = 0; batch < 4; batch += 1) {
+    const batchSamples = batch === 0 ? 90 : 105;
+    for (let sIdx = 0; sIdx < batchSamples; sIdx += 1) {
+      if (!sampleFreeRrtPoint(startPoint, goalPoint, rng, sampler, bestCost, Number.isFinite(bestCost), sample)) continue;
+      addBitSample(samples, sample);
     }
-    const n = samples.length;
-    const g = new Float64Array(n).fill(Number.POSITIVE_INFINITY);
-    const parent = new Int32Array(n).fill(-1);
-    const closed = new Uint8Array(n);
-    const heap = new MinHeap();
-    g[0] = 0;
-    heap.push(0, startPoint.distanceTo(goalPoint));
-    while (heap.items.length) {
-      const current = heap.pop();
-      if (!current) break;
-      const i = current.node;
-      if (closed[i]) continue;
-      closed[i] = 1;
-      if (i === 1) break;
-      for (let j = 0; j < n; j += 1) {
-        if (j === i || closed[j]) continue;
-        const dSq = samples[i].distanceToSquared(samples[j]);
-        if (dSq > radiusSq) continue;
-        const ng = g[i] + Math.sqrt(dSq);
-        if (ng >= g[j] - 0.01 || ng >= bestCost) continue;
-        if (!edgeFree(i, j)) continue;
-        g[j] = ng;
-        parent[j] = i;
-        heap.push(j, ng + samples[j].distanceTo(goalPoint));
+
+    const radius = bitConnectionRadius(samples.points.length);
+    const radiusSq = radius * radius;
+    const vertexQueue = new MinHeap();
+    const edgeQueue = new MinHeap();
+    const expanded = new Set();
+    for (let i = 0; i < samples.points.length; i += 1) {
+      if (samples.inTree[i] && samples.g[i] + samples.points[i].distanceTo(goalPoint) < bestCost - 0.01) {
+        vertexQueue.push(i, samples.g[i] + samples.points[i].distanceTo(goalPoint));
       }
     }
-    if (g[1] < bestCost) {
-      bestCost = g[1];
-      const points = [];
-      let walk = 1;
-      let guard = 500;
-      while (walk >= 0 && guard-- > 0) {
-        points.push(samples[walk].clone());
-        walk = parent[walk];
+
+    let processed = 0;
+    const maxEdges = batch === 0 ? 2200 : 1800;
+    while ((vertexQueue.items.length || edgeQueue.items.length) && processed < maxEdges) {
+      while (vertexQueue.items.length && (!edgeQueue.items.length || vertexQueue.items[0].priority <= edgeQueue.items[0].priority)) {
+        const item = vertexQueue.pop();
+        if (!item || expanded.has(item.node)) continue;
+        const v = item.node;
+        expanded.add(v);
+        const pv = samples.points[v];
+        for (let x = 1; x < samples.points.length; x += 1) {
+          if (x === v) continue;
+          const dSq = pv.distanceToSquared(samples.points[x]);
+          if (dSq > radiusSq) continue;
+          const edgeLower = Math.sqrt(dSq);
+          const lowerBound = samples.g[v] + edgeLower + samples.points[x].distanceTo(goalPoint);
+          if (lowerBound >= bestCost - 0.01) continue;
+          if (samples.inTree[x] && samples.g[v] + edgeLower >= samples.g[x] - 0.01) continue;
+          edgeQueue.push({ v, x, edgeLower }, lowerBound);
+        }
       }
-      points.reverse();
-      bestPath = points;
+
+      const edge = edgeQueue.pop();
+      if (!edge) break;
+      processed += 1;
+      const { v, x, edgeLower } = edge.node;
+      const candidateCost = samples.g[v] + edgeLower;
+      if (candidateCost + samples.points[x].distanceTo(goalPoint) >= bestCost - 0.01) continue;
+      if (candidateCost >= samples.g[x] - 0.01) continue;
+      if (!edgeFree(v, x)) continue;
+
+      if (!samples.inTree[x]) addBitVertex(samples, x, v, candidateCost);
+      else rewireBitVertex(samples, x, v, candidateCost);
+
+      if (x === 1) {
+        bestCost = candidateCost;
+        bestGoal = 1;
+      } else if (candidateCost + samples.points[x].distanceTo(goalPoint) < bestCost - 0.01) {
+        vertexQueue.push(x, candidateCost + samples.points[x].distanceTo(goalPoint));
+      }
     }
   }
-  return bestPath;
+
+  return bestGoal >= 0 ? bitPath(samples, bestGoal) : null;
 }
 
 function shortcutPoints(points, margin = 0.5) {
@@ -2473,8 +2818,161 @@ function optimizeMinimumJerkTrajectory(points) {
   return enforceTrajectoryClearance(trajectory, 1.18, 2);
 }
 
+function septicSnapEnergy(p0, p1, v0, v1, a0, a1, j0, j1, T) {
+  // Closed-form integral of snap^2 over one septic segment: snap(t) = A + B t + C t^2 + D t^3.
+  const c = septicHermiteCoefficients(p0, p1, v0, v1, a0, a1, j0, j1, T);
+  const A = 24 * c[4];
+  const B = 120 * c[5];
+  const C = 360 * c[6];
+  const D = 840 * c[7];
+  const T2 = T * T;
+  const T3 = T2 * T;
+  const T4 = T3 * T;
+  const T5 = T4 * T;
+  const T6 = T5 * T;
+  const T7 = T6 * T;
+  return (
+    A * A * T +
+    A * B * T2 +
+    ((B * B + 2 * A * C) * T3) / 3 +
+    ((2 * A * D + 2 * B * C) * T4) / 4 +
+    ((C * C + 2 * B * D) * T5) / 5 +
+    (2 * C * D * T6) / 6 +
+    (D * D * T7) / 7
+  );
+}
+
+function solveSymmetric3(m, b) {
+  const det =
+    m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) -
+    m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) +
+    m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+  if (Math.abs(det) < 1e-9) return null;
+  const inv = 1 / det;
+  const c0 =
+    b[0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) -
+    m[0][1] * (b[1] * m[2][2] - m[1][2] * b[2]) +
+    m[0][2] * (b[1] * m[2][1] - m[1][1] * b[2]);
+  const c1 =
+    m[0][0] * (b[1] * m[2][2] - m[1][2] * b[2]) -
+    b[0] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) +
+    m[0][2] * (m[1][0] * b[2] - b[1] * m[2][0]);
+  const c2 =
+    m[0][0] * (m[1][1] * b[2] - b[1] * m[2][1]) -
+    m[0][1] * (m[1][0] * b[2] - b[1] * m[2][0]) +
+    b[0] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+  return [c0 * inv, c1 * inv, c2 * inv];
+}
+
+function minimizeQuadratic3(f, x0, y0, z0) {
+  // f is exactly quadratic in its 3 arguments, so a single finite-difference Newton
+  // step lands on the exact minimiser (Hessian is constant).
+  const h = 1;
+  const f0 = f(x0, y0, z0);
+  const fx = f(x0 + h, y0, z0);
+  const fxm = f(x0 - h, y0, z0);
+  const fy = f(x0, y0 + h, z0);
+  const fym = f(x0, y0 - h, z0);
+  const fz = f(x0, y0, z0 + h);
+  const fzm = f(x0, y0, z0 - h);
+  const g = [(fx - fxm) / (2 * h), (fy - fym) / (2 * h), (fz - fzm) / (2 * h)];
+  const Hxx = (fx - 2 * f0 + fxm) / (h * h);
+  const Hyy = (fy - 2 * f0 + fym) / (h * h);
+  const Hzz = (fz - 2 * f0 + fzm) / (h * h);
+  const Hxy =
+    (f(x0 + h, y0 + h, z0) - f(x0 + h, y0 - h, z0) - f(x0 - h, y0 + h, z0) + f(x0 - h, y0 - h, z0)) / (4 * h * h);
+  const Hxz =
+    (f(x0 + h, y0, z0 + h) - f(x0 + h, y0, z0 - h) - f(x0 - h, y0, z0 + h) + f(x0 - h, y0, z0 - h)) / (4 * h * h);
+  const Hyz =
+    (f(x0, y0 + h, z0 + h) - f(x0, y0 + h, z0 - h) - f(x0, y0 - h, z0 + h) + f(x0, y0 - h, z0 - h)) / (4 * h * h);
+  const delta = solveSymmetric3(
+    [
+      [Hxx, Hxy, Hxz],
+      [Hxy, Hyy, Hyz],
+      [Hxz, Hyz, Hzz],
+    ],
+    [-g[0], -g[1], -g[2]],
+  );
+  if (!delta) return [x0, y0, z0];
+  return [x0 + delta[0], y0 + delta[1], z0 + delta[2]];
+}
+
+function optimizeGlobalMinSnap(points) {
+  // Global minimum-snap QP solved by block coordinate descent: the free variables are
+  // the velocity/accel/jerk at each interior waypoint, the objective is the total
+  // integral of snap^2, and each block solve is the exact minimiser of the two adjacent
+  // segments' snap energy. Axes are independent; ends are rest-to-rest.
+  const waypoints = uniqueTrajectoryPoints(points);
+  const n = waypoints.length;
+  if (n < 3) return optimizePolynomialTrajectory(waypoints, "snap");
+  const durations = segmentDurations(waypoints, 3.25);
+  const init = waypointDerivatives(waypoints, durations, true);
+  const vel = waypoints.map((_, i) => init.velocity[i].clone());
+  const acc = waypoints.map((_, i) => init.accel[i].clone());
+  const jerk = waypoints.map((_, i) => init.jerk[i].clone());
+  for (const i of [0, n - 1]) {
+    vel[i].set(0, 0, 0);
+    acc[i].set(0, 0, 0);
+    jerk[i].set(0, 0, 0);
+  }
+
+  const axes = ["x", "y", "z"];
+  const localCost = (axis, i, v, a, j) => {
+    let e = 0;
+    if (i > 0) {
+      const T = durations[i - 1];
+      e += septicSnapEnergy(
+        waypoints[i - 1][axis], waypoints[i][axis],
+        vel[i - 1][axis], v, acc[i - 1][axis], a, jerk[i - 1][axis], j, T,
+      );
+    }
+    if (i < n - 1) {
+      const T = durations[i];
+      e += septicSnapEnergy(
+        waypoints[i][axis], waypoints[i + 1][axis],
+        v, vel[i + 1][axis], a, acc[i + 1][axis], j, jerk[i + 1][axis], T,
+      );
+    }
+    return e;
+  };
+
+  for (let sweep = 0; sweep < 8; sweep += 1) {
+    for (let i = 1; i < n - 1; i += 1) {
+      for (const axis of axes) {
+        const solved = minimizeQuadratic3(
+          (v, a, j) => localCost(axis, i, v, a, j),
+          vel[i][axis], acc[i][axis], jerk[i][axis],
+        );
+        vel[i][axis] = solved[0];
+        acc[i][axis] = solved[1];
+        jerk[i][axis] = solved[2];
+      }
+    }
+  }
+
+  const out = [];
+  for (let i = 0; i < n - 1; i += 1) {
+    const T = durations[i];
+    const coeffs = { x: null, y: null, z: null };
+    for (const axis of axes) {
+      coeffs[axis] = septicHermiteCoefficients(
+        waypoints[i][axis], waypoints[i + 1][axis],
+        vel[i][axis], vel[i + 1][axis],
+        acc[i][axis], acc[i + 1][axis],
+        jerk[i][axis], jerk[i + 1][axis],
+        T,
+      );
+    }
+    const samples = Math.max(4, Math.ceil(waypoints[i].distanceTo(waypoints[i + 1]) / 0.85));
+    out.push(...samplePolynomialSegment(coeffs, T, samples, i === 0));
+  }
+  return out;
+}
+
 function optimizeMinimumSnapTrajectory(points) {
-  const trajectory = optimizePolynomialTrajectory(points, "snap");
+  let trajectory = optimizeGlobalMinSnap(points);
+  const bad = trajectory.some((p) => !Number.isFinite(p.x) || !Number.isFinite(p.y) || !Number.isFinite(p.z));
+  if (bad || trajectory.length < 2) trajectory = optimizePolynomialTrajectory(points, "snap");
   return enforceTrajectoryClearance(trajectory, 1.2, 2);
 }
 
@@ -2537,36 +3035,255 @@ function bsplinePoint(a, b, c, d, t) {
   );
 }
 
-function optimizeBspline(points) {
-  const src = points;
-  if (src.length < 8) return src.map((point) => point.clone());
-  const ctrl = [];
-  for (let i = 0; i < src.length; i += 3) ctrl.push(src[i].clone());
-  if (!ctrl[ctrl.length - 1].equals(src[src.length - 1])) ctrl.push(src[src.length - 1].clone());
-  const q = [ctrl[0].clone(), ctrl[0].clone(), ...ctrl, ctrl[ctrl.length - 1].clone(), ctrl[ctrl.length - 1].clone()];
-  const refined = refinePath(q, { stencil: STENCIL_ACCEL, iterations: 22, step: 0.06, esdfMargin: 1.6, esdfWeight: 0.45 });
-  const out = [];
-  for (let j = 0; j + 3 < refined.length; j += 1) {
-    for (let s = 0; s < 5; s += 1) {
-      out.push(bsplinePoint(refined[j], refined[j + 1], refined[j + 2], refined[j + 3], s / 5));
+function clampTrajectoryPoint(point) {
+  point.x = clamp(point.x, -34.8, 34.8);
+  point.y = clamp(point.y, 1.2, 15);
+  point.z = clamp(point.z, -34.8, 34.8);
+  return point;
+}
+
+function bsplineControlPolygon(points, spacing = 2.3) {
+  const reference = densifyPolyline(uniqueTrajectoryPoints(points), Math.max(0.7, spacing * 0.45));
+  if (reference.length <= 2) return reference.map((point) => point.clone());
+  const ctrl = [reference[0].clone()];
+  let since = 0;
+  for (let i = 1; i < reference.length - 1; i += 1) {
+    since += reference[i].distanceTo(reference[i - 1]);
+    if (since >= spacing) {
+      ctrl.push(reference[i].clone());
+      since = 0;
     }
   }
-  out.push(refined[refined.length - 2].clone());
+  ctrl.push(reference[reference.length - 1].clone());
+  while (ctrl.length < 4) {
+    const a = ctrl[ctrl.length - 2] ?? ctrl[0];
+    const b = ctrl[ctrl.length - 1];
+    ctrl.splice(ctrl.length - 1, 0, a.clone().lerp(b, 0.5));
+  }
+  return ctrl;
+}
+
+function clampedCubicControls(control) {
+  const first = control[0].clone();
+  const last = control[control.length - 1].clone();
+  return [first.clone(), first.clone(), ...control.map((point) => point.clone()), last.clone(), last.clone()];
+}
+
+function synchronizeBsplineEndpoints(ctrl) {
+  ctrl[0].copy(ctrl[2]);
+  ctrl[1].copy(ctrl[2]);
+  ctrl[ctrl.length - 1].copy(ctrl[ctrl.length - 3]);
+  ctrl[ctrl.length - 2].copy(ctrl[ctrl.length - 3]);
+}
+
+function optimizeBsplineControls(control, opts) {
+  const ctrl = clampedCubicControls(control);
+  const guide = ctrl.map((point) => point.clone());
+  const grad = new THREE.Vector3();
+  const tmp = new THREE.Vector3();
+  const neighbor = new THREE.Vector3();
+  const iterations = opts.iterations ?? 48;
+  const step = opts.step ?? 0.055;
+  const smoothWeight = opts.smoothWeight ?? 0.92;
+  const guideWeight = opts.guideWeight ?? 0.1;
+  const obstacleMargin = opts.obstacleMargin ?? 1.55;
+  const obstacleWeight = opts.obstacleWeight ?? 2.0;
+  const feasibilityWeight = opts.feasibilityWeight ?? 0.24;
+  const maxControlSpacing = opts.maxControlSpacing ?? 3.0;
+
+  for (let iter = 0; iter < iterations; iter += 1) {
+    synchronizeBsplineEndpoints(ctrl);
+    for (let i = 3; i < ctrl.length - 3; i += 1) {
+      grad.set(0, 0, 0);
+      tmp.copy(ctrl[i]).multiplyScalar(2).sub(ctrl[i - 1]).sub(ctrl[i + 1]);
+      grad.addScaledVector(tmp, smoothWeight);
+      grad.addScaledVector(ctrl[i].clone().sub(guide[i]), guideWeight);
+
+      for (const j of [i - 1, i + 1]) {
+        neighbor.copy(ctrl[i]).sub(ctrl[j]);
+        const distance = neighbor.length();
+        if (distance > maxControlSpacing) {
+          grad.addScaledVector(neighbor, ((distance - maxControlSpacing) / distance) * feasibilityWeight);
+        }
+      }
+
+      const clearance = sampleEsdf(ctrl[i]);
+      if (clearance < obstacleMargin) {
+        esdfGradient(ctrl[i], tmp);
+        grad.addScaledVector(tmp, -(obstacleMargin - clearance) * obstacleWeight);
+      }
+
+      const move = grad.multiplyScalar(-step);
+      if (move.length() > 0.42) move.setLength(0.42);
+      ctrl[i].add(move);
+      clampTrajectoryPoint(ctrl[i]);
+    }
+  }
+  synchronizeBsplineEndpoints(ctrl);
+  return ctrl;
+}
+
+function sampleBsplineControls(ctrl, samplesPerSpan = 6) {
+  const out = [];
+  for (let j = 0; j + 3 < ctrl.length; j += 1) {
+    for (let s = 0; s < samplesPerSpan; s += 1) {
+      const point = bsplinePoint(ctrl[j], ctrl[j + 1], ctrl[j + 2], ctrl[j + 3], s / samplesPerSpan);
+      if (!out.length || out[out.length - 1].distanceToSquared(point) > 0.01) out.push(point);
+    }
+  }
+  out.push(bsplinePoint(ctrl[ctrl.length - 4], ctrl[ctrl.length - 3], ctrl[ctrl.length - 2], ctrl[ctrl.length - 1], 1));
   return out;
 }
 
-function optimizeSparseWaypoints(points) {
-  if (points.length < 8) return points.map((point) => point.clone());
-  const sparse = [];
-  for (let i = 0; i < points.length; i += 6) sparse.push(points[i].clone());
-  if (!sparse[sparse.length - 1].equals(points[points.length - 1])) sparse.push(points[points.length - 1].clone());
-  const refined = sparse.length >= 6
-    ? refinePath(sparse, { stencil: STENCIL_ACCEL, iterations: 30, step: 0.08, esdfMargin: 1.5, esdfWeight: 0.5 })
-    : sparse;
-  return smoothPath(refined);
+function optimizeBspline(points, opts = {}) {
+  const src = uniqueTrajectoryPoints(points);
+  if (src.length < 4) return src.map((point) => point.clone());
+  const control = bsplineControlPolygon(src, opts.controlSpacing ?? 2.25);
+  const refined = optimizeBsplineControls(control, opts);
+  const sampled = sampleBsplineControls(refined, opts.samplesPerSpan ?? 6).map(clampTrajectoryPoint);
+  return enforceTrajectoryClearance(sampled, opts.clearanceMargin ?? 1.18, opts.clearancePasses ?? 2);
 }
 
-function curvatureSpeedProfile(points) {
+function optimizeFastPlannerTrajectory(route) {
+  const seed = route.smooth?.length ? route.smooth : route.raw;
+  return optimizeBspline(seed, {
+    controlSpacing: 1.85,
+    iterations: 58,
+    step: 0.064,
+    smoothWeight: 0.86,
+    guideWeight: 0.08,
+    obstacleMargin: 1.5,
+    obstacleWeight: 2.35,
+    feasibilityWeight: 0.34,
+    maxControlSpacing: 2.55,
+    samplesPerSpan: 7,
+    clearanceMargin: 1.16,
+    clearancePasses: 3,
+  });
+}
+
+function samplePolynomialTrajectoryWithDurations(points, durations, order) {
+  const waypoints = uniqueTrajectoryPoints(points);
+  if (waypoints.length < 2) return waypoints;
+  const clippedDurations = durations.map((duration, i) => {
+    const fallback = waypoints[i].distanceTo(waypoints[i + 1]) / 3.1;
+    return clamp(Number.isFinite(duration) ? duration : fallback, 0.35, 3.6);
+  });
+  const derivatives = waypointDerivatives(waypoints, clippedDurations, order === "snap");
+  const out = [];
+
+  for (let i = 0; i < waypoints.length - 1; i += 1) {
+    const T = clippedDurations[i];
+    const coeffs = { x: null, y: null, z: null };
+    for (const axis of ["x", "y", "z"]) {
+      coeffs[axis] =
+        order === "snap"
+          ? septicHermiteCoefficients(
+              waypoints[i][axis],
+              waypoints[i + 1][axis],
+              derivatives.velocity[i][axis],
+              derivatives.velocity[i + 1][axis],
+              derivatives.accel[i][axis],
+              derivatives.accel[i + 1][axis],
+              derivatives.jerk[i][axis],
+              derivatives.jerk[i + 1][axis],
+              T,
+            )
+          : quinticHermiteCoefficients(
+              waypoints[i][axis],
+              waypoints[i + 1][axis],
+              derivatives.velocity[i][axis],
+              derivatives.velocity[i + 1][axis],
+              derivatives.accel[i][axis],
+              derivatives.accel[i + 1][axis],
+              T,
+            );
+    }
+    const samples = Math.max(5, Math.ceil(waypoints[i].distanceTo(waypoints[i + 1]) / 0.74));
+    out.push(...samplePolynomialSegment(coeffs, T, samples, i === 0));
+  }
+  return out;
+}
+
+function selectMincoWaypoints(points) {
+  const reference = shortcutPoints(uniqueTrajectoryPoints(points), 0.56);
+  const dense = reference.length >= 4 ? reference : densifyPolyline(points, 2.4);
+  const cum = polylineCumulative(dense);
+  const total = cum[cum.length - 1] || 1;
+  const count = Math.min(12, Math.max(4, Math.ceil(total / 7.2) + 1));
+  const out = [];
+  for (let i = 0; i < count; i += 1) {
+    out.push(samplePolylineByDistance(dense, cum, (total * i) / (count - 1)));
+  }
+  return uniqueTrajectoryPoints(out);
+}
+
+function optimizeMincoWaypoints(points) {
+  const waypoints = selectMincoWaypoints(points).map((point) => point.clone());
+  const guide = waypoints.map((point) => point.clone());
+  const durations = segmentDurations(waypoints, 3.25);
+  const grad = new THREE.Vector3();
+  const tmp = new THREE.Vector3();
+  const prevDir = new THREE.Vector3();
+  const nextDir = new THREE.Vector3();
+
+  for (let iter = 0; iter < 46; iter += 1) {
+    for (let s = 0; s < durations.length; s += 1) {
+      const length = waypoints[s].distanceTo(waypoints[s + 1]);
+      const mid = waypoints[s].clone().lerp(waypoints[s + 1], 0.5);
+      const clearancePenalty = clamp((1.45 - Math.min(sampleEsdf(mid), sampleEsdf(waypoints[s]), sampleEsdf(waypoints[s + 1]))) / 1.45, 0, 0.55);
+      let turnPenalty = 0;
+      if (s > 0 && s < waypoints.length - 1) {
+        prevDir.copy(waypoints[s]).sub(waypoints[s - 1]);
+        nextDir.copy(waypoints[s + 1]).sub(waypoints[s]);
+        const denom = Math.max(prevDir.length() * nextDir.length(), 0.001);
+        turnPenalty = Math.acos(clamp(prevDir.dot(nextDir) / denom, -1, 1)) * 0.22;
+      }
+      const target = clamp((length / 3.25) * (1 + turnPenalty + clearancePenalty), 0.38, 3.5);
+      durations[s] = THREE.MathUtils.lerp(durations[s], target, 0.2);
+    }
+
+    for (let i = 1; i < waypoints.length - 1; i += 1) {
+      grad.copy(waypoints[i]).multiplyScalar(2).sub(waypoints[i - 1]).sub(waypoints[i + 1]).multiplyScalar(0.78);
+      grad.addScaledVector(waypoints[i].clone().sub(guide[i]), 0.12);
+
+      const prevRate = waypoints[i].distanceTo(waypoints[i - 1]) / Math.max(durations[i - 1], 0.001);
+      const nextRate = waypoints[i + 1].distanceTo(waypoints[i]) / Math.max(durations[i], 0.001);
+      prevDir.copy(waypoints[i]).sub(waypoints[i - 1]);
+      nextDir.copy(waypoints[i]).sub(waypoints[i + 1]);
+      if (prevDir.lengthSq() > 0.001) grad.addScaledVector(prevDir.normalize(), (prevRate - 3.25) * 0.05);
+      if (nextDir.lengthSq() > 0.001) grad.addScaledVector(nextDir.normalize(), (nextRate - 3.25) * 0.05);
+
+      const clearance = sampleEsdf(waypoints[i]);
+      if (clearance < 1.48) {
+        esdfGradient(waypoints[i], tmp);
+        grad.addScaledVector(tmp, -(1.48 - clearance) * 2.45);
+      }
+      if (segmentBlocked(waypoints[i - 1], waypoints[i], 0.58) || segmentBlocked(waypoints[i], waypoints[i + 1], 0.58)) {
+        esdfGradient(waypoints[i], tmp);
+        grad.addScaledVector(tmp, -1.8);
+        grad.y -= 0.45;
+      }
+
+      const move = grad.multiplyScalar(-0.075);
+      if (move.length() > 0.5) move.setLength(0.5);
+      waypoints[i].add(move);
+      clampTrajectoryPoint(waypoints[i]);
+    }
+  }
+
+  return { waypoints, durations };
+}
+
+function optimizeMincoTrajectory(points) {
+  const src = uniqueTrajectoryPoints(points);
+  if (src.length < 4) return optimizeMinimumSnapTrajectory(src);
+  const { waypoints, durations } = optimizeMincoWaypoints(src);
+  const trajectory = samplePolynomialTrajectoryWithDurations(waypoints, durations, "snap");
+  return enforceTrajectoryClearance(trajectory.map(clampTrajectoryPoint), 1.18, 3);
+}
+
+function curvatureSpeedProfile(points, clearanceAware = false) {
   const n = points.length;
   const profile = new Array(n).fill(1);
   for (let i = 1; i < n - 1; i += 1) {
@@ -2577,10 +3294,11 @@ function curvatureSpeedProfile(points) {
     if (la < 0.001 || lb < 0.001) continue;
     const angle = Math.acos(clamp(a.dot(b) / (la * lb), -1, 1));
     profile[i] = clamp(1.18 - angle * 2.1, 0.55, 1.18);
+    if (clearanceAware) profile[i] = Math.min(profile[i], clamp(0.52 + sampleEsdf(points[i]) * 0.26, 0.52, 1.18));
   }
-  for (let pass = 0; pass < 2; pass += 1) {
+  for (let pass = 0; pass < 3; pass += 1) {
     for (let i = 1; i < n - 1; i += 1) {
-      profile[i] = Math.min(profile[i], profile[i - 1] + 0.09, profile[i + 1] + 0.09);
+      profile[i] = Math.min(profile[i], profile[i - 1] + 0.08, profile[i + 1] + 0.08);
     }
   }
   return profile;
@@ -2617,8 +3335,16 @@ function planRouteForAlgorithm(id, start) {
     const cells = planKinodynamicAStar(start, false);
     return cells && routeFromCells(cells);
   }
+  if (id === "B04" || id === "B06") {
+    const cells = planGridAStar(start);
+    return cells && routeFromCells(cells);
+  }
+  if (id === "B05") {
+    const cells = planKinodynamicAStar(start, false) ?? planGridAStar(start);
+    return cells && routeFromCells(cells);
+  }
   if (id === "A08") {
-    const cells = planKinodynamicAStar(start, true);
+    const cells = planMotionPrimitiveSearch(start);
     return cells && routeFromCells(cells);
   }
   return null;
@@ -2631,13 +3357,15 @@ function postProcessRoute(id, route) {
     route.smooth = optimizeMinimumJerkTrajectory(sparseTrajectoryWaypoints(route));
   } else if (id === "B03") {
     route.smooth = optimizeSafeCorridorTrajectory(densifyPolyline(sparseTrajectoryWaypoints(route), 1.0), 1.55);
-  } else if (id === "B04" || id === "B05") {
+  } else if (id === "B04") {
     route.smooth = optimizeBspline(route.smooth);
+  } else if (id === "B05") {
+    route.smooth = optimizeFastPlannerTrajectory(route);
   } else if (id === "B06") {
-    route.smooth = optimizeSparseWaypoints(route.smooth);
+    route.smooth = optimizeMincoTrajectory(route.smooth);
   }
   if (id === "B05" || id === "B06") {
-    route.speedScale = curvatureSpeedProfile(route.smooth);
+    route.speedScale = curvatureSpeedProfile(route.smooth, true);
   }
   return route;
 }
@@ -4226,81 +4954,245 @@ function computeVasarhelyiForces(drone, neighbors) {
   return nearest;
 }
 
+const learningLayerCache = new Map();
+
+function getLearningLayer(key, inputCount, outputCount, seed) {
+  const cacheKey = `${key}:${inputCount}:${outputCount}:${seed}`;
+  let layer = learningLayerCache.get(cacheKey);
+  if (!layer) {
+    const weights = new Float32Array(inputCount * outputCount);
+    const bias = new Float32Array(outputCount);
+    for (let o = 0; o < outputCount; o += 1) {
+      bias[o] = Math.sin(seed * 0.37 + (o + 1) * 1.113) * 0.12;
+      for (let i = 0; i < inputCount; i += 1) {
+        const a = Math.sin((i + 1) * 12.9898 + (o + 1) * 78.233 + seed * 37.719);
+        const b = Math.cos((i + 1) * 4.1414 + (o + 1) * 19.191 + seed * 11.17);
+        weights[o * inputCount + i] = ((a + b * 0.5) * 0.42) / Math.sqrt(inputCount);
+      }
+    }
+    layer = { weights, bias, inputCount, outputCount };
+    learningLayerCache.set(cacheKey, layer);
+  }
+  return layer;
+}
+
+function runLearningLayer(input, layer, activation = Math.tanh) {
+  const output = new Array(layer.outputCount);
+  for (let o = 0; o < layer.outputCount; o += 1) {
+    let sum = layer.bias[o];
+    const base = o * layer.inputCount;
+    for (let i = 0; i < layer.inputCount; i += 1) {
+      sum += input[i] * layer.weights[base + i];
+    }
+    output[o] = activation ? activation(sum) : sum;
+  }
+  return output;
+}
+
+function runTinyPolicyNetwork(input, key, hiddenCount, outputCount, seed) {
+  const first = getLearningLayer(`${key}:h1`, input.length, hiddenCount, seed);
+  const hidden = runLearningLayer(input, first);
+  const second = getLearningLayer(`${key}:h2`, hidden.length, hiddenCount, seed + 0.71);
+  const hidden2 = runLearningLayer(hidden, second);
+  const output = getLearningLayer(`${key}:out`, hidden2.length, outputCount, seed + 1.37);
+  return runLearningLayer(hidden2, output);
+}
+
+function sigmoid(value) {
+  return 1 / (1 + Math.exp(-value));
+}
+
+function limitLearningVector(vector, maxLength) {
+  if (vector.length() > maxLength) vector.setLength(maxLength);
+  return vector;
+}
+
+function vectorFromLearningOutput(output, maxLength) {
+  const vector = new THREE.Vector3(output[0] ?? 0, output[1] ?? 0, output[2] ?? 0);
+  if (vector.length() > 1) vector.normalize();
+  return vector.multiplyScalar(maxLength);
+}
+
+function collectLearningObservation(drone, neighbors, senseRange, k = 4) {
+  const closest = [];
+  let nearest = Number.POSITIVE_INFINITY;
+  const rel = new THREE.Vector3();
+  const relVel = new THREE.Vector3();
+  for (const other of neighbors) {
+    if (other === drone) continue;
+    rel.copy(other.position).sub(drone.position);
+    const distance = rel.length();
+    if (distance < 0.001) continue;
+    nearest = Math.min(nearest, distance);
+    if (distance < senseRange) drone.neighborCount += 1;
+    closest.push({ other, distance });
+  }
+  closest.sort((left, right) => left.distance - right.distance);
+
+  const desiredDir = drone.desired.lengthSq() > 0.0001 ? drone.desired.clone().normalize() : new THREE.Vector3(1, 0, 0);
+  const velocityDir = drone.velocity.lengthSq() > 0.0001 ? drone.velocity.clone().normalize() : new THREE.Vector3();
+  const clearance = sampleEsdf(drone.position);
+  const speedScale = Math.max(drone.speed, 0.2);
+  const features = [
+    desiredDir.x,
+    desiredDir.y,
+    desiredDir.z,
+    velocityDir.x,
+    velocityDir.y,
+    velocityDir.z,
+    clamp(drone.velocity.length() / speedScale, 0, 1.8) - 0.9,
+    clamp(clearance / 5, 0, 1) * 2 - 1,
+    clamp((drone.position.y - 1.2) / 13.8, 0, 1) * 2 - 1,
+  ];
+
+  for (let i = 0; i < k; i += 1) {
+    const entry = closest[i];
+    if (!entry || entry.distance > senseRange * 1.8) {
+      features.push(0, 0, 0, 0, 0, 0, 0, 0);
+      continue;
+    }
+    rel.copy(entry.other.position).sub(drone.position);
+    relVel.copy(entry.other.velocity).sub(drone.velocity);
+    const distance = Math.max(entry.distance, 0.001);
+    const closing = clamp((-relVel.dot(rel)) / (distance * Math.max(speedScale + (entry.other.speed ?? 1), 0.5)), -1, 1);
+    features.push(
+      clamp(rel.x / senseRange, -1, 1),
+      clamp(rel.y / senseRange, -1, 1),
+      clamp(rel.z / senseRange, -1, 1),
+      clamp(relVel.x / 3, -1, 1),
+      clamp(relVel.y / 3, -1, 1),
+      clamp(relVel.z / 3, -1, 1),
+      1 - clamp(distance / senseRange, 0, 1),
+      closing,
+    );
+  }
+
+  return { features, closest, nearest, desiredDir, clearance };
+}
+
+function learningSeparationVelocity(drone, closest, range, gain) {
+  const result = new THREE.Vector3();
+  const away = new THREE.Vector3();
+  const relVel = new THREE.Vector3();
+  for (const entry of closest) {
+    if (entry.distance >= range) break;
+    away.copy(drone.position).sub(entry.other.position);
+    const distance = Math.max(entry.distance, 0.001);
+    const urgency = (range - distance) / range;
+    relVel.copy(entry.other.velocity).sub(drone.velocity);
+    const closing = clamp(relVel.dot(away) / (distance * Math.max(drone.speed + (entry.other.speed ?? 1), 0.5)), 0, 1);
+    result.addScaledVector(away.normalize(), (urgency * urgency + closing * 0.35) * gain);
+  }
+  return result;
+}
+
 function computeGlasPolicy(drone, neighbors) {
   const profile = getProfile();
   const radius = (profile.avoidRange ?? 2.35) * 2.1;
-  let nearest = Number.POSITIVE_INFINITY;
+  const obs = collectLearningObservation(drone, neighbors, radius, 5);
+  const output = runTinyPolicyNetwork(obs.features, "glas-policy", 14, 4, 1.01);
+  const learned = obs.desiredDir
+    .clone()
+    .multiplyScalar(drone.speed * (0.78 + 0.16 * output[3]))
+    .add(vectorFromLearningOutput(output, drone.speed * 0.62));
+
   const aggregate = new THREE.Vector3();
-  const offset = new THREE.Vector3();
-  const dv = new THREE.Vector3();
-  for (const other of neighbors) {
-    if (other === drone) continue;
-    offset.copy(drone.position).sub(other.position);
-    const distance = offset.length();
-    if (distance < 0.001) continue;
-    nearest = Math.min(nearest, distance);
-    if (distance > radius) continue;
-    drone.neighborCount += 1;
-    const w = (1 - distance / radius) ** 2;
-    aggregate.addScaledVector(offset, (w * 2.7) / distance);
-    dv.copy(other.velocity).sub(drone.velocity);
-    aggregate.addScaledVector(dv, w * 0.3);
+  const away = new THREE.Vector3();
+  const relVel = new THREE.Vector3();
+  for (let i = 0; i < Math.min(obs.closest.length, 5); i += 1) {
+    const entry = obs.closest[i];
+    if (entry.distance > radius) break;
+    away.copy(drone.position).sub(entry.other.position);
+    relVel.copy(entry.other.velocity).sub(drone.velocity);
+    const distance = Math.max(entry.distance, 0.001);
+    const proximity = 1 - distance / radius;
+    const closing = clamp(relVel.dot(away) / (distance * Math.max(drone.speed + (entry.other.speed ?? 1), 0.5)), 0, 1);
+    const attentionInput = [
+      proximity,
+      closing,
+      away.x / radius,
+      away.y / radius,
+      away.z / radius,
+      clamp(relVel.x / 3, -1, 1),
+      clamp(relVel.y / 3, -1, 1),
+      clamp(relVel.z / 3, -1, 1),
+    ];
+    const attention = sigmoid(runTinyPolicyNetwork(attentionInput, "glas-attention", 8, 1, 1.79)[0] * 2.2 + proximity * 3.2 + closing);
+    aggregate.addScaledVector(away.normalize(), attention * proximity * proximity * drone.speed * 1.15);
+    aggregate.addScaledVector(relVel, attention * proximity * 0.18);
   }
-  const policy = drone.desired.clone().multiplyScalar(0.9).add(aggregate);
-  if (policy.length() > drone.speed * 1.25) policy.setLength(drone.speed * 1.25);
-  const clearance = sampleEsdf(drone.position);
-  const proximity = Math.min(nearest / (drone.safety * 1.7), clearance / 1.25);
-  const lambda = clamp(1 - proximity, 0, 1) ** 2;
-  if (lambda > 0.01) {
-    const backup = aggregate.clone().multiplyScalar(1.6).addScaledVector(drone.velocity, -0.4);
-    esdfGradient(drone.position, offset);
-    backup.addScaledVector(offset, clamp(1.25 - clearance, 0, 1.25) * 2.2);
+
+  const risk = Math.max(
+    clamp(1 - obs.nearest / (drone.safety * 2.4), 0, 1),
+    clamp(1 - obs.clearance / 1.45, 0, 1),
+  );
+  const lambda = clamp((risk - 0.15) / 0.85 + output[3] * 0.05, 0, 1) ** 2;
+  const policy = learned.clone().add(aggregate);
+  if (lambda > 0.001) {
+    const backup = aggregate.clone().multiplyScalar(1.4).addScaledVector(drone.velocity, -0.38);
+    const normal = new THREE.Vector3();
+    esdfGradient(drone.position, normal);
+    backup.addScaledVector(normal, clamp(1.35 - obs.clearance, 0, 1.35) * drone.speed * 1.1);
     policy.multiplyScalar(1 - lambda).addScaledVector(backup, lambda);
   }
+  limitLearningVector(policy, drone.speed * 1.25);
   drone.policy.copy(policy);
-  drone.avoidance.add(policy.sub(drone.desired));
-  return nearest;
+  drone.avoidance.add(policy.clone().sub(drone.desired));
+  return obs.nearest;
+}
+
+function scorePrimalAction(drone, obs, unit, actionIndex, bucket) {
+  const target = drone.position.clone();
+  if (unit) target.addScaledVector(unit, 1.25);
+  if (unit && isWorldBlocked(target, 0.6)) return Number.NEGATIVE_INFINITY;
+
+  const currentField = distanceFieldAt(drone.position);
+  const nextField = distanceFieldAt(target);
+  const progress = clamp((currentField - nextField) / 3.5, -1, 1);
+  const clearance = clamp(sampleEsdf(target) / 4, 0, 1);
+  const align = unit ? unit.dot(obs.desiredDir) : -0.08;
+  const velocityDir = drone.velocity.lengthSq() > 0.0001 ? drone.velocity.clone().normalize() : obs.desiredDir;
+  const inertia = unit ? unit.dot(velocityDir) : 0;
+  let occupancy = 0;
+  const predicted = new THREE.Vector3();
+  for (let i = 0; i < Math.min(obs.closest.length, 8); i += 1) {
+    const entry = obs.closest[i];
+    predicted.copy(entry.other.position).addScaledVector(entry.other.velocity, 0.42);
+    const gap = predicted.distanceTo(target);
+    const safe = drone.safety + entry.other.safety + 0.35;
+    if (gap < safe * 1.65) occupancy += ((safe * 1.65 - gap) / (safe * 1.65)) ** 2;
+  }
+
+  const input = [
+    progress,
+    align,
+    clearance * 2 - 1,
+    clamp(occupancy, 0, 3) / 3,
+    inertia,
+    unit ? 0 : 1,
+    Math.sin(bucket * 0.7 + drone.id * 0.13),
+    Math.cos(bucket * 0.51 + actionIndex * 0.37),
+    unit?.x ?? 0,
+    unit?.y ?? 0,
+    unit?.z ?? 0,
+  ];
+  const learned = runTinyPolicyNetwork(input, "primal-action", 10, 1, 2.83 + actionIndex * 0.11)[0];
+  return learned * 1.35 + progress * 1.6 + align * 0.72 + clearance * 0.55 + inertia * 0.18 - occupancy * 1.8 - (unit ? 0 : 0.18);
 }
 
 function computePrimalPolicy(drone, neighbors) {
   const profile = getProfile();
   const range = profile.avoidRange ?? 2.25;
-  const away = new THREE.Vector3();
-  let nearest = Number.POSITIVE_INFINITY;
-  for (const other of neighbors) {
-    if (other === drone) continue;
-    away.copy(drone.position).sub(other.position);
-    const distance = away.length();
-    if (distance < 0.001) continue;
-    nearest = Math.min(nearest, distance);
-    if (distance < range) {
-      drone.neighborCount += 1;
-      const urgency = (range - distance) / range;
-      drone.avoidance.addScaledVector(away.normalize(), urgency * urgency * 2.4);
-    }
-  }
+  const obs = collectLearningObservation(drone, neighbors, range, 4);
   if (drone.actionUntil === undefined) drone.actionUntil = -1;
   if (state.elapsed >= drone.actionUntil) {
     const bucket = Math.floor(state.elapsed / 0.24);
-    const target = new THREE.Vector3();
-    const predicted = new THREE.Vector3();
-    let bestScore = Number.POSITIVE_INFINITY;
+    let bestScore = Number.NEGATIVE_INFINITY;
     let bestDir = null;
     for (let oi = 0; oi <= neighborOffsets.length; oi += 1) {
       const unit = oi < neighborOffsets.length ? offsetUnits[oi] : null;
-      target.copy(drone.position);
-      if (unit) {
-        target.addScaledVector(unit, 1.25);
-        if (isWorldBlocked(target, 0.6)) continue;
-      }
-      let score = distanceFieldAt(target) + (unit ? 0 : 0.6);
-      for (const other of neighbors) {
-        if (other === drone) continue;
-        predicted.copy(other.position).addScaledVector(other.velocity, 0.4);
-        if (predicted.distanceTo(target) < 1.4) score += 3.2;
-      }
-      score += Math.sin(drone.id * 12.9898 + bucket * 78.233 + oi * 37.719) * 0.3;
-      if (score < bestScore) {
+      const score = scorePrimalAction(drone, obs, unit, oi, bucket);
+      if (score > bestScore) {
         bestScore = score;
         bestDir = unit;
       }
@@ -4311,18 +5203,28 @@ function computePrimalPolicy(drone, neighbors) {
     drone.actionUntil = state.elapsed + 0.24;
   }
   if (drone.actionDir) {
-    drone.desired.copy(drone.actionDir);
-    drone.policy.copy(drone.actionDir);
+    const policy = drone.actionDir.clone().add(learningSeparationVelocity(drone, obs.closest, range, drone.speed * 0.55));
+    limitLearningVector(policy, drone.speed * 1.12);
+    drone.desired.copy(policy);
+    drone.policy.copy(policy);
   }
-  return nearest;
+  return obs.nearest;
+}
+
+function neuralCbfParameters(input, key, seed) {
+  const output = runTinyPolicyNetwork(input, key, 10, 2, seed);
+  return {
+    marginScale: 1.04 + 0.14 * ((output[0] + 1) * 0.5),
+    alpha: 1.35 + 1.45 * ((output[1] + 1) * 0.5),
+  };
 }
 
 function computeCbfFilter(drone, neighbors) {
   const profile = getProfile();
-  const alpha = 2.3;
   const range = profile.avoidRange ?? 2.55;
   const filtered = drone.desired.clone();
   const p = new THREE.Vector3();
+  const relVel = new THREE.Vector3();
   let nearest = Number.POSITIVE_INFINITY;
   for (let pass = 0; pass < 2; pass += 1) {
     for (const other of neighbors) {
@@ -4335,153 +5237,144 @@ function computeCbfFilter(drone, neighbors) {
         if (distance < range) drone.neighborCount += 1;
       }
       if (distance > 7) continue;
-      const ds = (drone.safety + other.safety) * 0.58;
+      relVel.copy(other.velocity).sub(drone.velocity);
+      const dsBase = (drone.safety + other.safety) * 0.58;
+      const input = [
+        clamp(distance / 7, 0, 1),
+        p.x / 7,
+        p.y / 7,
+        p.z / 7,
+        clamp(relVel.x / 3, -1, 1),
+        clamp(relVel.y / 3, -1, 1),
+        clamp(relVel.z / 3, -1, 1),
+        clamp((-relVel.dot(p)) / (distance * Math.max(drone.speed + (other.speed ?? 1), 0.5)), -1, 1),
+      ];
+      const cbf = neuralCbfParameters(input, "neural-cbf-pair", 3.71);
+      const ds = dsBase * cbf.marginScale;
       const hval = distance * distance - ds * ds;
-      const rhs = -alpha * hval + 2 * p.dot(other.velocity);
+      const rhs = -cbf.alpha * hval + 2 * p.dot(other.velocity);
       const lhs = 2 * p.dot(filtered);
       if (lhs < rhs) {
         filtered.addScaledVector(p, (rhs - lhs) / (2 * distance * distance));
       }
     }
+
     for (const obstacle of state.obstacles) {
       const closest = closestPointOnObstacle(drone.position, obstacle);
       p.copy(drone.position).sub(closest);
       const distance = p.length();
-      if (distance < 0.001 || distance > 4.5) continue;
-      const hval = distance * distance - 1;
-      const rhs = -alpha * hval;
+      if (distance < 0.001 || distance > 4.7) continue;
+      const input = [
+        clamp(distance / 4.7, 0, 1),
+        p.x / 4.7,
+        p.y / 4.7,
+        p.z / 4.7,
+        clamp(drone.velocity.x / 3, -1, 1),
+        clamp(drone.velocity.y / 3, -1, 1),
+        clamp(drone.velocity.z / 3, -1, 1),
+        clamp(sampleEsdf(drone.position) / 5, 0, 1) * 2 - 1,
+      ];
+      const cbf = neuralCbfParameters(input, "neural-cbf-obstacle", 4.19);
+      const ds = 1.0 * cbf.marginScale;
+      const hval = distance * distance - ds * ds;
+      const rhs = -cbf.alpha * hval;
       const lhs = 2 * p.dot(filtered);
       if (lhs < rhs) {
         filtered.addScaledVector(p, (rhs - lhs) / (2 * distance * distance));
       }
     }
   }
+  limitLearningVector(filtered, drone.speed * 1.28);
   drone.policy.copy(filtered);
-  drone.avoidance.add(filtered.sub(drone.desired));
+  drone.avoidance.add(filtered.clone().sub(drone.desired));
   return nearest;
+}
+
+function rolloutSafetyCost(drone, option, rawAction, base, neighbors, range, obs) {
+  let cost = option.distanceToSquared(rawAction) * 0.26 + option.distanceToSquared(base) * 0.14;
+  const predicted = new THREE.Vector3();
+  const otherPredicted = new THREE.Vector3();
+  for (const horizon of [0.35, 0.75, 1.15, 1.55]) {
+    predicted.copy(drone.position).addScaledVector(option, horizon);
+    if (isWorldBlocked(predicted, 0.9)) cost += 90;
+    for (const other of neighbors) {
+      if (other === drone) continue;
+      otherPredicted.copy(other.position).addScaledVector(other.velocity, horizon);
+      const gap = predicted.distanceTo(otherPredicted);
+      const safe = drone.safety + other.safety + 0.35;
+      if (gap < safe * 1.7) cost += ((safe * 1.7 - gap) / safe) ** 2 * 18;
+    }
+  }
+  const valueInput = [
+    ...obs.features.slice(0, 13),
+    clamp(option.x / Math.max(drone.speed, 0.2), -1, 1),
+    clamp(option.y / Math.max(drone.speed, 0.2), -1, 1),
+    clamp(option.z / Math.max(drone.speed, 0.2), -1, 1),
+    clamp(option.length() / Math.max(drone.speed, 0.2), 0, 1.4) - 0.7,
+    clamp(range - Math.min(obs.nearest, range), 0, range) / range,
+  ];
+  const value = runTinyPolicyNetwork(valueInput, "rl-safety-value", 12, 1, 5.29)[0];
+  return cost - value * 1.75;
 }
 
 function computeRlSafetyLayerPolicy(drone, neighbors) {
   const profile = getProfile();
   const range = profile.avoidRange ?? 2.4;
-  let nearest = Number.POSITIVE_INFINITY;
+  const obs = collectLearningObservation(drone, neighbors, range, 5);
+  const policyOut = runTinyPolicyNetwork(obs.features, "rl-policy", 16, 4, 4.83);
   const base = drone.desired.clone();
-  const wave = new THREE.Vector3(
-    Math.sin(state.elapsed * 1.8 + drone.id * 0.77),
-    Math.sin(state.elapsed * 1.1 + drone.id * 0.31) * 0.35,
-    Math.cos(state.elapsed * 1.6 + drone.id * 0.53),
-  ).multiplyScalar(drone.speed * 0.22);
-  const action = base.clone().add(wave);
+  const rawAction = obs.desiredDir
+    .clone()
+    .multiplyScalar(drone.speed * (0.82 + 0.24 * ((policyOut[3] + 1) * 0.5)))
+    .add(vectorFromLearningOutput(policyOut, drone.speed * 0.58));
+  limitLearningVector(rawAction, drone.speed * 1.18);
+
   const options = [
-    action,
+    rawAction.clone(),
     base.clone(),
     base.clone().multiplyScalar(0.62),
-    rotatedAroundY(base, 0.55),
-    rotatedAroundY(base, -0.55),
-    base.clone().add(new THREE.Vector3(0, drone.speed * 0.36, 0)),
-    base.clone().add(new THREE.Vector3(0, -drone.speed * 0.28, 0)),
+    rotatedAroundY(rawAction, 0.5),
+    rotatedAroundY(rawAction, -0.5),
+    rawAction.clone().add(new THREE.Vector3(0, drone.speed * 0.32, 0)),
+    rawAction.clone().add(new THREE.Vector3(0, -drone.speed * 0.26, 0)),
+    rawAction.clone().add(learningSeparationVelocity(drone, obs.closest, range, drone.speed * 0.62)),
   ];
-  let best = options[0];
+  let best = options[0].clone();
   let bestCost = Number.POSITIVE_INFINITY;
   for (const option of options) {
-    if (option.length() > drone.speed * 1.12) option.setLength(drone.speed * 1.12);
-    let cost = option.distanceToSquared(action) * 0.35 + option.distanceToSquared(base) * 0.18;
-    for (const horizon of [0.45, 0.9, 1.35]) {
-      const predicted = drone.position.clone().addScaledVector(option, horizon);
-      if (isWorldBlocked(predicted, 0.92)) cost += 80;
-      for (const other of neighbors) {
-        if (other === drone) continue;
-        const distance = drone.position.distanceTo(other.position);
-        if (distance < 0.001) continue;
-        nearest = Math.min(nearest, distance);
-        if (distance < range) drone.neighborCount += 1;
-        const otherPredicted = other.position.clone().addScaledVector(other.velocity, horizon);
-        const gap = predicted.distanceTo(otherPredicted);
-        const safe = drone.safety + other.safety + 0.35;
-        if (gap < safe) cost += (safe - gap) * (safe - gap) * 34;
-      }
-    }
+    limitLearningVector(option, drone.speed * 1.12);
+    const cost = rolloutSafetyCost(drone, option, rawAction, base, neighbors, range, obs);
     if (cost < bestCost) {
       bestCost = cost;
       best = option.clone();
     }
   }
   drone.policy.copy(best);
-  drone.avoidance.add(best.sub(drone.desired));
-  return nearest;
-}
-const e05Net = { W1: null, W2: null };
-
-function ensureE05Net() {
-  if (e05Net.W1) return;
-  const rng = createRng(20260705);
-  const w1 = new Float32Array(24 * 16);
-  for (let i = 0; i < w1.length; i += 1) w1[i] = (rng() * 2 - 1) * 0.65;
-  const w2 = new Float32Array(16 * 3);
-  for (let i = 0; i < w2.length; i += 1) w2[i] = (rng() * 2 - 1) * 0.65;
-  e05Net.W1 = w1;
-  e05Net.W2 = w2;
+  drone.avoidance.add(best.clone().sub(drone.desired));
+  return obs.nearest;
 }
 
 function computeE2eRlPolicy(drone, neighbors) {
-  ensureE05Net();
   const profile = getProfile();
   const range = profile.avoidRange ?? 2.2;
-  const away = new THREE.Vector3();
-  let nearest = Number.POSITIVE_INFINITY;
-  const closest = [];
-  for (const other of neighbors) {
-    if (other === drone) continue;
-    const distance = drone.position.distanceTo(other.position);
-    if (distance < 0.001) continue;
-    nearest = Math.min(nearest, distance);
-    if (distance < range) {
-      drone.neighborCount += 1;
-      away.copy(drone.position).sub(other.position);
-      drone.avoidance.addScaledVector(away.normalize(), ((range - distance) / range) ** 2 * 3.4);
-    }
-    closest.push({ other, distance });
-  }
-  closest.sort((left, right) => left.distance - right.distance);
-  const obs = new Float32Array(24);
-  const desiredDir =
-    drone.desired.lengthSq() > 0.0001 ? drone.desired.clone().normalize() : new THREE.Vector3(1, 0, 0);
-  obs[0] = desiredDir.x;
-  obs[1] = desiredDir.y;
-  obs[2] = desiredDir.z;
-  obs[3] = drone.velocity.x / 4;
-  obs[4] = drone.velocity.y / 4;
-  obs[5] = drone.velocity.z / 4;
-  for (let k = 0; k < 3; k += 1) {
-    const entry = closest[k];
-    if (!entry) continue;
-    const base = 6 + k * 6;
-    obs[base] = (entry.other.position.x - drone.position.x) / 6;
-    obs[base + 1] = (entry.other.position.y - drone.position.y) / 6;
-    obs[base + 2] = (entry.other.position.z - drone.position.z) / 6;
-    obs[base + 3] = (entry.other.velocity.x - drone.velocity.x) / 4;
-    obs[base + 4] = (entry.other.velocity.y - drone.velocity.y) / 4;
-    obs[base + 5] = (entry.other.velocity.z - drone.velocity.z) / 4;
-  }
-  const hidden = new Float32Array(16);
-  for (let hIdx = 0; hIdx < 16; hIdx += 1) {
-    let sum = 0;
-    for (let iIdx = 0; iIdx < 24; iIdx += 1) sum += e05Net.W1[hIdx * 24 + iIdx] * obs[iIdx];
-    hidden[hIdx] = Math.tanh(sum);
-  }
-  const dv = new THREE.Vector3();
-  for (let oIdx = 0; oIdx < 3; oIdx += 1) {
-    let sum = 0;
-    for (let hIdx = 0; hIdx < 16; hIdx += 1) sum += e05Net.W2[oIdx * 16 + hIdx] * hidden[hIdx];
-    dv.setComponent(oIdx, Math.tanh(sum) * drone.speed * 0.45);
-  }
-  const policy = drone.desired.clone().add(dv);
-  if (policy.length() > drone.speed * 1.15) policy.setLength(drone.speed * 1.15);
-  drone.policy.copy(policy);
-  drone.avoidance.add(policy.sub(drone.desired));
-  return nearest;
-}
+  const obs = collectLearningObservation(drone, neighbors, range, 5);
+  const output = runTinyPolicyNetwork(obs.features, "ctde-e2e-policy", 18, 4, 6.07);
+  const throttle = 0.74 + 0.34 * ((output[3] + 1) * 0.5);
+  const policy = obs.desiredDir
+    .clone()
+    .multiplyScalar(drone.speed * throttle)
+    .add(vectorFromLearningOutput(output, drone.speed * 0.72));
 
+  const guard = learningSeparationVelocity(drone, obs.closest, range, drone.speed * 0.72);
+  if (guard.lengthSq() > 0.0001) {
+    policy.add(guard);
+    policy.addScaledVector(obs.desiredDir, -Math.min(guard.length() / Math.max(drone.speed, 0.2), 1) * drone.speed * 0.14);
+  }
+  limitLearningVector(policy, drone.speed * 1.18);
+  drone.policy.copy(policy);
+  drone.avoidance.add(policy.clone().sub(drone.desired));
+  return obs.nearest;
+}
 function computeSwarmAvoidance(drone, neighbors) {
   if (isAlgorithm("C01")) return computeVelocityObstacleAvoidance(drone, neighbors, "orca");
   if (isAlgorithm("C02")) return computeVelocityObstacleAvoidance(drone, neighbors, "rvo");
@@ -5657,7 +6550,6 @@ window.search3DLab = {
 };
 window.__search3dReady = true;
 requestAnimationFrame(animate);
-
 
 
 
