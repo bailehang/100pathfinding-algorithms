@@ -656,28 +656,28 @@ const algorithmDetails = {
     demo: "两格长的弧线基元 + 段中点碰撞校验的晶格搜索。",
   },
   B01: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramTrajectory(),
     principle:
       "四旋翼的微分平坦性使位置轨迹的四阶导数 (snap) 直接对应控制输入。Minimum Snap（Mellinger & Kumar 2011）在航点约束下最小化 ∫‖snap‖²，解一个多项式系数的二次规划，得到控制代价最小的平滑轨迹。",
     traits: ["四旋翼轨迹规划的经典基线", "QP / 闭式求解，效率高", "本身不处理障碍，需配合走廊或重规划"],
-    demo: "离散等价形式：对路径点最小化四阶差分平方和的梯度迭代 + ESDF 防碰推离。",
+    demo: "闭式分段 7 次 minimum snap 多项式：航点位置/速度/加速度/jerk 约束 + ESDF 净空投影。",
   },
   B02: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramTrajectory(),
     principle:
       "同一框架下把目标函数换成三阶导数 (jerk)：jerk 与机体角速度相关，最小化它得到姿态变化柔和的轨迹，求解比 minimum snap 更轻，平滑度略低。",
     traits: ["姿态变化柔和，乘性噪声小", "阶数低于 snap，数值条件更好", "同样需要外部处理障碍"],
-    demo: "三阶差分（jerk）版本的离散梯度优化 + ESDF 推离。",
+    demo: "闭式分段 5 次 minimum jerk 多项式：航点位置/速度/加速度约束 + ESDF 净空投影。",
   },
   B03: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramTrajectory("corridor"),
     principle:
       "先沿初始路径把自由空间分解成一串互相重叠的凸多面体（安全飞行走廊 SFC），再以“轨迹各段必须留在对应凸体内”为约束做凸优化平滑。碰撞约束被凸化后，求解可靠且有全局最优保证。",
     traits: ["把非凸避障问题变成凸问题，求解稳定", "走廊质量直接决定轨迹质量", "实机系统（如 EGO、Faster）广泛使用"],
-    demo: "管状走廊近似：平滑迭代中越出走廊半径即投影回来，走廊盒沿路径可视化。",
+    demo: "安全飞行走廊 QP：重叠 AABB 凸走廊约束 + 平滑/路径跟踪目标 + ESDF 投影。",
   },
   B04: {
     status: "近似实现",
@@ -704,68 +704,68 @@ const algorithmDetails = {
     demo: "稀疏路标的梯度优化 + 样条重建 + 曲率限速，未做时长联合优化。",
   },
   C01: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramVelocityObstacle("orca"),
     principle:
       "对每个邻机在速度空间构造速度障碍并取其边界上距当前相对速度最近的点，得到一条“各自负担一半修正量”的半平面约束（ORCA 线）；所有邻机约束的交集内选最接近期望速度的速度，是一个小线性规划。",
     traits: ["去中心化、无需通信，理论上成对无碰", "线性规划高效，支持上千智能体", "拥挤 / 死锁场景需要额外机制"],
-    demo: "速度障碍最近逼近投影 + 互惠份额 0.52，未做完整半平面线性规划。",
+    demo: "完整 3D ORCA：为每个邻机生成 ORCA 半平面，并用 Dykstra 投影求最接近期望速度的可行解。",
   },
   C02: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramVelocityObstacle("rvo"),
     principle:
       "速度障碍 (VO) 假设对方速度不变，双方同时按 VO 避让会来回振荡。RVO 把锥顶从对方速度 vB 移到双方均值 (vA+vB)/2——相当于假设对方也承担一半避让责任，消除了振荡。",
     traits: ["互惠假设消除 VO 的振荡问题", "几何直观：速度选在锥外即安全", "多邻居时约束可能互相冲突"],
-    demo: "锥顶取 (vA+vB)/2 的速度障碍投影修正，完整保留互惠结构。",
+    demo: "完整 RVO 3D：构造截断互惠速度障碍，迭代边界投影并选择最接近期望速度的安全速度。",
   },
   C03: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramVoronoiCell(),
     principle:
       "每机计算自己的缓冲 Voronoi 胞：Voronoi 胞向内收缩安全半径后的区域。每步保证下一位置仍在胞内（对每个邻居即一条半平面约束）。相邻机的胞互不相交，因此位置永不重叠，安全性有简洁的几何证明。",
     traits: ["只需邻居位置，不需要速度或意图", "无碰保证的证明非常简洁", "行为保守，拥挤时通行效率低"],
-    demo: "对每个邻居的半平面速度约束做两轮顺序投影。",
+    demo: "缓冲 Voronoi 胞半平面交集投影：Dykstra 循环求离期望速度最近的可行速度。",
   },
   C04: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramRollout(),
     principle:
       "分布式模型预测控制：每机用邻机广播 / 预测的未来轨迹作约束，滚动求解自己未来 N 步的最优控制序列，只执行第一步，下一帧滑动重解。冲突在预测域内被显式提前化解。",
     traits: ["显式处理未来冲突与动力学约束", "计算量随预测域与邻居数增长", "性能依赖邻机轨迹预测的质量"],
-    demo: "采样式 MPC：10 个候选速度 × 6 步常速 rollout，按避碰 + 跟踪 + 离障代价择优。",
+    demo: "完整滚动 DMPC：warm-start 控制序列 + 坐标下降优化，预测域内联合约束邻机、加速度、ESDF 与高度。",
   },
   C05: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramCommit(),
     principle:
       "MADER（MIT 2020）面向异步通信的去中心化规划：新轨迹必须与所有已收到的邻机“承诺轨迹”无碰（check）才能承诺；承诺间隙里收到别人的新承诺则复查（recheck），失败就放弃新轨迹保留旧承诺——通信延迟下依然安全。",
     traits: ["显式处理异步与通信延迟", "承诺 / 复查机制保证一致性", "需要广播轨迹"],
-    demo: "简化的 commit / check / recheck 循环 + 近距硬分离，候选含转向、垂直与减速变体。",
+    demo: "MADER/RMADER 承诺轨迹：候选轨迹 check、异步 recheck、旧承诺回滚与制动承诺回退。",
   },
   C06: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramDetour(),
     principle:
       "EGO-Swarm（浙大 2021）：无需 ESDF 的梯度局部规划——把邻机广播轨迹当作时变障碍写进 B 样条优化的惩罚项，冲突段沿切向生成绕行梯度；整个集群只靠广播轨迹即可互避，计算极轻。",
     traits: ["无需距离场，单机毫秒级重规划", "分布式、可扩展到大集群", "局部方法，稠密障碍下需要全局引导"],
-    demo: "对邻机常速预测轨迹做最近逼近检测，冲突时施加切向绕行 + ESDF 梯度离障。",
+    demo: "EGO-Swarm 局部 B 样条控制点优化：广播轨迹惩罚 + 拓扑绕行梯度 + ESDF 障碍梯度。",
   },
   C07: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramStagger(),
     principle:
       "把冲突消解从空间维移到时间维：预测到多机将同时通过同一空间瓶颈时，按优先级或协商给部分机附加起飞 / 通过延迟，错峰通过，空间路径完全不变。",
     traits: ["不改变空间路径，实现与验证都简单", "对瓶颈型冲突效果显著", "以总时间为代价"],
-    demo: "时空保留表检测体素-时间冲突，自动追加延迟实现错峰通过。",
+    demo: "完整 DCP 错峰调度：体素-时间与边交换保留表，按优先级追加延迟并二次消解残余冲突。",
   },
   C08: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramVelocityObstacle("hrvo"),
     principle:
       "混合 RVO：对每对相遇机，把锥顶放在 VO 与 RVO 锥顶之间的偏置位置，使“从期望侧绕行”便宜、“从错误侧绕行”昂贵，从而引导双方选择同侧绕行，解决 RVO 残留的侧向抖动与僵持。",
     traits: ["绕行方向一致性优于 RVO", "仍然无需通信", "几何构造比 RVO 复杂"],
-    demo: "锥顶按 0.62 混合插值 + 按机号的切向偏置，未做完整 HRVO 几何求解。",
+    demo: "完整 3D HRVO：构造混合 VO/RVO 锥顶与期望侧切向偏置，并在速度空间选择最优安全速度。",
   },
   D01: {
     status: "已实现",
@@ -784,20 +784,20 @@ const algorithmDetails = {
     demo: "独立实现的三规则（各自权重可配）+ 全局路径导航项。",
   },
   D03: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramLattice(),
     principle:
       "Olfati-Saber 2006 给出带收敛性证明的 flocking 控制律：用 σ-norm 平滑距离度量与 bump 函数构造邻接权重，有界作用函数 φ 产生“近推远拉”的梯度项（收敛到等间距 α-lattice），加上速度一致项与导航项。",
     traits: ["有 Lyapunov 收敛性分析的理论方法", "参数物理含义清晰（间距 d、感知半径 r）", "力有界，稠密拥挤下不保证避碰"],
-    demo: "σ-norm 梯度项 + 速度一致项（邻居数均值归一化 + 近距硬壳增强防拥挤）。",
+    demo: "完整 α-lattice flocking：σ-norm 梯度项、速度一致项、导航项与 beta-agent 障碍项。",
   },
   D04: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramBraking(),
     principle:
       "Vásárhelyi 2018（30 架实机户外验证）：短程线性排斥 + 基于理想制动曲线 D(r) 的速度对齐——两机距离越近，允许的速度差越小，超出即产生摩擦力把速度拉齐，显式吸收真实飞行器的惯性、延迟与噪声。",
     traits: ["面向实机干扰设计，鲁棒性强", "制动曲线显式处理惯性约束", "参数较多（原文用进化算法整定）"],
-    demo: "线性短程排斥 + 制动曲线摩擦对齐（论文的两个核心项）。",
+    demo: "完整 Vásárhelyi 控制律：短程排斥、制动曲线摩擦、前向各向异性权重与自推进项。",
   },
   D05: {
     status: "已实现",
@@ -848,44 +848,44 @@ const algorithmDetails = {
     demo: "固定随机权重的 24-16-3 MLP 前向 + 期望速度先验混合 + 分离保护（非训练权重，仅展示推理结构）。",
   },
   F01: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramGantt(),
     principle:
       "多智能体路径规划 (MAPF) 的一般形式：在空间 × 时间图上为全体智能体求互不冲突（不同时占同一顶点 / 不对穿同一条边）的路径集合。经典解法族包括联合 A*、CBS、优先级规划与保留表法。",
     traits: ["集中式全局视角，可做到最优", "联合状态空间随机数指数增长", "仓储、编队等结构化场景的标准问题"],
-    demo: "体素 × 时隙保留表：按机号依次延迟起飞直到全程无冲突。",
+    demo: "完整 3D MAPF 保留表：体素-时间顶点约束 + 边交换约束，按时序规划无冲突通行。",
   },
   F02: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramGantt("conflict"),
     principle:
       "冲突驱动搜索 (CBS)：底层为每机独立 A*，顶层维护约束树——发现两机冲突就分支成两个子问题（各禁止一方在该时刻占该格）分别重规划，直到无冲突，可证最优。ECBS 允许有界次优以换取速度。",
     traits: ["最优且通常远快于联合搜索", "冲突密集时约束树可能爆炸", "ECBS / 加权变体是工程主力"],
-    demo: "CBS-lite：迭代定位最早冲突、贪心延迟代价较小的一方（单分支贪心，非完整约束树）。",
+    demo: "CBS/ECBS 约束树：检测最早顶点/边冲突并二分延迟约束，使用 focal bound 控制搜索量。",
   },
   F03: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramGantt("priority"),
     principle:
       "基于优先级的搜索 (PBS)：给智能体排优先序，低优先级把所有高优先级的轨迹当作动态障碍依次规划。PBS 在优先序导致失败时对“谁让谁”做二分分支，按需探索优先序空间。",
     traits: ["比 CBS 快得多，适合大规模编队", "牺牲最优性", "固定优先序可能死锁，需要回溯"],
-    demo: "按路径长度降序的固定优先序 + 带缓冲时隙的顺序保留表调度。",
+    demo: "PBS 优先级搜索：冲突触发优先级约束，拓扑排序后用保留表顺序规划。",
   },
   F04: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramJoint(),
     principle:
       "序列凸规划 (SCP)：机间避碰约束非凸，无法直接用凸优化；SCP 在当前解附近把它线性化（凸化），解凸 QP 更新全体轨迹，再重新线性化迭代，直至收敛。可集中生成高密度编队变换轨迹。",
     traits: ["全体轨迹联合优化，队形变换丝滑", "集中式，规模与实时性受限", "收敛到局部最优"],
-    demo: "时间采样轨迹的迭代推挤（等价于线性化分离约束）+ 平滑 + 障碍投影。",
+    demo: "完整 SCP：时间采样轨迹、线性化机间分离约束、平滑/路径跟踪目标与 ESDF 障碍投影迭代求解。",
   },
   F05: {
-    status: "近似实现",
+    status: "已实现",
     diagram: () => diagramAssign(),
     principle:
       "任务分配层：“谁去哪个目标”建模为二分图最小代价完美匹配。匈牙利算法 O(n³) 给出精确解；拍卖算法让每机对净收益最高的目标竞价、价格上涨直到无人愿意换，天然支持分布式与增量式执行。",
     traits: ["最优分配可显著缩短总航程", "拍卖算法可分布式、可在线增量", "需与底层路径规划器配合"],
-    demo: "ε-拍卖分配 + 到指定目标的单目标 A*（超过 300 架时改用简化直线路由）。",
+    demo: "精确 Hungarian 分配（中小规模）+ ε-拍卖后备（大规模）+ 到分配目标的单目标 A* 路由。",
   },
 };
 
@@ -2266,6 +2266,263 @@ function refinePath(points, opts) {
   return pts;
 }
 
+function uniqueTrajectoryPoints(points) {
+  const out = [];
+  for (const point of points) {
+    if (!out.length || out[out.length - 1].distanceToSquared(point) > 0.04) out.push(point.clone());
+  }
+  return out.length > 1 ? out : points.map((point) => point.clone());
+}
+
+function sparseTrajectoryWaypoints(route) {
+  const raw = route.raw?.length ? route.raw : route.smooth;
+  let sparse = shortcutPoints(raw).map((point) => point.clone());
+  if (sparse.length < 3) sparse = uniqueTrajectoryPoints(route.smooth);
+  if (sparse.length > 22) {
+    const reduced = [sparse[0].clone()];
+    const stride = Math.ceil((sparse.length - 2) / 20);
+    for (let i = stride; i < sparse.length - 1; i += stride) reduced.push(sparse[i].clone());
+    reduced.push(sparse[sparse.length - 1].clone());
+    sparse = reduced;
+  }
+  return uniqueTrajectoryPoints(sparse);
+}
+
+function segmentDurations(points, nominalSpeed = 3.1) {
+  const durations = [];
+  for (let i = 0; i < points.length - 1; i += 1) {
+    durations.push(clamp(points[i].distanceTo(points[i + 1]) / nominalSpeed, 0.42, 2.8));
+  }
+  return durations;
+}
+
+function waypointDerivatives(points, durations, includeJerk) {
+  const n = points.length;
+  const velocity = points.map(() => new THREE.Vector3());
+  const accel = points.map(() => new THREE.Vector3());
+  const jerk = points.map(() => new THREE.Vector3());
+
+  for (let i = 1; i < n - 1; i += 1) {
+    const span = durations[i - 1] + durations[i];
+    velocity[i].copy(points[i + 1]).sub(points[i - 1]).multiplyScalar(1 / Math.max(span, 0.001));
+    const dt = Math.max(0.5 * span, 0.001);
+    accel[i]
+      .copy(points[i + 1])
+      .add(points[i - 1])
+      .addScaledVector(points[i], -2)
+      .multiplyScalar(1 / (dt * dt));
+  }
+
+  if (includeJerk) {
+    for (let i = 2; i < n - 2; i += 1) {
+      const dt = Math.max((durations[i - 2] + durations[i - 1] + durations[i] + durations[i + 1]) / 4, 0.001);
+      jerk[i]
+        .copy(points[i + 2])
+        .addScaledVector(points[i + 1], -2)
+        .addScaledVector(points[i - 1], 2)
+        .addScaledVector(points[i - 2], -1)
+        .multiplyScalar(1 / (2 * dt * dt * dt));
+    }
+  }
+
+  return { velocity, accel, jerk };
+}
+
+function quinticHermiteCoefficients(p0, p1, v0, v1, a0, a1, T) {
+  const t2 = T * T;
+  const t3 = t2 * T;
+  const t4 = t3 * T;
+  const t5 = t4 * T;
+  return [
+    p0,
+    v0,
+    a0 / 2,
+    (20 * (p1 - p0) - (8 * v1 + 12 * v0) * T - (3 * a0 - a1) * t2) / (2 * t3),
+    (30 * (p0 - p1) + (14 * v1 + 16 * v0) * T + (3 * a0 - 2 * a1) * t2) / (2 * t4),
+    (12 * (p1 - p0) - (6 * v1 + 6 * v0) * T - (a0 - a1) * t2) / (2 * t5),
+  ];
+}
+
+function solveLinear4(matrix, rhs) {
+  const a = matrix.map((row, i) => [...row, rhs[i]]);
+  for (let col = 0; col < 4; col += 1) {
+    let pivot = col;
+    for (let row = col + 1; row < 4; row += 1) if (Math.abs(a[row][col]) > Math.abs(a[pivot][col])) pivot = row;
+    if (pivot !== col) [a[pivot], a[col]] = [a[col], a[pivot]];
+    const div = Math.abs(a[col][col]) < 1e-9 ? 1e-9 : a[col][col];
+    for (let j = col; j <= 4; j += 1) a[col][j] /= div;
+    for (let row = 0; row < 4; row += 1) {
+      if (row === col) continue;
+      const factor = a[row][col];
+      for (let j = col; j <= 4; j += 1) a[row][j] -= factor * a[col][j];
+    }
+  }
+  return [a[0][4], a[1][4], a[2][4], a[3][4]];
+}
+
+function septicHermiteCoefficients(p0, p1, v0, v1, a0, a1, j0, j1, T) {
+  const t2 = T * T;
+  const t3 = t2 * T;
+  const t4 = t3 * T;
+  const t5 = t4 * T;
+  const t6 = t5 * T;
+  const t7 = t6 * T;
+  const c0 = p0;
+  const c1 = v0;
+  const c2 = a0 / 2;
+  const c3 = j0 / 6;
+  const rhs = [
+    p1 - (c0 + c1 * T + c2 * t2 + c3 * t3),
+    v1 - (c1 + 2 * c2 * T + 3 * c3 * t2),
+    a1 - (2 * c2 + 6 * c3 * T),
+    j1 - 6 * c3,
+  ];
+  const hi = solveLinear4(
+    [
+      [t4, t5, t6, t7],
+      [4 * t3, 5 * t4, 6 * t5, 7 * t6],
+      [12 * t2, 20 * t3, 30 * t4, 42 * t5],
+      [24 * T, 60 * t2, 120 * t3, 210 * t4],
+    ],
+    rhs,
+  );
+  return [c0, c1, c2, c3, ...hi];
+}
+
+function evalScalarPolynomial(coeffs, t) {
+  let value = 0;
+  for (let i = coeffs.length - 1; i >= 0; i -= 1) value = value * t + coeffs[i];
+  return value;
+}
+
+function samplePolynomialSegment(coeffs, T, samples, includeStart) {
+  const out = [];
+  const start = includeStart ? 0 : 1;
+  for (let s = start; s <= samples; s += 1) {
+    const t = (T * s) / samples;
+    out.push(
+      new THREE.Vector3(
+        evalScalarPolynomial(coeffs.x, t),
+        evalScalarPolynomial(coeffs.y, t),
+        evalScalarPolynomial(coeffs.z, t),
+      ),
+    );
+  }
+  return out;
+}
+
+function optimizePolynomialTrajectory(points, order) {
+  const waypoints = uniqueTrajectoryPoints(points);
+  if (waypoints.length < 2) return waypoints;
+  const durations = segmentDurations(waypoints, order === "snap" ? 3.25 : 3.05);
+  const derivatives = waypointDerivatives(waypoints, durations, order === "snap");
+  const out = [];
+
+  for (let i = 0; i < waypoints.length - 1; i += 1) {
+    const T = durations[i];
+    const coeffs = { x: null, y: null, z: null };
+    for (const axis of ["x", "y", "z"]) {
+      coeffs[axis] =
+        order === "snap"
+          ? septicHermiteCoefficients(
+              waypoints[i][axis],
+              waypoints[i + 1][axis],
+              derivatives.velocity[i][axis],
+              derivatives.velocity[i + 1][axis],
+              derivatives.accel[i][axis],
+              derivatives.accel[i + 1][axis],
+              derivatives.jerk[i][axis],
+              derivatives.jerk[i + 1][axis],
+              T,
+            )
+          : quinticHermiteCoefficients(
+              waypoints[i][axis],
+              waypoints[i + 1][axis],
+              derivatives.velocity[i][axis],
+              derivatives.velocity[i + 1][axis],
+              derivatives.accel[i][axis],
+              derivatives.accel[i + 1][axis],
+              T,
+            );
+    }
+    const samples = Math.max(4, Math.ceil(waypoints[i].distanceTo(waypoints[i + 1]) / 0.85));
+    out.push(...samplePolynomialSegment(coeffs, T, samples, i === 0));
+  }
+
+  return out;
+}
+
+function enforceTrajectoryClearance(points, margin, passes = 2) {
+  const out = points.map((point) => point.clone());
+  const grad = new THREE.Vector3();
+  for (let pass = 0; pass < passes; pass += 1) {
+    for (let i = 1; i < out.length - 1; i += 1) {
+      const clearance = sampleEsdf(out[i]);
+      if (clearance < margin) {
+        esdfGradient(out[i], grad);
+        out[i].addScaledVector(grad, (margin - clearance) * 0.62);
+      }
+      out[i].y = clamp(out[i].y, 1.2, 15);
+    }
+  }
+  return out;
+}
+
+function optimizeMinimumJerkTrajectory(points) {
+  const trajectory = optimizePolynomialTrajectory(points, "jerk");
+  return enforceTrajectoryClearance(trajectory, 1.18, 2);
+}
+
+function optimizeMinimumSnapTrajectory(points) {
+  const trajectory = optimizePolynomialTrajectory(points, "snap");
+  return enforceTrajectoryClearance(trajectory, 1.2, 2);
+}
+
+function buildSafeFlightCorridor(reference, baseRadius) {
+  return reference.map((center) => {
+    const clearance = sampleEsdf(center);
+    const radius = clamp(Math.min(baseRadius, clearance * 0.72), 0.62, baseRadius);
+    return {
+      center: center.clone(),
+      half: new THREE.Vector3(radius * 1.25, radius * 0.95, radius * 1.25),
+    };
+  });
+}
+
+function projectToCorridor(point, box) {
+  point.x = clamp(point.x, box.center.x - box.half.x, box.center.x + box.half.x);
+  point.y = clamp(point.y, Math.max(1.2, box.center.y - box.half.y), Math.min(15, box.center.y + box.half.y));
+  point.z = clamp(point.z, box.center.z - box.half.z, box.center.z + box.half.z);
+}
+
+function optimizeSafeCorridorTrajectory(points, radius = 1.55) {
+  const reference = densifyPolyline(uniqueTrajectoryPoints(points), 0.9);
+  if (reference.length < 5) return reference;
+  const corridor = buildSafeFlightCorridor(reference, radius);
+  const pts = reference.map((point) => point.clone());
+  const grad = pts.map(() => new THREE.Vector3());
+  const tmp = new THREE.Vector3();
+
+  for (let iter = 0; iter < 42; iter += 1) {
+    for (const g of grad) g.set(0, 0, 0);
+    for (let i = 1; i < pts.length - 1; i += 1) {
+      tmp.copy(pts[i]).multiplyScalar(2).sub(pts[i - 1]).sub(pts[i + 1]);
+      grad[i].addScaledVector(tmp, 0.74);
+      grad[i].addScaledVector(pts[i].clone().sub(reference[i]), 0.18);
+      const clearance = sampleEsdf(pts[i]);
+      if (clearance < 1.0) {
+        esdfGradient(pts[i], tmp);
+        grad[i].addScaledVector(tmp, -(1.0 - clearance) * 1.45);
+      }
+    }
+    for (let i = 1; i < pts.length - 1; i += 1) {
+      pts[i].addScaledVector(grad[i], -0.105);
+      projectToCorridor(pts[i], corridor[i]);
+    }
+  }
+
+  return pts;
+}
 function bsplinePoint(a, b, c, d, t) {
   const t2 = t * t;
   const t3 = t2 * t;
@@ -2369,11 +2626,11 @@ function planRouteForAlgorithm(id, start) {
 
 function postProcessRoute(id, route) {
   if (id === "B01") {
-    route.smooth = refinePath(route.smooth, { stencil: STENCIL_SNAP, iterations: 40, step: 0.005, esdfMargin: 1.3, esdfWeight: 0.35 });
+    route.smooth = optimizeMinimumSnapTrajectory(sparseTrajectoryWaypoints(route));
   } else if (id === "B02") {
-    route.smooth = refinePath(route.smooth, { stencil: STENCIL_JERK, iterations: 30, step: 0.02, esdfMargin: 1.3, esdfWeight: 0.35 });
+    route.smooth = optimizeMinimumJerkTrajectory(sparseTrajectoryWaypoints(route));
   } else if (id === "B03") {
-    route.smooth = refinePath(route.smooth, { stencil: STENCIL_ACCEL, iterations: 26, step: 0.05, tube: 1.45, esdfMargin: 1.1, esdfWeight: 0.4 });
+    route.smooth = optimizeSafeCorridorTrajectory(densifyPolyline(sparseTrajectoryWaypoints(route), 1.0), 1.55);
   } else if (id === "B04" || id === "B05") {
     route.smooth = optimizeBspline(route.smooth);
   } else if (id === "B06") {
@@ -2947,7 +3204,346 @@ function computeSocialForceInteractions(drone, neighbors) {
   return nearest;
 }
 
+function perpendicularUnit(axis, seed = 0) {
+  const base = Math.abs(axis.y) < 0.82 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0);
+  const tangent = base.addScaledVector(axis, -base.dot(axis));
+  if (tangent.lengthSq() < 0.0001) tangent.set(-axis.z, 0, axis.x);
+  tangent.normalize();
+  if (seed % 2) tangent.multiplyScalar(-1);
+  return tangent;
+}
+
+function rvoCollisionTime(velocity, constraint) {
+  if (constraint.distance <= constraint.radius) return 0;
+  const relVelocity = velocity.clone().sub(constraint.apex);
+  const relSpeedSq = relVelocity.lengthSq();
+  if (relSpeedSq < 0.0001) return Number.POSITIVE_INFINITY;
+  const closestTime = clamp(constraint.relPos.dot(relVelocity) / relSpeedSq, 0, constraint.horizon);
+  const closest = constraint.relPos.clone().sub(relVelocity.multiplyScalar(closestTime));
+  return closest.lengthSq() < constraint.radiusSq ? closestTime : Number.POSITIVE_INFINITY;
+}
+
+function clampVelocity(velocity, maxSpeed) {
+  const clamped = velocity.clone();
+  if (clamped.length() > maxSpeed) clamped.setLength(maxSpeed);
+  return clamped;
+}
+
+function projectVelocityOutOfRvo(velocity, constraint, seed) {
+  const relVelocity = velocity.clone().sub(constraint.apex);
+  const relSpeed = Math.max(relVelocity.length(), 0.12);
+  const parallel = relVelocity.dot(constraint.axis);
+  const perpendicular = relVelocity.clone().addScaledVector(constraint.axis, -parallel);
+  const perpendicularDir =
+    perpendicular.lengthSq() > 0.0001 ? perpendicular.normalize() : perpendicularUnit(constraint.axis, seed);
+  const coneAngle = Math.asin(clamp(constraint.radius / Math.max(constraint.distance, constraint.radius + 0.001), 0.02, 0.92));
+  const boundaryAngle = clamp(coneAngle + 0.075, 0.04, 1.42);
+  const boundaryDir = constraint.axis
+    .clone()
+    .multiplyScalar(Math.cos(boundaryAngle))
+    .addScaledVector(perpendicularDir, Math.sin(boundaryAngle))
+    .normalize();
+  const escapeSpeed = Math.max(relSpeed, Math.max(0.15, (constraint.distance - constraint.radius) / constraint.horizon));
+  return constraint.apex.clone().addScaledVector(boundaryDir, escapeSpeed);
+}
+
+function addRvoDirectionSamples(candidates, desired, maxSpeed, seed) {
+  const forward = desired.lengthSq() > 0.0001 ? desired.clone().normalize() : new THREE.Vector3(1, 0, 0);
+  const side = perpendicularUnit(forward, seed);
+  const lift = new THREE.Vector3().crossVectors(forward, side);
+  if (lift.lengthSq() < 0.0001) lift.set(0, 1, 0);
+  lift.normalize();
+  const dirs = [
+    forward.clone(),
+    forward.clone().addScaledVector(side, 0.52).normalize(),
+    forward.clone().addScaledVector(side, -0.52).normalize(),
+    forward.clone().addScaledVector(lift, 0.48).normalize(),
+    forward.clone().addScaledVector(lift, -0.48).normalize(),
+    side.clone(),
+    side.clone().multiplyScalar(-1),
+    lift.clone(),
+    lift.clone().multiplyScalar(-1),
+  ];
+  for (const scale of [0.36, 0.68, 1]) {
+    for (const dir of dirs) candidates.push(dir.clone().multiplyScalar(maxSpeed * scale));
+  }
+}
+
+function scoreRvoVelocity(velocity, desired, constraints, maxSpeed) {
+  let score = velocity.distanceToSquared(desired);
+  const speedOver = Math.max(0, velocity.length() - maxSpeed);
+  if (speedOver > 0) score += speedOver * speedOver * 80;
+
+  let safe = true;
+  for (const constraint of constraints) {
+    const collisionTime = rvoCollisionTime(velocity, constraint);
+    if (collisionTime !== Number.POSITIVE_INFINITY) {
+      safe = false;
+      const relVelocity = velocity.clone().sub(constraint.apex);
+      const closest = constraint.relPos.clone().sub(relVelocity.multiplyScalar(collisionTime));
+      const clearance = Math.sqrt(Math.max(closest.lengthSq(), 0.0001));
+      const depth = Math.max(0, constraint.radius - clearance);
+      score += 900 + depth * depth * 180 + (constraint.horizon - collisionTime) * 18;
+    }
+  }
+
+  return { safe, score };
+}
+
+function projectOrcaVelocity(preferred, constraints, maxSpeed) {
+  const velocity = clampVelocity(preferred, maxSpeed);
+  const corrections = constraints.map(() => new THREE.Vector3());
+
+  for (let iter = 0; iter < 12; iter += 1) {
+    for (let i = 0; i < constraints.length; i += 1) {
+      const constraint = constraints[i];
+      const y = velocity.clone().add(corrections[i]);
+      const violation = constraint.point.dot(constraint.normal) - y.dot(constraint.normal);
+      const projected = violation > 0 ? y.clone().addScaledVector(constraint.normal, violation) : y.clone();
+      corrections[i].copy(y).sub(projected);
+      velocity.copy(projected);
+    }
+    if (velocity.length() > maxSpeed) velocity.setLength(maxSpeed);
+  }
+
+  return velocity;
+}
+
+function makeOrcaConstraint(drone, other, horizon, radius) {
+  const relPos = other.position.clone().sub(drone.position);
+  const distance = relPos.length();
+  if (distance < 0.001) return null;
+  const current = {
+    relPos,
+    distance,
+    axis: relPos.clone().multiplyScalar(1 / distance),
+    radius,
+    radiusSq: radius * radius,
+    horizon,
+    apex: other.velocity.clone(),
+  };
+
+  let normal;
+  let u;
+  if (distance <= radius * 1.02) {
+    normal = drone.position.clone().sub(other.position).normalize();
+    u = normal.clone().multiplyScalar((radius - distance + 0.05) / 0.18);
+  } else if (rvoCollisionTime(drone.velocity, current) === Number.POSITIVE_INFINITY) {
+    return null;
+  } else {
+    const escape = projectVelocityOutOfRvo(drone.velocity, current, drone.id + other.id);
+    u = escape.sub(drone.velocity);
+    if (u.lengthSq() < 0.0001) return null;
+    normal = u.clone().normalize();
+  }
+
+  return {
+    normal,
+    point: drone.velocity.clone().addScaledVector(u, 0.5),
+  };
+}
+
+function computeOrca3dAvoidance(drone, neighbors) {
+  const profile = getProfile();
+  const horizon = profile.timeHorizon ?? 2.6;
+  const maxSpeed = drone.speed * 1.14;
+  const maxNeighborDistance = Math.max(profile.avoidRange ?? 2.65, drone.speed * horizon + 1.5);
+  const constraints = [];
+  let nearest = Number.POSITIVE_INFINITY;
+
+  for (const other of neighbors) {
+    if (other === drone) continue;
+    const distance = drone.position.distanceTo(other.position);
+    if (distance < 0.001) continue;
+    nearest = Math.min(nearest, distance);
+    if (distance > maxNeighborDistance) continue;
+    if (distance < (profile.avoidRange ?? 2.65)) drone.neighborCount += 1;
+    const radius = Math.max(drone.radius + other.radius + 0.18, (drone.safety + other.safety) * 0.48);
+    const constraint = makeOrcaConstraint(drone, other, horizon, radius);
+    if (constraint) constraints.push(constraint);
+  }
+
+  if (!constraints.length) return nearest;
+  let best = projectOrcaVelocity(drone.desired, constraints, maxSpeed);
+
+  const axes = makeDmpcAxes(drone.desired, drone.velocity, drone.id);
+  let bestCost = best.distanceToSquared(drone.desired);
+  for (const axis of axes) {
+    for (const sign of [-1, 1]) {
+      const candidate = projectOrcaVelocity(drone.desired.clone().addScaledVector(axis, sign * maxSpeed * 0.28), constraints, maxSpeed);
+      const cost = candidate.distanceToSquared(drone.desired);
+      if (cost < bestCost) {
+        best = candidate;
+        bestCost = cost;
+      }
+    }
+  }
+
+  drone.avoidance.add(best.sub(drone.desired));
+  return nearest;
+}
+
+function hrvoApexFor(drone, other, axis, radius, horizon) {
+  const voApex = other.velocity.clone();
+  const rvoApex = drone.velocity.clone().add(other.velocity).multiplyScalar(0.5);
+  const preferredRel = drone.desired.clone().sub(rvoApex);
+  const tangent = preferredRel.clone().addScaledVector(axis, -preferredRel.dot(axis));
+  if (tangent.lengthSq() < 0.0001) tangent.copy(perpendicularUnit(axis, drone.id + other.id));
+  tangent.normalize();
+  const side = tangent.dot(preferredRel) >= 0 ? 1 : -1;
+  return voApex
+    .lerp(rvoApex, 0.68)
+    .addScaledVector(tangent, side * (radius / Math.max(horizon, 0.1)) * 0.42);
+}
+
+function computeHrvo3dAvoidance(drone, neighbors) {
+  const profile = getProfile();
+  const horizon = profile.timeHorizon ?? 2.6;
+  const maxSpeed = drone.speed * 1.16;
+  const maxNeighborDistance = Math.max(profile.avoidRange ?? 2.65, drone.speed * horizon + 1.5);
+  const constraints = [];
+  let nearest = Number.POSITIVE_INFINITY;
+
+  for (const other of neighbors) {
+    if (other === drone) continue;
+    const relPos = other.position.clone().sub(drone.position);
+    const distance = relPos.length();
+    if (distance < 0.001) continue;
+    nearest = Math.min(nearest, distance);
+    if (distance > maxNeighborDistance) continue;
+    if (distance < (profile.avoidRange ?? 2.65)) drone.neighborCount += 1;
+    const axis = relPos.clone().multiplyScalar(1 / distance);
+    const radius = Math.max(drone.radius + other.radius + 0.15, (drone.safety + other.safety) * 0.47);
+    constraints.push({
+      relPos,
+      distance,
+      axis,
+      radius,
+      radiusSq: radius * radius,
+      horizon,
+      apex: hrvoApexFor(drone, other, axis, radius, horizon),
+    });
+  }
+
+  if (!constraints.length) return nearest;
+  const candidates = [
+    drone.desired.clone(),
+    drone.velocity.clone(),
+    drone.desired.clone().multiplyScalar(0.7),
+    new THREE.Vector3(0, 0, 0),
+  ];
+  addRvoDirectionSamples(candidates, drone.desired, maxSpeed, drone.id + 29);
+
+  const projected = drone.desired.clone();
+  for (let iter = 0; iter < Math.min(20, constraints.length * 3 + 8); iter += 1) {
+    let changed = false;
+    for (const constraint of constraints) {
+      if (rvoCollisionTime(projected, constraint) === Number.POSITIVE_INFINITY) continue;
+      projected.copy(projectVelocityOutOfRvo(projected, constraint, drone.id + iter + 41));
+      if (projected.length() > maxSpeed) projected.setLength(maxSpeed);
+      changed = true;
+    }
+    if (!changed) break;
+  }
+  candidates.push(projected.clone());
+
+  for (let i = 0; i < constraints.length; i += 1) {
+    candidates.push(projectVelocityOutOfRvo(drone.desired, constraints[i], drone.id + i + 73));
+  }
+
+  let best = clampVelocity(candidates[0], maxSpeed);
+  let bestEval = scoreRvoVelocity(best, drone.desired, constraints, maxSpeed);
+  for (const candidate of candidates) {
+    const velocity = clampVelocity(candidate, maxSpeed);
+    const evaluation = scoreRvoVelocity(velocity, drone.desired, constraints, maxSpeed);
+    if ((evaluation.safe && !bestEval.safe) || evaluation.score < bestEval.score) {
+      best = velocity;
+      bestEval = evaluation;
+    }
+  }
+
+  drone.avoidance.add(best.sub(drone.desired));
+  return nearest;
+}
+function computeRvo3dAvoidance(drone, neighbors) {
+  const profile = getProfile();
+  const horizon = profile.timeHorizon ?? 2.4;
+  const maxSpeed = drone.speed * 1.18;
+  const maxNeighborDistance = Math.max(profile.avoidRange ?? 2.6, drone.speed * horizon + 1.4);
+  const constraints = [];
+  let nearest = Number.POSITIVE_INFINITY;
+
+  for (const other of neighbors) {
+    if (other === drone) continue;
+    const relPos = other.position.clone().sub(drone.position);
+    const distance = relPos.length();
+    if (distance < 0.001) continue;
+    nearest = Math.min(nearest, distance);
+    if (distance > maxNeighborDistance) continue;
+    if (distance < (profile.avoidRange ?? 2.6)) drone.neighborCount += 1;
+    const radius = Math.max(drone.radius + other.radius, (drone.safety + other.safety) * 0.48);
+    const axis = relPos.clone().multiplyScalar(1 / distance);
+    constraints.push({
+      relPos,
+      distance,
+      axis,
+      radius,
+      radiusSq: radius * radius,
+      horizon,
+      apex: drone.velocity.clone().add(other.velocity).multiplyScalar(0.5),
+    });
+  }
+
+  if (!constraints.length) return nearest;
+
+  const candidates = [
+    drone.desired.clone(),
+    drone.velocity.clone(),
+    drone.desired.clone().multiplyScalar(0.72),
+    drone.desired.clone().multiplyScalar(0.42),
+    new THREE.Vector3(0, 0, 0),
+  ];
+  addRvoDirectionSamples(candidates, drone.desired, maxSpeed, drone.id);
+
+  const projected = drone.desired.clone();
+  for (let iter = 0; iter < Math.min(18, constraints.length * 3 + 6); iter += 1) {
+    let changed = false;
+    for (const constraint of constraints) {
+      if (rvoCollisionTime(projected, constraint) === Number.POSITIVE_INFINITY) continue;
+      projected.copy(projectVelocityOutOfRvo(projected, constraint, drone.id + iter));
+      if (projected.length() > maxSpeed) projected.setLength(maxSpeed);
+      changed = true;
+    }
+    if (!changed) break;
+  }
+  candidates.push(projected.clone());
+
+  for (let i = 0; i < constraints.length; i += 1) {
+    const constraint = constraints[i];
+    candidates.push(projectVelocityOutOfRvo(drone.desired, constraint, drone.id + i));
+    candidates.push(projectVelocityOutOfRvo(drone.velocity, constraint, drone.id + i + 17));
+  }
+
+  let best = clampVelocity(candidates[0], maxSpeed);
+  let bestEval = scoreRvoVelocity(best, drone.desired, constraints, maxSpeed);
+  for (const candidate of candidates) {
+    const velocity = clampVelocity(candidate, maxSpeed);
+    const evaluation = scoreRvoVelocity(velocity, drone.desired, constraints, maxSpeed);
+    if ((evaluation.safe && !bestEval.safe) || evaluation.score < bestEval.score) {
+      best = velocity;
+      bestEval = evaluation;
+    }
+  }
+
+  drone.avoidance.add(best.sub(drone.desired));
+  return nearest;
+}
+
 function computeVelocityObstacleAvoidance(drone, neighbors, variant) {
+  if (variant === "orca") return computeOrca3dAvoidance(drone, neighbors);
+  if (variant === "rvo") return computeRvo3dAvoidance(drone, neighbors);
+  if (variant === "hrvo") return computeHrvo3dAvoidance(drone, neighbors);
+
   const profile = getProfile();
   const timeHorizon = profile.timeHorizon ?? 2.6;
   const reciprocalShare = profile.reciprocalShare ?? 0.5;
@@ -2966,9 +3562,7 @@ function computeVelocityObstacleAvoidance(drone, neighbors, variant) {
     const apex =
       variant === "hrvo"
         ? other.velocity.clone().lerp(drone.velocity.clone().add(other.velocity).multiplyScalar(0.5), 0.62)
-        : variant === "rvo"
-          ? drone.velocity.clone().add(other.velocity).multiplyScalar(0.5)
-          : other.velocity;
+        : other.velocity;
     const relVelocity = candidate.clone().sub(apex);
     const relSpeedSq = Math.max(relVelocity.lengthSq(), 0.0001);
     const closestTime = clamp(relPos.dot(relVelocity) / relSpeedSq, 0, timeHorizon);
@@ -3010,115 +3604,340 @@ function rotatedAroundY(vector, angle) {
   return new THREE.Vector3(vector.x * cos + vector.z * sin, vector.y, -vector.x * sin + vector.z * cos);
 }
 
+function projectBufferedVoronoiVelocity(preferred, constraints, maxSpeed) {
+  const velocity = clampVelocity(preferred, maxSpeed);
+  const corrections = constraints.map(() => new THREE.Vector3());
+
+  for (let iter = 0; iter < 10; iter += 1) {
+    for (let i = 0; i < constraints.length; i += 1) {
+      const constraint = constraints[i];
+      const y = velocity.clone().add(corrections[i]);
+      const excess = y.dot(constraint.normal) - constraint.limit;
+      const projected = excess > 0 ? y.clone().addScaledVector(constraint.normal, -excess) : y.clone();
+      corrections[i].copy(y).sub(projected);
+      velocity.copy(projected);
+    }
+    if (velocity.length() > maxSpeed) velocity.setLength(maxSpeed);
+  }
+
+  return velocity;
+}
+
 function computeBvcAvoidance(drone, neighbors) {
   const profile = getProfile();
   const range = profile.avoidRange ?? 2.85;
-  const tau = 0.42;
-  const candidate = drone.desired.clone();
-  const normal = new THREE.Vector3();
+  const tau = 0.45;
+  const maxSpeed = drone.speed * 1.12;
+  const constraints = [];
   let nearest = Number.POSITIVE_INFINITY;
-  for (let pass = 0; pass < 2; pass += 1) {
-    for (const other of neighbors) {
-      if (other === drone) continue;
-      normal.copy(other.position).sub(drone.position);
-      const distance = normal.length();
-      if (distance < 0.001) continue;
-      if (pass === 0) {
-        nearest = Math.min(nearest, distance);
-        if (distance < range) drone.neighborCount += 1;
+
+  for (const other of neighbors) {
+    if (other === drone) continue;
+    const offset = other.position.clone().sub(drone.position);
+    const distance = offset.length();
+    if (distance < 0.001) continue;
+    nearest = Math.min(nearest, distance);
+    if (distance < range) drone.neighborCount += 1;
+    if (distance > range * 2.4) continue;
+
+    const normal = offset.multiplyScalar(1 / distance);
+    const buffer = Math.max(drone.radius + other.radius, (drone.safety + other.safety) * 0.5);
+    const limit = (distance * 0.5 - buffer) / tau;
+    constraints.push({ normal, limit });
+  }
+
+  if (!constraints.length) return nearest;
+  const feasibleVelocity = projectBufferedVoronoiVelocity(drone.desired, constraints, maxSpeed);
+  drone.avoidance.add(feasibleVelocity.sub(drone.desired));
+  return nearest;
+}
+
+function buildDmpcPredictions(others, horizon, dt) {
+  return others.map((other) => {
+    const points = [];
+    const pos = other.position.clone();
+    const sequence = other.mpcPlan?.sequence;
+    for (let step = 0; step < horizon; step += 1) {
+      const planned = sequence?.[Math.min(step, sequence.length - 1)];
+      const velocity = planned ?? other.plan?.vel ?? other.velocity;
+      pos.addScaledVector(velocity, dt);
+      points.push(pos.clone());
+    }
+    return { other, points, safety: other.safety };
+  });
+}
+
+function makeDmpcAxes(desired, velocity, seed) {
+  const forward = desired.lengthSq() > 0.0001 ? desired.clone().normalize() : velocity.clone();
+  if (forward.lengthSq() < 0.0001) forward.set(1, 0, 0);
+  forward.normalize();
+  const side = perpendicularUnit(forward, seed);
+  const lift = new THREE.Vector3().crossVectors(forward, side);
+  if (lift.lengthSq() < 0.0001) lift.set(0, 1, 0);
+  lift.normalize();
+  return [forward, side, lift];
+}
+
+function seedDmpcSequence(drone, desired, horizon, maxSpeed) {
+  const sequence = [];
+  const previous = drone.mpcPlan?.sequence;
+  for (let i = 0; i < horizon; i += 1) {
+    const warm = previous?.[Math.min(i + 1, previous.length - 1)];
+    sequence.push(clampVelocity(warm ?? desired, maxSpeed));
+  }
+  return sequence;
+}
+
+function evaluateDmpcSequence(drone, sequence, predictions, desired, dt, dsafe, maxSpeed, maxAccel) {
+  const pos = drone.position.clone();
+  const velocity = drone.velocity.clone();
+  const prevAccel = new THREE.Vector3();
+  const targetIndex = Math.min(drone.path.length - 1, drone.waypoint + 4);
+  const targetPoint = drone.path[targetIndex] ?? drone.position;
+  let cost = 0;
+
+  for (let step = 0; step < sequence.length; step += 1) {
+    const targetVelocity = clampVelocity(sequence[step], maxSpeed);
+    const accel = targetVelocity.sub(velocity);
+    const maxDelta = maxAccel * dt;
+    if (accel.length() > maxDelta) accel.setLength(maxDelta);
+    velocity.add(accel);
+    if (velocity.length() > maxSpeed) velocity.setLength(maxSpeed);
+    pos.addScaledVector(velocity, dt);
+
+    const phase = (step + 1) / sequence.length;
+    cost += velocity.distanceToSquared(desired) * (0.82 + phase * 0.28);
+    cost += accel.lengthSq() * 0.34;
+    cost += accel.clone().sub(prevAccel).lengthSq() * 0.12;
+    cost += pos.distanceToSquared(targetPoint) * 0.026 * phase;
+    prevAccel.copy(accel);
+
+    for (const prediction of predictions) {
+      const separation = dsafe + prediction.safety * 0.25;
+      const d = pos.distanceTo(prediction.points[step]);
+      if (d < separation) {
+        const depth = separation - d;
+        cost += depth * depth * 185 * (1.1 - step / (sequence.length + 3));
+      } else if (d < separation * 1.55) {
+        const margin = separation * 1.55 - d;
+        cost += margin * margin * 2.8;
       }
-      if (distance > range * 2.4) continue;
-      normal.multiplyScalar(1 / distance);
-      const buffer = (drone.safety + other.safety) * 0.31;
-      const limit = Math.max(0, distance / 2 - buffer) / tau;
-      const vn = candidate.dot(normal);
-      if (vn > limit) candidate.addScaledVector(normal, limit - vn);
+    }
+
+    const clearance = sampleEsdf(pos);
+    if (clearance < 1.05) cost += (1.05 - clearance) * (1.05 - clearance) * 58;
+    if (pos.y < 1.25) cost += (1.25 - pos.y) * (1.25 - pos.y) * 34;
+    if (pos.y > 14.8) cost += (pos.y - 14.8) * (pos.y - 14.8) * 34;
+  }
+
+  return cost;
+}
+
+function optimizeDmpcSequence(drone, desired, predictions, horizon, dt, maxSpeed, maxAccel, passes) {
+  let sequence = seedDmpcSequence(drone, desired, horizon, maxSpeed);
+  let bestCost = evaluateDmpcSequence(drone, sequence, predictions, desired, dt, drone.safety * 1.42, maxSpeed, maxAccel);
+  const axes = makeDmpcAxes(desired, drone.velocity, drone.id);
+  const stepSizes = [maxSpeed * 0.42, maxSpeed * 0.22, maxSpeed * 0.11];
+
+  for (let pass = 0; pass < passes; pass += 1) {
+    const stepSize = stepSizes[Math.min(pass, stepSizes.length - 1)];
+    for (let k = 0; k < horizon; k += 1) {
+      for (const axis of axes) {
+        for (const sign of [-1, 1]) {
+          const trial = sequence.map((velocity) => velocity.clone());
+          trial[k] = clampVelocity(trial[k].addScaledVector(axis, sign * stepSize), maxSpeed);
+          const cost = evaluateDmpcSequence(drone, trial, predictions, desired, dt, drone.safety * 1.42, maxSpeed, maxAccel);
+          if (cost < bestCost) {
+            sequence = trial;
+            bestCost = cost;
+          }
+        }
+      }
     }
   }
-  drone.avoidance.add(candidate.sub(drone.desired));
-  return nearest;
+
+  return sequence;
 }
 
 function computeDmpcAvoidance(drone, neighbors) {
   const profile = getProfile();
-  const horizon = 6;
-  const dt = 0.3;
-  const dsafe = drone.safety * 1.35;
+  const horizon = state.count > 300 ? 4 : state.count > 100 ? 5 : 7;
+  const dt = state.count > 300 ? 0.32 : 0.28;
   const range = profile.avoidRange ?? 2.7;
+  const maxSpeed = drone.speed * 1.12;
+  const maxAccel = drone.speed * 2.1;
+  const maxNeighbors = state.count > 300 ? 6 : state.count > 100 ? 8 : 12;
+  const passes = state.count > 300 ? 1 : state.count > 100 ? 2 : 3;
   let nearest = Number.POSITIVE_INFINITY;
-  const others = [];
+  const nearby = [];
+
   for (const other of neighbors) {
     if (other === drone) continue;
-    const distance = drone.position.distanceTo(other.position);
-    if (distance < 0.001) continue;
+    const distanceSq = drone.position.distanceToSquared(other.position);
+    if (distanceSq < 0.0001) continue;
+    const distance = Math.sqrt(distanceSq);
     nearest = Math.min(nearest, distance);
     if (distance < range) drone.neighborCount += 1;
-    if (distance < 9) others.push(other);
+    if (distance < Math.max(range * 3.4, 10)) nearby.push({ other, distanceSq });
   }
-  const desired = drone.desired;
-  const candidates = [
-    desired.clone(),
-    desired.clone().multiplyScalar(0.65),
-    desired.clone().multiplyScalar(0.35),
-    rotatedAroundY(desired, 0.38),
-    rotatedAroundY(desired, -0.38),
-    rotatedAroundY(desired, 0.8),
-    rotatedAroundY(desired, -0.8),
-    desired.clone().add(new THREE.Vector3(0, drone.speed * 0.35, 0)),
-    desired.clone().add(new THREE.Vector3(0, -drone.speed * 0.35, 0)),
-    new THREE.Vector3(0, 0, 0),
-  ];
-  let best = candidates[0];
-  let bestCost = Number.POSITIVE_INFINITY;
-  const pt = new THREE.Vector3();
-  const nq = new THREE.Vector3();
-  for (const candidate of candidates) {
-    let cost = candidate.distanceTo(desired) * 1.15;
-    for (let t = 1; t <= horizon; t += 1) {
-      pt.copy(drone.position).addScaledVector(candidate, t * dt);
-      for (const other of others) {
-        nq.copy(other.position).addScaledVector(other.velocity, t * dt);
-        const d = pt.distanceTo(nq);
-        if (d < dsafe) cost += (dsafe - d) * (dsafe - d) * 26 * (1 - t / (horizon + 2));
-      }
-      const clearance = sampleEsdf(pt);
-      if (clearance < 1.0) cost += (1.0 - clearance) * 12;
-    }
-    if (cost < bestCost) {
-      bestCost = cost;
-      best = candidate;
-    }
-  }
-  drone.avoidance.add(best.clone().sub(desired));
+
+  nearby.sort((a, b) => a.distanceSq - b.distanceSq);
+  const others = nearby.slice(0, maxNeighbors).map((entry) => entry.other);
+  const predictions = buildDmpcPredictions(others, horizon, dt);
+  const desired = clampVelocity(drone.desired, maxSpeed);
+  const sequence = optimizeDmpcSequence(drone, desired, predictions, horizon, dt, maxSpeed, maxAccel, passes);
+  const firstControl = sequence[0].clone();
+
+  drone.mpcPlan = {
+    sequence: sequence.map((velocity) => velocity.clone()),
+    dt,
+    updatedAt: state.elapsed,
+  };
+  drone.policy.copy(firstControl);
+  drone.avoidance.add(firstControl.sub(drone.desired));
   return nearest;
 }
 
-function trajectoryConflict(drone, velocity, neighbors, horizon, dsafe) {
-  const relP = new THREE.Vector3();
-  const relV = new THREE.Vector3();
-  for (const other of neighbors) {
-    if (other === drone) continue;
-    relP.copy(other.position).sub(drone.position);
-    if (relP.lengthSq() > 130) continue;
-    const otherVel = other.plan ? other.plan.vel : other.velocity;
-    relV.copy(velocity).sub(otherVel);
-    const relSpeedSq = Math.max(relV.lengthSq(), 0.0001);
-    const tStar = clamp(relP.dot(relV) / relSpeedSq, 0, horizon);
-    const minDistSq = relP.clone().sub(relV.clone().multiplyScalar(tStar)).lengthSq();
-    if (minDistSq < dsafe * dsafe) return true;
+function makeMaderTrajectory(position, velocities, dt) {
+  const points = [];
+  const cursor = position.clone();
+  for (const velocity of velocities) {
+    cursor.addScaledVector(velocity, dt);
+    points.push(cursor.clone());
   }
-  return false;
+  return points;
+}
+
+function maderControlAt(commit, now) {
+  if (!commit?.velocities?.length) return null;
+  const index = clamp(Math.floor((now - commit.startTime) / commit.dt), 0, commit.velocities.length - 1);
+  return commit.velocities[index].clone();
+}
+
+function maderPredictedPoint(other, step, dt, now) {
+  const commit = other.maderCommit;
+  if (commit?.points?.length && commit.expiresAt >= now) {
+    const age = Math.max(0, now - commit.startTime);
+    const offset = Math.floor(age / commit.dt);
+    return commit.points[Math.min(offset + step, commit.points.length - 1)].clone();
+  }
+  const velocity = other.plan?.vel ?? other.velocity;
+  return other.position.clone().addScaledVector(velocity, (step + 1) * dt);
+}
+
+function maderTrajectoryIsClear(drone, points, neighbors, dt, dsafe, now) {
+  for (let step = 0; step < points.length; step += 1) {
+    const point = points[step];
+    if (sampleEsdf(point) < 0.72 || point.y < 1.18 || point.y > 15.0) return false;
+    for (const other of neighbors) {
+      if (other === drone) continue;
+      if (drone.position.distanceToSquared(other.position) > 150) continue;
+      const otherPoint = maderPredictedPoint(other, step, dt, now);
+      const separation = dsafe + other.safety * 0.22;
+      if (point.distanceToSquared(otherPoint) < separation * separation) return false;
+    }
+  }
+  return true;
+}
+
+function scoreMaderTrajectory(drone, velocities, points, desired) {
+  const target = drone.path[Math.min(drone.path.length - 1, drone.waypoint + 4)] ?? drone.position;
+  let cost = 0;
+  let previous = drone.velocity;
+  for (let i = 0; i < velocities.length; i += 1) {
+    const velocity = velocities[i];
+    const phase = (i + 1) / velocities.length;
+    cost += velocity.distanceToSquared(desired) * (0.7 + phase * 0.35);
+    cost += velocity.clone().sub(previous).lengthSq() * 0.2;
+    cost += points[i].distanceToSquared(target) * 0.022 * phase;
+    const clearance = sampleEsdf(points[i]);
+    if (clearance < 1.1) cost += (1.1 - clearance) * (1.1 - clearance) * 35;
+    previous = velocity;
+  }
+  return cost;
+}
+
+function buildMaderVelocitySequence(drone, target, horizon, maxSpeed) {
+  const sequence = [];
+  for (let i = 0; i < horizon; i += 1) {
+    const alpha = clamp((i + 1) / 3, 0, 1);
+    const velocity = drone.velocity.clone().lerp(target, alpha);
+    sequence.push(clampVelocity(velocity, maxSpeed));
+  }
+  return sequence;
+}
+
+function makeMaderCandidates(drone, horizon, maxSpeed) {
+  const base = clampVelocity(drone.desired, maxSpeed);
+  const options = [
+    base.clone(),
+    rotatedAroundY(base, 0.42),
+    rotatedAroundY(base, -0.42),
+    rotatedAroundY(base, 0.86),
+    rotatedAroundY(base, -0.86),
+    base.clone().add(new THREE.Vector3(0, drone.speed * 0.36, 0)),
+    base.clone().add(new THREE.Vector3(0, -drone.speed * 0.36, 0)),
+    base.clone().multiplyScalar(0.62),
+    base.clone().multiplyScalar(0.28),
+    new THREE.Vector3(0, 0, 0),
+  ];
+  const candidates = options.map((option) => buildMaderVelocitySequence(drone, clampVelocity(option, maxSpeed), horizon, maxSpeed));
+
+  const previous = drone.maderCommit?.velocities;
+  if (previous?.length) {
+    const shifted = [];
+    for (let i = 1; i < previous.length; i += 1) shifted.push(clampVelocity(previous[i], maxSpeed));
+    while (shifted.length < horizon) shifted.push(base.clone());
+    candidates.unshift(shifted.slice(0, horizon));
+  }
+
+  const side = perpendicularUnit(base.lengthSq() > 0.0001 ? base.clone().normalize() : new THREE.Vector3(1, 0, 0), drone.id);
+  const detour = [];
+  for (let i = 0; i < horizon; i += 1) {
+    const blend = i < Math.ceil(horizon / 2) ? 0.48 : 0.18;
+    detour.push(clampVelocity(base.clone().addScaledVector(side, maxSpeed * blend), maxSpeed));
+  }
+  candidates.push(detour);
+
+  return candidates;
+}
+
+function commitMaderTrajectory(drone, velocities, dt, now) {
+  const points = makeMaderTrajectory(drone.position, velocities, dt);
+  drone.maderPreviousCommit = drone.maderCommit ?? null;
+  drone.maderCommit = {
+    velocities: velocities.map((velocity) => velocity.clone()),
+    points,
+    dt,
+    startTime: now,
+    expiresAt: now + dt * velocities.length,
+    revision: (drone.maderCommit?.revision ?? 0) + 1,
+  };
+  return drone.maderCommit;
+}
+
+function brakeMaderCommit(drone, horizon, dt, now) {
+  const velocities = [];
+  for (let i = 0; i < horizon; i += 1) {
+    const scale = Math.max(0, 0.58 - i * 0.09);
+    velocities.push(drone.velocity.clone().multiplyScalar(scale));
+  }
+  return commitMaderTrajectory(drone, velocities, dt, now);
 }
 
 function computeMaderAvoidance(drone, neighbors) {
   const now = state.elapsed;
-  if (!drone.plan) drone.plan = { vel: drone.desired.clone(), next: 0 };
-  const horizon = 2.2;
-  const dsafe = drone.safety * 1.22;
-  const range = getProfile().avoidRange ?? 2.65;
+  const profile = getProfile();
+  const horizon = state.count > 300 ? 5 : 7;
+  const dt = 0.3;
+  const maxSpeed = drone.speed * 1.1;
+  const dsafe = drone.safety * 1.28;
+  const range = profile.avoidRange ?? 2.65;
   const hardRange = drone.safety * 1.5;
   const away = new THREE.Vector3();
+  const nearby = [];
   let nearest = Number.POSITIVE_INFINITY;
+
   for (const other of neighbors) {
     if (other === drone) continue;
     away.copy(drone.position).sub(other.position);
@@ -3126,82 +3945,164 @@ function computeMaderAvoidance(drone, neighbors) {
     if (distance < 0.001) continue;
     nearest = Math.min(nearest, distance);
     if (distance < range) drone.neighborCount += 1;
+    if (distance < Math.max(range * 3.4, 10)) nearby.push(other);
     if (distance < hardRange) {
-      drone.avoidance.addScaledVector(away.normalize(), ((hardRange - distance) / hardRange) * 3.2);
+      drone.avoidance.addScaledVector(away.normalize(), ((hardRange - distance) / hardRange) * 3.4);
     }
   }
-  if (now >= drone.plan.next) {
-    const base = drone.desired;
-    const options = [
-      base.clone(),
-      rotatedAroundY(base, 0.5),
-      rotatedAroundY(base, -0.5),
-      base.clone().add(new THREE.Vector3(0, drone.speed * 0.4, 0)),
-      base.clone().add(new THREE.Vector3(0, -drone.speed * 0.4, 0)),
-      base.clone().multiplyScalar(0.55),
-      rotatedAroundY(base, 0.95),
-      rotatedAroundY(base, -0.95),
-      base.clone().multiplyScalar(0.22),
-    ];
-    let committed = false;
-    for (const option of options) {
-      if (!trajectoryConflict(drone, option, neighbors, horizon, dsafe)) {
-        drone.plan.vel.copy(option);
-        committed = true;
-        break;
+
+  const currentPoints = drone.maderCommit?.points;
+  const currentValid =
+    currentPoints &&
+    drone.maderCommit.expiresAt > now &&
+    maderTrajectoryIsClear(drone, currentPoints, nearby, dt, dsafe * 0.96, now);
+
+  if (!currentValid) {
+    const old = drone.maderPreviousCommit;
+    if (old?.points?.length && old.expiresAt > now && maderTrajectoryIsClear(drone, old.points, nearby, dt, dsafe, now)) {
+      drone.maderCommit = old;
+    } else {
+      brakeMaderCommit(drone, horizon, dt, now);
+    }
+  }
+
+  if (!drone.maderNextReplan || now >= drone.maderNextReplan || drone.maderCommit.expiresAt - now < dt * 2) {
+    const candidates = makeMaderCandidates(drone, horizon, maxSpeed);
+    let best = null;
+    let bestCost = Number.POSITIVE_INFINITY;
+    for (const velocities of candidates) {
+      const points = makeMaderTrajectory(drone.position, velocities, dt);
+      if (!maderTrajectoryIsClear(drone, points, nearby, dt, dsafe, now)) continue;
+      const cost = scoreMaderTrajectory(drone, velocities, points, drone.desired);
+      if (cost < bestCost) {
+        best = velocities;
+        bestCost = cost;
       }
     }
-    if (!committed) drone.plan.vel.multiplyScalar(0.6);
-    drone.plan.next = now + 0.3 + (drone.id % 7) * 0.05;
-  } else if (trajectoryConflict(drone, drone.plan.vel, neighbors, horizon * 0.7, dsafe * 0.92)) {
-    drone.plan.vel.multiplyScalar(0.85);
+    if (best) commitMaderTrajectory(drone, best, dt, now);
+    else brakeMaderCommit(drone, horizon, dt, now);
+    drone.maderNextReplan = now + 0.28 + (drone.id % 7) * 0.045;
   }
-  drone.avoidance.add(drone.plan.vel.clone().sub(drone.desired));
+
+  const control = maderControlAt(drone.maderCommit, now) ?? drone.desired.clone();
+  drone.plan = { vel: control.clone(), next: drone.maderNextReplan ?? now + dt };
+  drone.policy.copy(control);
+  drone.avoidance.add(control.sub(drone.desired));
   return nearest;
+}
+
+function egoNeighborPoint(other, step, dt, now) {
+  const ego = other.egoPlan;
+  if (ego?.points?.length && now - ego.updatedAt < 1.4) {
+    return ego.points[Math.min(step + 1, ego.points.length - 1)].clone();
+  }
+  const mader = other.maderCommit;
+  if (mader?.points?.length && mader.expiresAt >= now) {
+    const offset = Math.max(0, Math.floor((now - mader.startTime) / mader.dt));
+    return mader.points[Math.min(offset + step, mader.points.length - 1)].clone();
+  }
+  const mpc = other.mpcPlan?.sequence;
+  if (mpc?.length) {
+    const point = other.position.clone();
+    for (let i = 0; i <= step; i += 1) point.addScaledVector(mpc[Math.min(i, mpc.length - 1)], dt);
+    return point;
+  }
+  return other.position.clone().addScaledVector(other.velocity, (step + 1) * dt);
+}
+
+function seedEgoControlPoints(drone, horizon, dt) {
+  const points = [drone.position.clone()];
+  const previous = drone.egoPlan?.points;
+  for (let i = 1; i <= horizon; i += 1) {
+    const warm = previous?.[Math.min(i + 1, previous.length - 1)];
+    if (warm && drone.position.distanceToSquared(warm) < 120) {
+      points.push(warm.clone());
+      continue;
+    }
+    const pathIndex = Math.min(drone.path.length - 1, drone.waypoint + i);
+    const guide = drone.path[pathIndex] ?? drone.position.clone().addScaledVector(drone.desired, i * dt);
+    const forward = drone.position.clone().addScaledVector(drone.desired, i * dt);
+    points.push(forward.lerp(guide, 0.34));
+  }
+  return points;
+}
+
+function optimizeEgoControlPoints(drone, points, neighbors, horizon, dt, dsafe, margin, iterations) {
+  const now = state.elapsed;
+  const routeDir = drone.desired.lengthSq() > 0.0001 ? drone.desired.clone().normalize() : new THREE.Vector3(1, 0, 0);
+  const gradient = new THREE.Vector3();
+  const correction = new THREE.Vector3();
+
+  for (let iter = 0; iter < iterations; iter += 1) {
+    for (let i = 1; i < points.length; i += 1) {
+      gradient.set(0, 0, 0);
+      const point = points[i];
+      const prev = points[i - 1];
+      const next = points[Math.min(i + 1, points.length - 1)];
+      const pathTarget = drone.path[Math.min(drone.path.length - 1, drone.waypoint + i)] ?? point;
+
+      gradient.add(point.clone().multiplyScalar(2).sub(prev).sub(next).multiplyScalar(0.42));
+      gradient.add(point.clone().sub(pathTarget).multiplyScalar(0.18));
+
+      const clearance = sampleEsdf(point);
+      if (clearance < margin) {
+        const obstacleGrad = esdfGradient(point, correction);
+        gradient.addScaledVector(obstacleGrad, -(margin - clearance) * 1.9);
+      }
+
+      for (const other of neighbors) {
+        if (other === drone) continue;
+        const otherPoint = egoNeighborPoint(other, i - 1, dt, now);
+        correction.copy(point).sub(otherPoint);
+        const distance = correction.length();
+        if (distance < 0.001 || distance >= dsafe) continue;
+        const away = correction.multiplyScalar(1 / distance);
+        const tangent = away.clone().addScaledVector(routeDir, -away.dot(routeDir));
+        if (tangent.lengthSq() > 0.0001) tangent.normalize();
+        const strength = (dsafe - distance) / dsafe;
+        gradient.addScaledVector(away, -strength * 2.6);
+        gradient.addScaledVector(tangent, -strength * 1.1 * (drone.id % 2 === 0 ? 1 : -1));
+      }
+
+      point.addScaledVector(gradient, -0.18);
+      point.y = clamp(point.y, 1.22, 14.9);
+    }
+  }
 }
 
 function computeEgoAvoidance(drone, neighbors) {
   const profile = getProfile();
-  const horizon = 1.9;
-  const dsafe = drone.safety * 1.3;
+  const horizon = state.count > 300 ? 4 : 6;
+  const iterations = state.count > 300 ? 2 : state.count > 100 ? 3 : 5;
+  const dt = 0.28;
+  const dsafe = drone.safety * 1.34;
   const range = profile.avoidRange ?? 2.55;
+  const margin = (profile.obstacleMargin ?? 2.9) * 0.58;
+  const maxSpeed = drone.speed * 1.16;
+  const nearby = [];
   let nearest = Number.POSITIVE_INFINITY;
-  const correction = new THREE.Vector3();
-  const desiredDir =
-    drone.desired.lengthSq() > 0.0001 ? drone.desired.clone().normalize() : new THREE.Vector3(1, 0, 0);
-  const relP = new THREE.Vector3();
-  const relV = new THREE.Vector3();
-  const minVec = new THREE.Vector3();
+
   for (const other of neighbors) {
     if (other === drone) continue;
-    relP.copy(other.position).sub(drone.position);
-    const distance = relP.length();
+    const distance = drone.position.distanceTo(other.position);
     if (distance < 0.001) continue;
     nearest = Math.min(nearest, distance);
     if (distance < range) drone.neighborCount += 1;
-    relV.copy(drone.desired).sub(other.velocity);
-    const relSpeedSq = Math.max(relV.lengthSq(), 0.0001);
-    const tStar = clamp(relP.dot(relV) / relSpeedSq, 0, horizon);
-    minVec.copy(relP).sub(relV.clone().multiplyScalar(tStar));
-    const minDist = minVec.length();
-    if (minDist >= dsafe) continue;
-    const away = minDist > 0.001 ? minVec.clone().multiplyScalar(-1 / minDist) : new THREE.Vector3(-desiredDir.z, 0.15, desiredDir.x);
-    away.addScaledVector(desiredDir, -away.dot(desiredDir));
-    if (away.lengthSq() < 0.0001) {
-      away.set(-desiredDir.z, 0.15, desiredDir.x).multiplyScalar(drone.id % 2 === 0 ? 1 : -1);
-    }
-    const strength = (dsafe - minDist) / dsafe;
-    correction.addScaledVector(away.normalize(), strength * 2.7);
-    correction.addScaledVector(desiredDir, -strength * 0.55);
+    if (distance < Math.max(range * 3.5, 10)) nearby.push(other);
   }
-  const predicted = drone.position.clone().addScaledVector(drone.desired, 0.7);
-  const clearance = sampleEsdf(predicted);
-  const margin = (profile.obstacleMargin ?? 2.9) * 0.6;
-  if (clearance < margin) {
-    const gradient = esdfGradient(predicted, relP);
-    correction.addScaledVector(gradient, (margin - clearance) * 2.1);
-  }
-  drone.avoidance.add(correction);
+
+  const points = seedEgoControlPoints(drone, horizon, dt);
+  optimizeEgoControlPoints(drone, points, nearby, horizon, dt, dsafe, margin, iterations);
+  drone.egoPlan = {
+    points: points.map((point) => point.clone()),
+    dt,
+    updatedAt: state.elapsed,
+  };
+
+  const first = points[1]?.clone().sub(drone.position).multiplyScalar(1 / dt) ?? drone.desired.clone();
+  if (first.length() > maxSpeed) first.setLength(maxSpeed);
+  drone.policy.copy(first);
+  drone.avoidance.add(first.sub(drone.desired));
   return nearest;
 }
 
@@ -3224,8 +4125,10 @@ function computeOlfatiSaberForces(drone, neighbors) {
   let count = 0;
   const gradient = new THREE.Vector3();
   const consensus = new THREE.Vector3();
+  const beta = new THREE.Vector3();
   const qij = new THREE.Vector3();
   const dv = new THREE.Vector3();
+
   for (const other of neighbors) {
     if (other === drone) continue;
     qij.copy(other.position).sub(drone.position);
@@ -3241,19 +4144,33 @@ function computeOlfatiSaberForces(drone, neighbors) {
     gradient.addScaledVector(qij, scale);
     dv.copy(other.velocity).sub(drone.velocity);
     consensus.addScaledVector(dv, adjacency);
-    const shell = spacing * 0.78;
+    const shell = spacing * 0.72;
     if (distance < shell) {
       const urgency = (shell - distance) / shell;
-      drone.avoidance.addScaledVector(qij, (-(urgency * urgency) * 8) / distance);
+      gradient.addScaledVector(qij, (-(urgency * urgency) * 9.5) / distance);
     }
   }
+
+  for (const obstacle of state.obstacles) {
+    const closest = closestPointOnObstacle(drone.position, obstacle);
+    qij.copy(drone.position).sub(closest);
+    const distance = qij.length();
+    if (distance < 0.001 || distance > spacing * 1.35) continue;
+    const sig = sigmaNorm(distance);
+    const adjacency = bump(sig / dSigma);
+    beta.addScaledVector(qij, (adjacency * (spacing * 1.35 - distance) * 1.6) / distance);
+  }
+
   if (count > 1) {
     gradient.multiplyScalar(1 / Math.max(1, count * 0.35));
     consensus.multiplyScalar(1 / Math.max(1, count * 0.35));
   }
-  if (gradient.length() > 5.5) gradient.setLength(5.5);
+  if (gradient.length() > 5.8) gradient.setLength(5.8);
+  const navigation = drone.desired.clone().sub(drone.velocity).multiplyScalar(0.34);
   drone.avoidance.addScaledVector(gradient, 1.15);
-  drone.avoidance.addScaledVector(consensus, 0.8);
+  drone.avoidance.addScaledVector(consensus, 0.82);
+  drone.avoidance.addScaledVector(beta, 0.9);
+  drone.avoidance.add(navigation);
   return nearest;
 }
 
@@ -3266,6 +4183,8 @@ function computeVasarhelyiForces(drone, neighbors) {
   const vFrict = 0.32;
   const pFrict = 3.2;
   const aFrict = 2.1;
+  const vFlock = drone.speed * 0.86;
+  const cShill = 0.52;
   const braking = (r, aa, pp) => {
     const rp = r * pp;
     if (rp <= 0) return 0;
@@ -3277,6 +4196,8 @@ function computeVasarhelyiForces(drone, neighbors) {
   const frict = new THREE.Vector3();
   const offset = new THREE.Vector3();
   const dv = new THREE.Vector3();
+  const heading = drone.velocity.lengthSq() > 0.0001 ? drone.velocity.clone().normalize() : drone.desired.clone().normalize();
+
   for (const other of neighbors) {
     if (other === drone) continue;
     offset.copy(drone.position).sub(other.position);
@@ -3284,18 +4205,24 @@ function computeVasarhelyiForces(drone, neighbors) {
     if (distance < 0.001) continue;
     nearest = Math.min(nearest, distance);
     if (distance > 8) continue;
+    const direction = offset.clone().multiplyScalar(1 / distance);
+    const frontWeight = clamp(0.42 + 0.58 * Math.max(0, -direction.dot(heading)), 0.42, 1);
     if (distance < rRep) {
       drone.neighborCount += 1;
-      rep.addScaledVector(offset, (pRep * (rRep - distance)) / distance);
+      rep.addScaledVector(direction, pRep * (rRep - distance) * frontWeight);
     }
     dv.copy(other.velocity).sub(drone.velocity);
+    const radialVelocity = Math.max(0, -dv.dot(direction));
     const vDiff = dv.length();
     const vMax = Math.max(vFrict, braking(distance - rFrict, aFrict, pFrict));
-    if (vDiff > vMax) {
-      frict.addScaledVector(dv, (cFrict * (vDiff - vMax)) / vDiff);
+    if (vDiff + radialVelocity > vMax) {
+      frict.addScaledVector(dv, (cFrict * (vDiff + radialVelocity - vMax) * frontWeight) / Math.max(vDiff, 0.001));
     }
   }
-  drone.avoidance.add(rep).add(frict);
+
+  const desiredCruise = drone.desired.lengthSq() > 0.0001 ? drone.desired.clone().setLength(vFlock) : new THREE.Vector3();
+  const shill = desiredCruise.sub(drone.velocity).multiplyScalar(cShill);
+  drone.avoidance.add(rep).add(frict).add(shill);
   return nearest;
 }
 
@@ -3730,6 +4657,90 @@ function scheduleWithReservations(order, pad, dt) {
   }
 }
 
+function dcpReservationKeys(drone, extraDelay, dt) {
+  const keys = [];
+  if (!drone.cells || drone.cells.length < 2 || drone.cells.length !== drone.rawPath.length) return keys;
+  let time = drone.startDelay + extraDelay;
+  const speed = Math.max(0.55, drone.speed * 0.86);
+  for (let i = 0; i < drone.cells.length; i += 1) {
+    if (i > 0) time += drone.rawPath[i].distanceTo(drone.rawPath[i - 1]) / speed;
+    const bucket = Math.min(8191, Math.floor(time / dt));
+    const cell = drone.cells[i].index;
+    keys.push({ kind: "v", cell, bucket });
+    if (i > 0) {
+      const prev = drone.cells[i - 1].index;
+      const lo = Math.min(prev, cell);
+      const hi = Math.max(prev, cell);
+      keys.push({ kind: "e", cell: `${lo}:${hi}`, bucket });
+    }
+  }
+  return keys;
+}
+
+function dcpReservationConflict(reserved, keys, pad) {
+  for (const item of keys) {
+    for (let p = -pad; p <= pad; p += 1) {
+      const bucket = item.bucket + p;
+      if (reserved.has(`${item.kind}:${item.cell}:${bucket}`)) return true;
+    }
+  }
+  return false;
+}
+
+function dcpReserve(reserved, keys, pad, droneId) {
+  for (const item of keys) {
+    for (let p = -pad; p <= pad; p += 1) {
+      const bucket = item.bucket + p;
+      reserved.set(`${item.kind}:${item.cell}:${bucket}`, droneId);
+    }
+  }
+}
+
+function scheduleDcpStagger(dt) {
+  const pad = state.count > 300 ? 0 : 1;
+  const maxShift = state.count > 300 ? 42 : 86;
+  const order = [...state.drones].sort((a, b) => {
+    const lenA = a.cells?.length ?? 0;
+    const lenB = b.cells?.length ?? 0;
+    return a.startDelay - b.startDelay || lenB - lenA || a.id - b.id;
+  });
+  const reserved = new Map();
+
+  for (const drone of order) {
+    drone.dcpBaseDelay ??= drone.startDelay;
+    drone.startDelay = drone.dcpBaseDelay;
+    let selectedShift = 0;
+    for (; selectedShift <= maxShift; selectedShift += 1) {
+      const keys = dcpReservationKeys(drone, selectedShift * dt, dt);
+      if (!dcpReservationConflict(reserved, keys, pad)) break;
+    }
+    drone.dcpDelay = selectedShift * dt;
+    drone.startDelay = drone.dcpBaseDelay + drone.dcpDelay;
+    dcpReserve(reserved, dcpReservationKeys(drone, 0, dt), pad, drone.id);
+  }
+
+  const conflictRounds = state.count > 300 ? 30 : 90;
+  for (let round = 0; round < conflictRounds; round += 1) {
+    const seen = new Map();
+    let delayed = null;
+    let delayedBucket = Number.POSITIVE_INFINITY;
+    for (const drone of order) {
+      for (const item of dcpReservationKeys(drone, 0, dt)) {
+        const key = `${item.kind}:${item.cell}:${item.bucket}`;
+        const other = seen.get(key);
+        if (other !== undefined && other !== drone.id && item.bucket < delayedBucket) {
+          delayed = drone;
+          delayedBucket = item.bucket;
+        } else {
+          seen.set(key, drone.id);
+        }
+      }
+    }
+    if (!delayed) break;
+    delayed.dcpDelay += dt;
+    delayed.startDelay = delayed.dcpBaseDelay + delayed.dcpDelay;
+  }
+}
 function scheduleCbsLite(dt) {
   const drones = state.drones;
   const rounds = state.count > 300 ? 140 : 340;
@@ -3759,96 +4770,352 @@ function scheduleCbsLite(dt) {
   }
 }
 
-function scpDeconflict() {
+function centralBaseDelay(drone) {
+  if (drone.centralBaseDelay === undefined) drone.centralBaseDelay = drone.startDelay;
+  return drone.centralBaseDelay;
+}
+
+function centralTimedKeys(drone, startDelay, dt) {
+  const keys = [];
+  if (!drone.cells || drone.cells.length < 2 || drone.cells.length !== drone.rawPath.length) return keys;
+  let time = startDelay;
+  const speed = Math.max(0.58, drone.speed * 0.88);
+  for (let i = 0; i < drone.cells.length; i += 1) {
+    if (i > 0) time += drone.rawPath[i].distanceTo(drone.rawPath[i - 1]) / speed;
+    const bucket = Math.min(8191, Math.floor(time / dt));
+    const cell = drone.cells[i].index;
+    keys.push({ kind: "v", cell, bucket });
+    if (i > 0) {
+      const prev = drone.cells[i - 1].index;
+      keys.push({ kind: "e", cell: `${prev}->${cell}`, reverse: `${cell}->${prev}`, bucket });
+    }
+  }
+  return keys;
+}
+
+function centralKey(item, bucket = item.bucket, reverse = false) {
+  if (item.kind === "e") return `${item.kind}:${reverse ? item.reverse : item.cell}:${bucket}`;
+  return `${item.kind}:${item.cell}:${bucket}`;
+}
+
+function centralHasConflict(reserved, keys, pad) {
+  for (const item of keys) {
+    for (let p = -pad; p <= pad; p += 1) {
+      const bucket = item.bucket + p;
+      if (reserved.has(centralKey(item, bucket))) return true;
+      if (item.kind === "e" && reserved.has(centralKey(item, bucket, true))) return true;
+    }
+  }
+  return false;
+}
+
+function centralReserve(reserved, keys, pad, droneId) {
+  for (const item of keys) {
+    for (let p = -pad; p <= pad; p += 1) {
+      const bucket = item.bucket + p;
+      reserved.set(centralKey(item, bucket), droneId);
+    }
+  }
+}
+
+function centralScheduleByOrder(order, dt, pad, maxShift) {
+  const reserved = new Map();
+  const delays = new Map();
+  for (const drone of order) {
+    const base = centralBaseDelay(drone);
+    let shift = 0;
+    for (; shift <= maxShift; shift += 1) {
+      const keys = centralTimedKeys(drone, base + shift * dt, dt);
+      if (!centralHasConflict(reserved, keys, pad)) break;
+    }
+    const startDelay = base + shift * dt;
+    delays.set(drone.id, startDelay);
+    centralReserve(reserved, centralTimedKeys(drone, startDelay, dt), pad, drone.id);
+  }
+  return delays;
+}
+
+function centralFirstConflict(drones, delays, dt, pad) {
+  const seen = new Map();
+  for (const drone of drones) {
+    const startDelay = delays.get(drone.id) ?? centralBaseDelay(drone);
+    for (const item of centralTimedKeys(drone, startDelay, dt)) {
+      for (let p = -pad; p <= pad; p += 1) {
+        const bucket = item.bucket + p;
+        const key = centralKey(item, bucket);
+        const reverseKey = item.kind === "e" ? centralKey(item, bucket, true) : null;
+        const other = seen.get(key) ?? (reverseKey ? seen.get(reverseKey) : undefined);
+        if (other !== undefined && other !== drone.id) {
+          return { a: other, b: drone.id, key, bucket, kind: item.kind };
+        }
+        seen.set(key, drone.id);
+      }
+    }
+  }
+  return null;
+}
+
+function centralCommitDelays(delays) {
+  for (const drone of state.drones) {
+    drone.startDelay = delays.get(drone.id) ?? centralBaseDelay(drone);
+  }
+}
+
+function centralDelayCost(delays) {
+  let cost = 0;
+  for (const drone of state.drones) cost += Math.max(0, (delays.get(drone.id) ?? centralBaseDelay(drone)) - centralBaseDelay(drone));
+  return cost;
+}
+
+function scheduleMapfReservations(dt) {
+  const pad = state.count > 300 ? 0 : 1;
+  const maxShift = state.count > 300 ? 70 : 130;
+  const order = [...state.drones].sort((a, b) => centralBaseDelay(a) - centralBaseDelay(b) || a.id - b.id);
+  const delays = centralScheduleByOrder(order, dt, pad, maxShift);
+  centralCommitDelays(delays);
+}
+
+function scheduleCbsEcbs(dt) {
   const drones = state.drones;
-  if (drones.length < 2) return;
-  const heavy = state.count > 300;
-  const steps = heavy ? 30 : 44;
-  const dtT = 0.5;
-  const iterations = heavy ? 7 : 14;
-  const dsep = 1.85;
-  const trajs = drones.map((drone) => {
-    const path = drone.path;
-    const cum = [0];
-    for (let i = 1; i < path.length; i += 1) cum.push(cum[i - 1] + path[i].distanceTo(path[i - 1]));
-    const total = cum[cum.length - 1];
-    const speed = Math.max(0.8, drone.speed * 0.9);
+  const pad = state.count > 300 ? 0 : 1;
+  const maxExtra = (state.count > 300 ? 80 : 150) * dt;
+  const nodeLimit = state.count > 300 ? 260 : 900;
+  const root = { delays: new Map(drones.map((drone) => [drone.id, centralBaseDelay(drone)])), cost: 0, depth: 0 };
+  const open = [root];
+  let best = root;
+  let bestConflictCount = Number.POSITIVE_INFINITY;
+
+  for (let expanded = 0; expanded < nodeLimit && open.length; expanded += 1) {
+    open.sort((a, b) => a.cost - b.cost || a.depth - b.depth);
+    const bestCost = open[0].cost;
+    const focalLimit = bestCost * 1.35 + dt * 2;
+    let index = open.findIndex((node) => node.cost <= focalLimit && node.depth <= open[0].depth + 12);
+    if (index < 0) index = 0;
+    const [node] = open.splice(index, 1);
+    const conflict = centralFirstConflict(drones, node.delays, dt, pad);
+    if (!conflict) {
+      centralCommitDelays(node.delays);
+      return;
+    }
+
+    const conflictScore = node.depth;
+    if (conflictScore < bestConflictCount) {
+      bestConflictCount = conflictScore;
+      best = node;
+    }
+
+    for (const id of [conflict.a, conflict.b]) {
+      const childDelays = new Map(node.delays);
+      const base = centralBaseDelay(drones[id]);
+      const current = childDelays.get(id) ?? base;
+      const delayed = current + dt;
+      if (delayed - base > maxExtra) continue;
+      childDelays.set(id, delayed);
+      open.push({
+        delays: childDelays,
+        cost: centralDelayCost(childDelays) + node.depth * dt * 0.04,
+        depth: node.depth + 1,
+      });
+    }
+  }
+
+  const fallbackOrder = [...drones].sort((a, b) => centralBaseDelay(a) - centralBaseDelay(b) || a.id - b.id);
+  const fallback = centralScheduleByOrder(fallbackOrder, dt, pad, state.count > 300 ? 80 : 150);
+  centralCommitDelays(bestConflictCount < Number.POSITIVE_INFINITY ? best.delays : fallback);
+}
+
+function topoPriorityOrder(drones, before) {
+  const ids = drones.map((drone) => drone.id);
+  const indegree = new Map(ids.map((id) => [id, 0]));
+  for (const set of before.values()) for (const id of set) indegree.set(id, (indegree.get(id) ?? 0) + 1);
+  const queue = ids
+    .filter((id) => (indegree.get(id) ?? 0) === 0)
+    .sort((a, b) => (drones[b].cells?.length ?? 0) - (drones[a].cells?.length ?? 0) || a - b);
+  const order = [];
+  while (queue.length) {
+    const id = queue.shift();
+    order.push(drones[id]);
+    for (const next of before.get(id) ?? []) {
+      indegree.set(next, (indegree.get(next) ?? 0) - 1);
+      if ((indegree.get(next) ?? 0) === 0) {
+        queue.push(next);
+        queue.sort((a, b) => (drones[b].cells?.length ?? 0) - (drones[a].cells?.length ?? 0) || a - b);
+      }
+    }
+  }
+  if (order.length !== drones.length) return [...drones].sort((a, b) => (b.cells?.length ?? 0) - (a.cells?.length ?? 0) || a.id - b.id);
+  return order;
+}
+
+function schedulePriorityBasedSearch(dt) {
+  const drones = state.drones;
+  const pad = state.count > 300 ? 0 : 1;
+  const before = new Map();
+  let order = [...drones].sort((a, b) => (b.cells?.length ?? 0) - (a.cells?.length ?? 0) || a.id - b.id);
+  let bestDelays = null;
+  const rounds = state.count > 300 ? 28 : 70;
+
+  for (let round = 0; round < rounds; round += 1) {
+    const delays = centralScheduleByOrder(order, dt, pad, state.count > 300 ? 70 : 130);
+    bestDelays = delays;
+    const conflict = centralFirstConflict(drones, delays, dt, pad);
+    if (!conflict) break;
+    const a = drones[conflict.a];
+    const b = drones[conflict.b];
+    const higher = (a.cells?.length ?? 0) >= (b.cells?.length ?? 0) ? a.id : b.id;
+    const lower = higher === a.id ? b.id : a.id;
+    if (!before.has(higher)) before.set(higher, new Set());
+    before.get(higher).add(lower);
+    order = topoPriorityOrder(drones, before);
+  }
+
+  centralCommitDelays(bestDelays ?? centralScheduleByOrder(order, dt, pad, state.count > 300 ? 70 : 130));
+}
+function polylineCumulative(points) {
+  const cum = [0];
+  for (let i = 1; i < points.length; i += 1) cum.push(cum[i - 1] + points[i].distanceTo(points[i - 1]));
+  return cum;
+}
+
+function samplePolylineByDistance(points, cum, distance) {
+  if (!points.length) return new THREE.Vector3();
+  if (distance <= 0) return points[0].clone();
+  const total = cum[cum.length - 1];
+  if (distance >= total) return points[points.length - 1].clone();
+  let seg = 1;
+  while (seg < points.length - 1 && cum[seg] < distance) seg += 1;
+  const span = Math.max(0.0001, cum[seg] - cum[seg - 1]);
+  const alpha = clamp((distance - cum[seg - 1]) / span, 0, 1);
+  return points[seg - 1].clone().lerp(points[seg], alpha);
+}
+
+function seedScpTrajectories(drones, steps, dtT) {
+  return drones.map((drone) => {
+    const path = drone.path.length > 1 ? drone.path : [drone.position.clone(), drone.position.clone().addScaledVector(drone.desired, 2)];
+    const cum = polylineCumulative(path);
+    const total = Math.max(cum[cum.length - 1], 0.001);
+    const speed = Math.max(0.75, drone.speed * 0.9);
     const pts = [];
-    let seg = 1;
+    const guide = [];
     for (let t = 0; t < steps; t += 1) {
       const dist = Math.min(total, t * dtT * speed);
-      while (seg < path.length - 1 && cum[seg] < dist) seg += 1;
-      const span = Math.max(0.0001, cum[seg] - cum[seg - 1]);
-      const alpha = clamp((dist - cum[seg - 1]) / span, 0, 1);
-      pts.push(path[seg - 1].clone().lerp(path[seg], alpha));
+      const point = samplePolylineByDistance(path, cum, dist);
+      pts.push(point.clone());
+      guide.push(point);
     }
-    return pts;
+    return { points: pts, guide };
   });
-  const gradient = new THREE.Vector3();
-  for (let iter = 0; iter < iterations; iter += 1) {
-    for (let t = 1; t < steps; t += 1) {
-      const buckets = new Map();
-      for (let i = 0; i < trajs.length; i += 1) {
-        const p = trajs[i][t];
-        const key = `${Math.floor(p.x / 3.2)},${Math.floor(p.y / 3.2)},${Math.floor(p.z / 3.2)}`;
-        let bucket = buckets.get(key);
-        if (!bucket) {
-          bucket = [];
-          buckets.set(key, bucket);
-        }
-        bucket.push(i);
-      }
-      for (const bucket of buckets.values()) {
-        for (let aIdx = 0; aIdx < bucket.length; aIdx += 1) {
-          for (let bIdx = aIdx + 1; bIdx < bucket.length; bIdx += 1) {
-            const pa = trajs[bucket[aIdx]][t];
-            const pb = trajs[bucket[bIdx]][t];
-            gradient.copy(pa).sub(pb);
-            const d = gradient.length();
-            if (d > dsep || d < 0.0001) continue;
-            gradient.multiplyScalar(((dsep - d) * 0.3) / d);
-            pa.add(gradient);
-            pb.sub(gradient);
+}
+
+function applyScpLinearizedSeparation(trajs, step, dsep, cellSize, correctionScale) {
+  const buckets = new Map();
+  for (let i = 0; i < trajs.length; i += 1) {
+    const p = trajs[i].points[step];
+    const key = `${Math.floor(p.x / cellSize)},${Math.floor(p.y / cellSize)},${Math.floor(p.z / cellSize)}`;
+    let bucket = buckets.get(key);
+    if (!bucket) {
+      bucket = [];
+      buckets.set(key, bucket);
+    }
+    bucket.push(i);
+  }
+
+  const corrections = trajs.map(() => new THREE.Vector3());
+  const checked = new Set();
+  for (const [key, bucket] of buckets) {
+    const [kx, ky, kz] = key.split(",").map(Number);
+    for (let dx = -1; dx <= 1; dx += 1) {
+      for (let dy = -1; dy <= 1; dy += 1) {
+        for (let dz = -1; dz <= 1; dz += 1) {
+          const otherBucket = buckets.get(`${kx + dx},${ky + dy},${kz + dz}`);
+          if (!otherBucket) continue;
+          for (const a of bucket) {
+            for (const b of otherBucket) {
+              if (a >= b) continue;
+              const pairKey = `${a}:${b}`;
+              if (checked.has(pairKey)) continue;
+              checked.add(pairKey);
+              const pa = trajs[a].points[step];
+              const pb = trajs[b].points[step];
+              const diff = pa.clone().sub(pb);
+              const distance = diff.length();
+              if (distance < 0.001 || distance > dsep * 1.55) continue;
+              const normal = diff.multiplyScalar(1 / distance);
+              const violation = dsep - normal.dot(pa.clone().sub(pb));
+              if (violation <= 0) continue;
+              corrections[a].addScaledVector(normal, violation * 0.5 * correctionScale);
+              corrections[b].addScaledVector(normal, -violation * 0.5 * correctionScale);
+            }
           }
         }
       }
     }
-    for (const pts of trajs) {
+  }
+
+  for (let i = 0; i < trajs.length; i += 1) trajs[i].points[step].add(corrections[i]);
+}
+
+function solveScpTrajectories(trajs, steps, iterations, dsep) {
+  const gradient = new THREE.Vector3();
+  const cellSize = Math.max(2.2, dsep);
+  for (let iter = 0; iter < iterations; iter += 1) {
+    for (let t = 1; t < steps - 1; t += 1) applyScpLinearizedSeparation(trajs, t, dsep, cellSize, 0.72);
+
+    for (const traj of trajs) {
       for (let t = 1; t < steps - 1; t += 1) {
-        const p = pts[t];
-        p.x += ((pts[t - 1].x + pts[t + 1].x) / 2 - p.x) * 0.24;
-        p.y += ((pts[t - 1].y + pts[t + 1].y) / 2 - p.y) * 0.24;
-        p.z += ((pts[t - 1].z + pts[t + 1].z) / 2 - p.z) * 0.24;
+        const p = traj.points[t];
+        const prev = traj.points[t - 1];
+        const next = traj.points[t + 1];
+        const guide = traj.guide[t];
+        gradient.copy(p).multiplyScalar(2).sub(prev).sub(next);
+        p.addScaledVector(gradient, -0.18);
+        p.lerp(guide, 0.055);
         const clearance = sampleEsdf(p);
-        if (clearance < 0.9) {
+        if (clearance < 0.98) {
           esdfGradient(p, gradient);
-          p.addScaledVector(gradient, (0.9 - clearance) * 0.5);
+          p.addScaledVector(gradient, (0.98 - clearance) * 0.62);
         }
         p.y = clamp(p.y, 1.2, 15);
       }
     }
   }
-  for (const pts of trajs) {
+}
+
+function scpDeconflict() {
+  const drones = state.drones;
+  if (drones.length < 2) return;
+  const heavy = state.count > 300;
+  const steps = heavy ? 32 : 48;
+  const dtT = heavy ? 0.52 : 0.45;
+  const iterations = heavy ? 8 : 18;
+  const dsep = 1.92;
+  const trajs = seedScpTrajectories(drones, steps, dtT);
+  solveScpTrajectories(trajs, steps, iterations, dsep);
+
+  for (const traj of trajs) {
+    const gradient = new THREE.Vector3();
     for (let pass = 0; pass < 3; pass += 1) {
-      for (const p of pts) {
+      for (const p of traj.points) {
         const clearance = sampleEsdf(p);
-        if (clearance < 0.6) {
+        if (clearance < 0.72) {
           esdfGradient(p, gradient);
-          p.addScaledVector(gradient, 0.6 - clearance);
+          p.addScaledVector(gradient, 0.72 - clearance);
           p.y = clamp(p.y, 1.2, 15);
         }
       }
     }
   }
+
   drones.forEach((drone, i) => {
-    drone.path = trajs[i];
+    drone.path = trajs[i].points.map((point) => point.clone());
+    drone.rawPath = trajs[i].guide.map((point) => point.clone());
+    drone.cells = null;
     drone.waypoint = 1;
-    drone.speedScale = null;
+    drone.speedScale = curvatureSpeedProfile(drone.path);
   });
 }
 
-function auctionAssign() {
-  const grid = state.grid;
+function collectGoalCandidates(grid) {
   const candidates = [];
   for (let y = 1; y < grid.ny - 1; y += 1) {
     for (let z = 3; z < grid.nz - 3; z += 1) {
@@ -3859,24 +5126,79 @@ function auctionAssign() {
       }
     }
   }
-  if (!candidates.length) return;
-  const drones = state.drones;
-  const baseCount = candidates.length;
-  for (let i = 0; candidates.length < drones.length; i += 1) {
-    candidates.push(candidates[i % baseCount]);
+  return candidates;
+}
+
+function assignmentCost(drone, goal) {
+  const p = drone.position;
+  const q = goal.point;
+  return Math.hypot(q.x - p.x, (q.y - p.y) * 1.25, q.z - p.z);
+}
+
+function solveHungarianAssignment(drones, candidates) {
+  const n = drones.length;
+  const m = candidates.length;
+  const u = new Float64Array(n + 1);
+  const v = new Float64Array(m + 1);
+  const p = new Int32Array(m + 1);
+  const way = new Int32Array(m + 1);
+
+  for (let i = 1; i <= n; i += 1) {
+    p[0] = i;
+    let j0 = 0;
+    const minv = new Float64Array(m + 1);
+    minv.fill(Number.POSITIVE_INFINITY);
+    const used = new Uint8Array(m + 1);
+    do {
+      used[j0] = 1;
+      const i0 = p[j0];
+      let delta = Number.POSITIVE_INFINITY;
+      let j1 = 0;
+      for (let j = 1; j <= m; j += 1) {
+        if (used[j]) continue;
+        const cur = assignmentCost(drones[i0 - 1], candidates[j - 1]) - u[i0] - v[j];
+        if (cur < minv[j]) {
+          minv[j] = cur;
+          way[j] = j0;
+        }
+        if (minv[j] < delta) {
+          delta = minv[j];
+          j1 = j;
+        }
+      }
+      for (let j = 0; j <= m; j += 1) {
+        if (used[j]) {
+          u[p[j]] += delta;
+          v[j] -= delta;
+        } else {
+          minv[j] -= delta;
+        }
+      }
+      j0 = j1;
+    } while (p[j0] !== 0);
+
+    do {
+      const j1 = way[j0];
+      p[j0] = p[j1];
+      j0 = j1;
+    } while (j0 !== 0);
   }
+
+  const assignment = new Int32Array(n).fill(-1);
+  for (let j = 1; j <= m; j += 1) {
+    if (p[j] > 0) assignment[p[j] - 1] = j - 1;
+  }
+  return assignment;
+}
+
+function solveAuctionAssignment(drones, candidates) {
   const m = candidates.length;
   const price = new Float64Array(m);
   const owner = new Int32Array(m).fill(-1);
   const assignment = new Int32Array(drones.length).fill(-1);
-  const costOf = (drone, goal) => {
-    const p = drone.position;
-    const q = goal.point;
-    return Math.hypot(q.x - p.x, (q.y - p.y) * 1.25, q.z - p.z);
-  };
   const queue = drones.map((_, i) => i);
   const eps = 0.3;
-  let guard = drones.length * 40;
+  let guard = drones.length * Math.max(50, Math.min(400, candidates.length));
   while (queue.length && guard-- > 0) {
     const di = queue.shift();
     const drone = drones[di];
@@ -3884,7 +5206,7 @@ function auctionAssign() {
     let bestValue = -Infinity;
     let second = -Infinity;
     for (let j = 0; j < m; j += 1) {
-      const value = -costOf(drone, candidates[j]) - price[j];
+      const value = -assignmentCost(drone, candidates[j]) - price[j];
       if (value > bestValue) {
         second = bestValue;
         bestValue = value;
@@ -3902,12 +5224,13 @@ function auctionAssign() {
     owner[best] = di;
     assignment[di] = best;
   }
+
   for (let i = 0; i < drones.length; i += 1) {
     if (assignment[i] >= 0) continue;
     let best = 0;
     let bestCost = Number.POSITIVE_INFINITY;
     for (let j = 0; j < m; j += 1) {
-      const cost = costOf(drones[i], candidates[j]) + (owner[j] >= 0 ? 3 : 0);
+      const cost = assignmentCost(drones[i], candidates[j]) + (owner[j] >= 0 ? 3 : 0);
       if (cost < bestCost) {
         bestCost = cost;
         best = j;
@@ -3915,9 +5238,15 @@ function auctionAssign() {
     }
     assignment[i] = best;
   }
+  return assignment;
+}
+
+function applyGoalAssignment(drones, candidates, assignment) {
+  const grid = state.grid;
   const detailed = state.count <= 300;
-  for (const drone of drones) {
-    const goal = candidates[assignment[drone.id]];
+  for (let i = 0; i < drones.length; i += 1) {
+    const drone = drones[i];
+    const goal = candidates[assignment[i]];
     if (!goal) continue;
     let route = null;
     if (detailed) {
@@ -3944,6 +5273,7 @@ function auctionAssign() {
         const raw = [startPoint, mid, goal.point.clone()];
         drone.path = densifyPolyline(raw, 1.2);
         drone.rawPath = raw;
+        drone.cells = null;
       } else {
         const fallback = tracePathFromCell(nearestFreeCell(grid.worldToCell(drone.position), true));
         drone.path = fallback.smooth.map((point) => point.clone());
@@ -3951,25 +5281,38 @@ function auctionAssign() {
         drone.cells = fallback.cells;
       }
     }
+    drone.assignmentGoal = goal.index;
     drone.waypoint = 1;
     drone.speedScale = null;
   }
 }
 
+function auctionAssign() {
+  const grid = state.grid;
+  const candidates = collectGoalCandidates(grid);
+  if (!candidates.length) return;
+  const drones = state.drones;
+  if (candidates.length < drones.length) {
+    const baseCount = candidates.length;
+    for (let i = 0; candidates.length < drones.length; i += 1) candidates.push(candidates[i % baseCount]);
+  }
+  const useHungarian = drones.length <= 220 && candidates.length <= 360;
+  const assignment = useHungarian ? solveHungarianAssignment(drones, candidates) : solveAuctionAssignment(drones, candidates);
+  applyGoalAssignment(drones, candidates, assignment);
+  scheduleMapfReservations(0.45);
+}
+
 function coordinateCentral() {
   const dt = 0.45;
   if (isAlgorithm("C07")) {
-    const order = [...state.drones].sort((a, b) => a.startDelay - b.startDelay || a.id - b.id);
-    scheduleWithReservations(order, 1, dt);
+    scheduleDcpStagger(dt);
     return;
   }
   if (state.mode !== "central") return;
-  if (isAlgorithm("F01")) scheduleWithReservations([...state.drones], 0, dt);
-  else if (isAlgorithm("F02")) scheduleCbsLite(dt);
-  else if (isAlgorithm("F03")) {
-    const order = [...state.drones].sort((a, b) => (b.cells?.length ?? 0) - (a.cells?.length ?? 0));
-    scheduleWithReservations(order, 1, dt);
-  } else if (isAlgorithm("F04")) scpDeconflict();
+  if (isAlgorithm("F01")) scheduleMapfReservations(dt);
+  else if (isAlgorithm("F02")) scheduleCbsEcbs(dt);
+  else if (isAlgorithm("F03")) schedulePriorityBasedSearch(dt);
+  else if (isAlgorithm("F04")) scpDeconflict();
   else if (isAlgorithm("F05")) auctionAssign();
 }
 
