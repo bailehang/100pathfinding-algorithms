@@ -1,4 +1,4 @@
-import * as THREE from "three";
+﻿import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 const canvas = document.querySelector("#scene");
@@ -77,7 +77,7 @@ const algorithmGroups = [
         summary: "最优互反避障，速度空间半平面约束",
         profile: { speed: 1, avoidRange: 2.75, avoidWeight: 4.2, timeHorizon: 2.8, reciprocalShare: 0.52 },
       },
-      { id: "C02", name: "RVO 3D", summary: "互惠速度障碍，局部避让直观", profile: { speed: 1.05, avoidRange: 2.35, avoidWeight: 3.7 } },
+      { id: "C02", name: "RVO 3D", summary: "互惠速度障碍，局部避让直观", profile: { speed: 1.05, avoidRange: 2.35, avoidWeight: 3.7, timeHorizon: 2.4, reciprocalShare: 0.55 } },
       { id: "C03", name: "Buffered Voronoi Cells", summary: "每机限制在缓冲 Voronoi 胞内", profile: { speed: 0.92, avoidRange: 2.85, avoidWeight: 4.6, safetyScale: 1.12 } },
       { id: "C04", name: "DMPC", summary: "滚动优化并使用邻机预测轨迹", profile: { speed: 0.96, avoidRange: 2.7, avoidWeight: 4.35, response: 2.6 } },
       { id: "C05", name: "MADER / RMADER", summary: "异步去中心化轨迹 recheck", profile: { speed: 1.03, avoidRange: 2.65, avoidWeight: 4.7, startDelay: 0.06 } },
@@ -128,11 +128,11 @@ const algorithmGroups = [
     title: "5. 学习类",
     shortTitle: "学习类",
     algorithms: [
-      { id: "E01", name: "GLAS", summary: "模仿学习分布式策略 + 安全滤波", profile: { speed: 1.05, avoidRange: 2.35, avoidWeight: 4.35 } },
-      { id: "E02", name: "PRIMAL / PRIMAL2", summary: "RL + IL 多智能体路径策略", profile: { speed: 0.98, avoidRange: 2.25, avoidWeight: 4.1, wander: 0.12 } },
-      { id: "E03", name: "Neural CBF", summary: "策略网络经控制屏障函数过滤", profile: { speed: 1.0, avoidRange: 2.55, avoidWeight: 4.7, obstacleMargin: 3.2 } },
-      { id: "E04", name: "RL + Safety Layer", summary: "RL 输出经安全层修正", profile: { speed: 1.08, avoidRange: 2.4, avoidWeight: 4.55, wander: 0.1 } },
-      { id: "E05", name: "End-to-End Swarm RL", summary: "端到端集群策略展示", profile: { speed: 1.12, avoidRange: 2.2, avoidWeight: 4.0, wander: 0.2 } },
+      { id: "E01", name: "GLAS", summary: "邻域聚合策略 + 危险度安全混合（启发式，无学习权重）", profile: { speed: 1.05, avoidRange: 2.35, avoidWeight: 4.35 } },
+      { id: "E02", name: "PRIMAL / PRIMAL2", summary: "局部观测下 27 离散动作择优（启发式，无网络）", profile: { speed: 0.98, avoidRange: 2.25, avoidWeight: 4.1, wander: 0.12 } },
+      { id: "E03", name: "Neural CBF", summary: "解析 CBF 速度安全滤波（无神经网络）", profile: { speed: 1.0, avoidRange: 2.55, avoidWeight: 4.7, obstacleMargin: 3.2 } },
+      { id: "E04", name: "RL + Safety Layer", summary: "预测式安全层修正（启发式，无 RL 策略）", profile: { speed: 1.08, avoidRange: 2.4, avoidWeight: 4.55, wander: 0.1 } },
+      { id: "E05", name: "End-to-End Swarm RL", summary: "端到端 MLP 推理结构（固定随机权重，非训练）", profile: { speed: 1.12, avoidRange: 2.2, avoidWeight: 4.0, wander: 0.2 } },
     ],
   },
   {
@@ -158,6 +158,753 @@ const algorithms = algorithmGroups.flatMap((group) =>
   })),
 );
 const algorithmById = new Map(algorithms.map((algorithm) => [algorithm.id, algorithm]));
+
+// ===== Algorithm learning cards: concept diagrams and descriptions =====
+
+const DIAG = {
+  grid: "rgba(255,255,255,0.09)",
+  obstacle: "#4b555f",
+  teal: "#2ee6d6",
+  green: "#76e06f",
+  amber: "#ffbf47",
+  rose: "#ff667c",
+  violet: "#b692ff",
+  muted: "#a9b0b7",
+};
+
+function svgFrame(inner) {
+  const markers = ["teal", "green", "amber", "rose", "violet", "muted"]
+    .map(
+      (key) =>
+        `<marker id="arr-${key}" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="4.5" markerHeight="4.5" orient="auto"><path d="M0,0L8,4L0,8Z" fill="${DIAG[key]}"/></marker>`,
+    )
+    .join("");
+  return `<svg viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg"><defs>${markers}</defs>${inner}</svg>`;
+}
+
+function dLine(x1, y1, x2, y2, color, width = 2, dash = "") {
+  return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${DIAG[color]}" stroke-width="${width}"${dash ? ` stroke-dasharray="${dash}"` : ""}/>`;
+}
+
+function dArrow(x1, y1, x2, y2, color, width = 2, dash = "") {
+  return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${DIAG[color]}" stroke-width="${width}"${dash ? ` stroke-dasharray="${dash}"` : ""} marker-end="url(#arr-${color})"/>`;
+}
+
+function dText(x, y, text, color = "muted", size = 10, anchor = "middle") {
+  return `<text x="${x}" y="${y}" fill="${DIAG[color]}" font-size="${size}" text-anchor="${anchor}">${text}</text>`;
+}
+
+function dDot(x, y, r, color, opacity = 1) {
+  return `<circle cx="${x}" cy="${y}" r="${r}" fill="${DIAG[color]}" opacity="${opacity}"/>`;
+}
+
+const diagCell = (cx, cy) => [20 + cx * 26 + 13, 15 + cy * 24 + 12];
+
+function diagGridBase() {
+  let g = "";
+  for (let i = 0; i <= 10; i += 1) g += dLine(20 + i * 26, 15, 20 + i * 26, 135, "grid", 1);
+  for (let j = 0; j <= 5; j += 1) g += dLine(20, 15 + j * 24, 280, 15 + j * 24, "grid", 1);
+  for (const [cx, cy] of [[4, 1], [4, 2], [4, 3], [7, 3], [7, 4]]) {
+    g += `<rect x="${20 + cx * 26 + 1}" y="${15 + cy * 24 + 1}" width="24" height="22" fill="${DIAG.obstacle}"/>`;
+  }
+  g += dDot(33, 123, 5, "green") + dDot(267, 27, 5, "rose");
+  g += dText(33, 112, "起点", "green") + dText(267, 45, "目标", "rose");
+  return g;
+}
+
+const diagPathCells = [[0, 4], [1, 3], [2, 2], [3, 1], [4, 0], [5, 0], [6, 0], [7, 0], [8, 0], [9, 0]];
+
+function diagPathPolyline(color = "teal", width = 2.5) {
+  const points = diagPathCells.map(([cx, cy]) => diagCell(cx, cy).join(",")).join(" ");
+  return `<polyline points="${points}" fill="none" stroke="${DIAG[color]}" stroke-width="${width}" stroke-linejoin="round"/>`;
+}
+
+function diagramGridSearch(variant) {
+  let extra = "";
+  if (variant === "astar") {
+    const wave = [[0, 3], [1, 4], [1, 2], [2, 3], [0, 2], [2, 4], [1, 1], [3, 2], [2, 1], [3, 3], [0, 1], [3, 0], [2, 0], [3, 4], [5, 1], [4, 4], [1, 0], [6, 1], [5, 2]];
+    wave.forEach(([cx, cy], i) => {
+      extra += `<rect x="${20 + cx * 26 + 2}" y="${15 + cy * 24 + 2}" width="22" height="20" fill="${DIAG.teal}" opacity="${Math.max(0.05, 0.24 - i * 0.011)}"/>`;
+    });
+    extra += diagPathPolyline() + dText(150, 148, "开放/关闭列表按 f = g + h 波前扩展", "muted");
+  } else if (variant === "hybrid") {
+    extra += `<path d="M33,123 C 90,120 80,60 130,38 C 175,20 220,24 267,27" fill="none" stroke="${DIAG.teal}" stroke-width="2.5"/>`;
+    extra += dArrow(78, 106, 96, 92, "amber") + dArrow(150, 32, 170, 27, "amber");
+    extra += dText(150, 148, "航向进入状态 · 每步限转 · 转向有代价", "muted");
+  } else if (variant === "jps") {
+    const jumps = [[0, 4], [3, 1], [4, 0], [9, 0]];
+    const pts = jumps.map(([cx, cy]) => diagCell(cx, cy));
+    for (let i = 0; i < pts.length - 1; i += 1) extra += dLine(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], "teal", 2.5);
+    extra += pts.slice(1, -1).map(([x, y]) => dDot(x, y, 4.5, "amber")).join("");
+    extra += dText(118, 55, "跳点", "amber") + dText(150, 148, "沿直线跳跃剪枝，仅在 forced neighbor 生成节点", "muted");
+  } else if (variant === "kino") {
+    extra += diagPathPolyline();
+    const arrowsAt = [[1, 3], [3, 1], [5, 0], [7, 0]];
+    for (const [cx, cy] of arrowsAt) {
+      const [x, y] = diagCell(cx, cy);
+      extra += dArrow(x, y, x + 16, y - (cy > 0 ? 13 : 0), "violet", 1.8);
+    }
+    extra += dText(150, 148, "状态 = 位置 × 速度方向，扩展受加速度约束", "muted");
+  } else if (variant === "primitives") {
+    extra += `<path d="M33,123 Q 59,115 72,99 Q 86,81 98,63 Q 110,44 124,32 Q 140,22 163,25 Q 200,29 228,27 Q 248,26 267,27" fill="none" stroke="${DIAG.teal}" stroke-width="2.5"/>`;
+    for (const [x, y] of [[72, 99], [98, 63], [124, 32], [163, 25], [228, 27]]) extra += dDot(x, y, 3.6, "violet");
+    extra += dText(150, 148, "预置可行轨迹段（基元）逐段拼接搜索", "muted");
+  }
+  return svgFrame(diagGridBase() + extra);
+}
+
+function diagramTree(variant) {
+  const nodes = [
+    [33, 123], [62, 100], [80, 126], [55, 66], [96, 84], [120, 108], [104, 52], [140, 76],
+    [150, 118], [168, 46], [186, 88], [206, 62], [226, 96], [238, 40], [256, 70], [186, 124],
+  ];
+  const edges = [[0, 1], [0, 2], [1, 3], [1, 4], [4, 5], [3, 6], [4, 7], [5, 8], [6, 9], [7, 10], [9, 11], [10, 12], [11, 13], [12, 14], [8, 15]];
+  const best = [0, 1, 4, 7, 10, 12, 14];
+  let g = "";
+  if (variant === "informed") {
+    g += `<ellipse cx="150" cy="75" rx="128" ry="42" transform="rotate(-17 150 75)" fill="${DIAG.violet}" opacity="0.08" stroke="${DIAG.violet}" stroke-dasharray="5 4"/>`;
+    g += dText(228, 118, "informed 椭球采样域", "violet");
+  }
+  if (variant === "batches") {
+    g += `<ellipse cx="150" cy="75" rx="132" ry="52" transform="rotate(-16 150 75)" fill="none" stroke="${DIAG.muted}" stroke-dasharray="5 4" opacity="0.6"/>`;
+    g += `<ellipse cx="152" cy="72" rx="112" ry="34" transform="rotate(-16 150 75)" fill="${DIAG.violet}" opacity="0.08" stroke="${DIAG.violet}" stroke-dasharray="5 4"/>`;
+    g += dText(238, 126, "批次 1 → 批次 2 收缩", "violet");
+  }
+  for (const [a, b] of edges) {
+    const onBest = best.includes(a) && best.includes(b) && Math.abs(best.indexOf(a) - best.indexOf(b)) === 1;
+    g += dLine(nodes[a][0], nodes[a][1], nodes[b][0], nodes[b][1], onBest ? "teal" : "muted", onBest ? 2.5 : 1.2);
+  }
+  for (let i = 0; i < nodes.length; i += 1) {
+    g += dDot(nodes[i][0], nodes[i][1], i === 0 ? 5 : 2.6, i === 0 ? "green" : best.includes(i) ? "teal" : "muted");
+  }
+  g += dLine(256, 70, 267, 47, "teal", 2.5) + dDot(267, 40, 5, "rose");
+  g += dText(33, 112, "起点", "green") + dText(267, 58, "目标", "rose");
+  if (!variant) g += dText(150, 145, "随机采样生长树 · 邻域内选优父节点并 rewire", "muted");
+  else g += dText(150, 145, variant === "informed" ? "有解后仅在椭球内采样，加速收敛" : "批量采样 + 图搜索，边碰撞惰性检测", "muted");
+  return svgFrame(g);
+}
+
+function diagramTrajectory(variant) {
+  const rawPts = "30,118 70,96 96,110 128,66 160,84 196,40 226,56 268,32";
+  let g = `<polyline points="${rawPts}" fill="none" stroke="${DIAG.amber}" stroke-width="1.6" stroke-dasharray="4 3" opacity="0.85"/>`;
+  const smooth = `M30,118 C 70,104 100,96 128,74 C 156,54 196,58 226,46 C 244,40 256,36 268,32`;
+  if (variant === "speed") {
+    g += `<path d="M30,118 C 70,104 100,96 128,74" fill="none" stroke="${DIAG.teal}" stroke-width="3"/>`;
+    g += `<path d="M128,74 C 156,54 178,56 196,52" fill="none" stroke="${DIAG.amber}" stroke-width="3"/>`;
+    g += `<path d="M196,52 C 220,48 250,38 268,32" fill="none" stroke="${DIAG.teal}" stroke-width="3"/>`;
+    g += dText(163, 40, "急弯降速", "amber");
+  } else {
+    g += `<path d="${smooth}" fill="none" stroke="${DIAG.teal}" stroke-width="2.6"/>`;
+  }
+  if (variant === "corridor") {
+    for (const [x, y, r] of [[30, 118, 0], [80, 98, -18], [130, 72, -24], [186, 54, -12], [240, 40, -10]]) {
+      g += `<rect x="${x - 6}" y="${y - 15}" width="64" height="30" rx="6" transform="rotate(${r} ${x} ${y})" fill="${DIAG.green}" opacity="0.1" stroke="${DIAG.green}" stroke-opacity="0.5"/>`;
+    }
+    g += dText(150, 145, "轨迹被约束在重叠凸走廊内做平滑", "muted");
+  } else if (variant === "ctrl") {
+    const ctrl = [[30, 118], [84, 92], [132, 84], [176, 46], [222, 52], [268, 32]];
+    g += `<polyline points="${ctrl.map((p) => p.join(",")).join(" ")}" fill="none" stroke="${DIAG.violet}" stroke-width="1.2" stroke-dasharray="3 3"/>`;
+    g += ctrl.map(([x, y]) => dDot(x, y, 3.6, "violet")).join("");
+    g += dArrow(132, 84, 118, 104, "rose", 1.8) + dText(112, 118, "ESDF 梯度推离", "rose");
+    g += dText(150, 145, "优化 B 样条控制点：平滑项 + 距离场斥力", "muted");
+  } else if (variant === "sparse") {
+    const wp = [[30, 118], [128, 74], [226, 46], [268, 32]];
+    g += wp.map(([x, y]) => dDot(x, y, 4.4, "violet")).join("");
+    g += dText(150, 145, "只优化少量路标，段内多项式解析最优", "muted");
+  } else if (variant === "speed") {
+    g += dText(150, 145, "B 样条 + ESDF 优化，按曲率重分配速度", "muted");
+  } else {
+    g += dText(150, 145, "最小化高阶导数：折线 → 控制代价最小的平滑轨迹", "muted");
+  }
+  g += dDot(30, 118, 4.5, "green") + dDot(268, 32, 4.5, "rose");
+  g += dText(76, 84, "初始折线", "amber");
+  return svgFrame(g);
+}
+
+function diagramVelocityObstacle(variant) {
+  let g = dDot(48, 116, 7, "teal") + dText(48, 136, "本机 A", "teal");
+  g += dDot(112, 38, 7, "muted") + dText(112, 26, "邻机 B", "muted");
+  g += dArrow(112, 38, 138, 58, "muted", 1.6);
+  const ax = 178;
+  const ay = 108;
+  g += `<path d="M${ax},${ay} L 268,34 L 292,86 Z" fill="${DIAG.rose}" opacity="0.13" stroke="${DIAG.rose}" stroke-width="1.2" stroke-dasharray="4 3"/>`;
+  g += dText(258, 66, "碰撞速度集", "rose", 10);
+  g += dArrow(ax, ay, 248, 62, "amber", 2) + dText(232, 92, "期望速度", "amber");
+  if (variant === "orca") {
+    g += dLine(196, 44, 292, 108, "teal", 1.6, "5 4");
+    g += dArrow(ax, ay, 224, 116, "teal", 2.2) + dText(224, 132, "半平面内取最近速度", "teal");
+    g += dText(ax - 4, ay + 16, "各承担一半修正", "muted");
+  } else {
+    g += dArrow(ax, ay, 216, 120, "teal", 2.2) + dText(226, 134, "修正到锥外", "teal");
+    const apexLabel = variant === "rvo" ? "锥顶 = (vA+vB)/2" : variant === "hrvo" ? "混合锥顶（偏置选边）" : "锥顶 = vB";
+    g += dText(ax - 8, ay + 16, apexLabel, "violet");
+  }
+  return svgFrame(g);
+}
+
+function diagramVoronoiCell() {
+  const hex = "150,26 224,52 232,104 158,132 84,110 72,54";
+  const inner = "150,42 206,62 212,98 156,118 100,102 92,62";
+  let g = `<polygon points="${hex}" fill="none" stroke="${DIAG.muted}" stroke-width="1.4"/>`;
+  g += `<polygon points="${inner}" fill="${DIAG.teal}" opacity="0.08" stroke="${DIAG.teal}" stroke-dasharray="5 4"/>`;
+  g += dDot(150, 82, 6, "teal");
+  for (const [x, y] of [[36, 30], [258, 28], [278, 96], [40, 124], [180, 12]]) g += dDot(x, y, 4.5, "muted");
+  g += dArrow(150, 82, 192, 96, "teal", 2.2);
+  g += dText(66, 26, "邻机", "muted") + dText(196, 40, "Voronoi 胞", "muted") + dText(152, 132, "缓冲收缩后的安全胞", "teal");
+  g += dText(150, 148, "每步速度被约束：下一位置不出自己的胞", "muted");
+  return svgFrame(g);
+}
+
+function diagramRollout() {
+  let g = dDot(42, 78, 7, "teal");
+  const fans = [
+    ["M42,78 C 90,20 160,14 236,20", "muted"],
+    ["M42,78 C 96,44 170,40 244,44", "muted"],
+    ["M42,78 C 100,72 180,72 252,74", "teal"],
+    ["M42,78 C 96,108 170,112 244,108", "muted"],
+    ["M42,78 C 90,132 160,138 232,134", "muted"],
+  ];
+  for (const [d, color] of fans) {
+    g += `<path d="${d}" fill="none" stroke="${DIAG[color]}" stroke-width="${color === "teal" ? 2.6 : 1.3}"${color === "teal" ? "" : ' stroke-dasharray="4 3"'}/>`;
+  }
+  g += dDot(224, 30, 5, "muted") + dArrow(224, 30, 168, 20, "rose", 1.6, "4 3");
+  g += dText(236, 16, "邻机预测轨迹", "rose");
+  g += `<text x="176" y="30" fill="${DIAG.rose}" font-size="14" text-anchor="middle">✕</text>`;
+  g += dText(252, 90, "代价最低", "teal");
+  g += dText(150, 148, "候选控制 × N 步 rollout，滚动执行第一步", "muted");
+  return svgFrame(g);
+}
+
+function diagramCommit() {
+  let g = `<path d="M28,110 C 90,96 180,84 272,74" fill="none" stroke="${DIAG.teal}" stroke-width="2.6"/>`;
+  g += dDot(28, 110, 6, "teal") + dText(28, 128, "本机", "teal");
+  g += `<path d="M212,16 C 196,52 178,84 168,120" fill="none" stroke="${DIAG.amber}" stroke-width="1.6" stroke-dasharray="5 4"/>`;
+  g += dText(238, 16, "邻机承诺轨迹", "amber");
+  g += `<circle cx="182" cy="80" r="14" fill="none" stroke="${DIAG.rose}" stroke-dasharray="3 3"/>`;
+  g += `<text x="182" y="85" fill="${DIAG.rose}" font-size="12" text-anchor="middle">✕</text>`;
+  g += `<path d="M120,94 C 150,120 200,124 262,108" fill="none" stroke="${DIAG.green}" stroke-width="2.2"/>`;
+  g += `<text x="262" y="126" fill="${DIAG.green}" font-size="12" text-anchor="middle">✓ 重新承诺</text>`;
+  g += dText(150, 148, "check 通过才承诺；recheck 失败则回退 / 减速", "muted");
+  return svgFrame(g);
+}
+
+function diagramDetour() {
+  let g = dLine(30, 80, 270, 80, "muted", 1.4, "5 4");
+  g += dDot(30, 80, 6, "teal");
+  g += dArrow(150, 18, 150, 66, "amber", 1.6, "4 3") + dText(150, 12, "邻机广播轨迹", "amber");
+  g += dDot(150, 80, 5, "rose") + dText(178, 96, "预测冲突点", "rose");
+  g += `<path d="M30,80 C 80,82 108,116 150,116 C 192,116 220,84 270,80" fill="none" stroke="${DIAG.teal}" stroke-width="2.6"/>`;
+  g += dDot(270, 80, 5, "rose");
+  g += dText(150, 145, "沿切向平滑绕行，不依赖 ESDF 全场", "muted");
+  return svgFrame(g);
+}
+
+function diagramStagger() {
+  let g = `<rect x="138" y="14" width="24" height="46" fill="${DIAG.obstacle}"/><rect x="138" y="94" width="24" height="44" fill="${DIAG.obstacle}"/>`;
+  const rows = [[40, "t + 0", "teal"], [76, "t + Δ", "amber"], [112, "t + 2Δ", "violet"]];
+  rows.forEach(([y, t, color], i) => {
+    g += dDot(34, y, 5.5, color);
+    g += dArrow(46, y, 128 - i * 4, 77 - (77 - y) * 0.25, color, 1.8);
+    g += dText(34, y - 12, t, color);
+  });
+  g += dArrow(166, 77, 268, 77, "green", 2.2) + dText(224, 66, "依次通过瓶颈", "green");
+  g += dText(150, 148, "空间路径不变，把冲突消解移到时间维", "muted");
+  return svgFrame(g);
+}
+
+function diagramForces(exponential) {
+  let g = `<rect x="96" y="96" width="52" height="30" fill="${DIAG.obstacle}"/>`;
+  if (exponential) {
+    for (let r = 1; r <= 3; r += 1) {
+      g += `<rect x="${96 - r * 11}" y="${96 - r * 11}" width="${52 + r * 22}" height="${30 + r * 22}" rx="${r * 6}" fill="none" stroke="${DIAG.rose}" opacity="${0.4 - r * 0.11}"/>`;
+    }
+  }
+  g += dDot(160, 66, 7, "teal") + dDot(268, 56, 6, "rose") + dText(268, 42, "目标", "rose");
+  g += dDot(120, 30, 5, "muted") + dText(104, 20, "邻机", "muted");
+  g += dArrow(160, 66, 226, 60, "green", 2.2) + dText(196, 48, "吸引", "green");
+  g += dArrow(160, 66, 186, 34, "rose", 1.8) + dArrow(148, 78, 172, 100, "rose", 0.01);
+  g += dArrow(160, 66, 184, 96, "rose", 1.8);
+  g += dText(206, 106, exponential ? "指数斥力 A·e^((r−d)/B)" : "距离越近斥力越强", "rose");
+  g += dArrow(160, 66, 236, 84, "teal", 2.4) + dText(244, 100, "合力", "teal");
+  g += dText(150, 148, exponential ? "驱动力 (v*−v)/τ + 个体/障碍指数斥力" : "沿吸引 + 排斥势场的负梯度运动", "muted");
+  return svgFrame(g);
+}
+
+function diagramBoids() {
+  let g = "";
+  const panel = (cx, title, inner) => dText(cx, 138, title, "teal", 11) + inner;
+  let sep = "";
+  for (const [x, y, ex, ey] of [[52, 62, 30, 42], [70, 78, 92, 92], [58, 92, 38, 112]]) {
+    sep += dDot(x, y, 4, "teal") + dArrow(x, y, ex, ey, "rose", 1.6);
+  }
+  g += panel(60, "分离", sep);
+  let ali = "";
+  for (const [x, y] of [[136, 60], [158, 76], [140, 96]]) {
+    ali += dDot(x, y, 4, "teal") + dArrow(x, y, x + 30, y - 8, "green", 1.6);
+  }
+  g += panel(150, "对齐", ali);
+  let coh = "";
+  const center = [244, 78];
+  for (const [x, y] of [[220, 54], [268, 60], [238, 106]]) {
+    coh += dDot(x, y, 4, "teal") + dArrow(x, y, center[0] + (x < center[0] ? -6 : 6), center[1], "amber", 1.6);
+  }
+  coh += `<text x="${center[0]}" y="${center[1] + 4}" fill="${DIAG.amber}" font-size="11" text-anchor="middle">×</text>`;
+  g += panel(244, "聚合", coh);
+  g += dLine(105, 30, 105, 120, "grid", 1) + dLine(195, 30, 195, 120, "grid", 1);
+  g += dText(150, 22, "三条局部规则 → 群体行为涌现", "muted");
+  return svgFrame(g);
+}
+
+function diagramLattice() {
+  const center = [150, 72];
+  const ring = [];
+  for (let i = 0; i < 6; i += 1) {
+    const angle = (Math.PI / 3) * i + 0.28;
+    ring.push([center[0] + Math.cos(angle) * 46, center[1] + Math.sin(angle) * 40]);
+  }
+  let g = "";
+  for (const [x, y] of ring) g += dLine(center[0], center[1], x, y, "teal", 1.2);
+  for (let i = 0; i < 6; i += 1) {
+    const [x1, y1] = ring[i];
+    const [x2, y2] = ring[(i + 1) % 6];
+    g += dLine(x1, y1, x2, y2, "teal", 1.2);
+  }
+  g += dDot(center[0], center[1], 5, "teal");
+  for (const [x, y] of ring) g += dDot(x, y, 4.4, "teal") + dArrow(x, y, x + 20, y - 6, "green", 1.4);
+  g += dText(178, 52, "d", "amber", 12);
+  g += dText(150, 138, "φ 作用函数使间距收敛到 d（α-lattice）+ 速度一致", "muted");
+  return svgFrame(g);
+}
+
+function diagramBraking() {
+  let g = dArrow(46, 124, 282, 124, "muted", 1.4) + dArrow(46, 124, 46, 18, "muted", 1.4);
+  g += dText(270, 138, "机间距离 r", "muted") + dText(28, 30, "Δv", "muted");
+  g += `<path d="M60,122 Q 120,118 170,88 T 276,30" fill="none" stroke="${DIAG.teal}" stroke-width="2.4"/>`;
+  g += `<path d="M60,122 Q 120,118 170,88 T 276,30 L 276,18 L 60,18 Z" fill="${DIAG.rose}" opacity="0.07"/>`;
+  g += dDot(190, 46, 4.5, "rose") + dArrow(190, 46, 190, 72, "rose", 1.8);
+  g += dText(232, 44, "超出 → 摩擦力拉齐", "rose");
+  g += dText(150, 108, "允许速度差 D(r)", "teal");
+  g += dText(150, 148, "距离越近允许速度差越小，符合理想制动", "muted");
+  return svgFrame(g);
+}
+
+function diagramPolicy(variant) {
+  const box = (x, y, w, h, title, color = "muted") =>
+    `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="7" fill="rgba(255,255,255,0.05)" stroke="${DIAG[color]}"/>` +
+    dText(x + w / 2, y + h / 2 + 4, title, color === "muted" ? "muted" : color, 11);
+  let g = box(14, 56, 66, 38, "局部观测");
+  g += dArrow(80, 75, 100, 75, "muted", 1.6);
+  if (variant === "mlp") {
+    g += `<rect x="102" y="42" width="84" height="66" rx="7" fill="rgba(255,255,255,0.05)" stroke="${DIAG.violet}"/>`;
+    const layers = [[116, [56, 74, 92]], [144, [50, 66, 82, 98]], [172, [62, 86]]];
+    for (let l = 0; l < layers.length - 1; l += 1) {
+      for (const y1 of layers[l][1]) for (const y2 of layers[l + 1][1]) g += dLine(layers[l][0], y1, layers[l + 1][0], y2, "violet", 0.5);
+    }
+    for (const [x, ys] of layers) for (const y of ys) g += dDot(x, y, 3, "violet");
+    g += dText(144, 122, "端到端策略网络", "violet");
+    g += dArrow(186, 75, 216, 75, "muted", 1.6);
+    g += dArrow(226, 75, 278, 75, "teal", 2.6) + dText(252, 62, "动作", "teal");
+  } else if (variant === "discrete") {
+    g += box(102, 42, 78, 66, "", "violet") + dText(141, 60, "策略打分", "violet", 11);
+    for (let r = 0; r < 3; r += 1) {
+      for (let c = 0; c < 3; c += 1) {
+        const on = r === 0 && c === 2;
+        g += `<rect x="${118 + c * 16}" y="${68 + r * 12}" width="14" height="10" fill="${on ? DIAG.teal : "rgba(255,255,255,0.09)"}"/>`;
+      }
+    }
+    g += dArrow(180, 75, 216, 75, "muted", 1.6);
+    g += dArrow(226, 75, 278, 55, "teal", 2.6) + dText(248, 42, "离散动作", "teal");
+  } else if (variant === "blend") {
+    g += box(102, 30, 78, 34, "策略 π", "violet");
+    g += box(102, 86, 78, 34, "安全动作", "amber");
+    g += dArrow(180, 47, 216, 68, "violet", 1.8) + dArrow(180, 103, 216, 82, "amber", 1.8);
+    g += `<circle cx="226" cy="75" r="12" fill="rgba(255,255,255,0.05)" stroke="${DIAG.teal}"/>` + dText(226, 79, "λ", "teal", 12);
+    g += dArrow(238, 75, 284, 75, "teal", 2.6);
+    g += dText(150, 145, "越接近危险 λ 越大，越偏向安全动作", "muted");
+    return svgFrame(g);
+  } else {
+    g += box(102, 56, 70, 38, "策略 π", "violet");
+    g += dArrow(172, 75, 192, 75, "muted", 1.6);
+    g += box(194, 56, 72, 38, variant === "filter" ? "CBF 滤波" : "安全层", "amber");
+    g += dArrow(266, 75, 292, 75, "teal", 2.6);
+    g += dText(150, 130, variant === "filter" ? "约束 ḣ ≥ −αh：最小改动策略输出以保安全" : "预测将碰撞时修正 / 抑制策略输出", "muted");
+    return svgFrame(g);
+  }
+  g += dText(150, 145, variant === "mlp" ? "观测 → 网络前向 → 控制，行为由奖励涌现" : "局部观测选离散动作，让路行为由训练涌现", "muted");
+  return svgFrame(g);
+}
+
+function diagramGantt(variant) {
+  const rows = [
+    [34, 96, "teal"],
+    [62, 128, "amber"],
+    [90, 74, "violet"],
+    [118, 108, "green"],
+  ];
+  const starts = variant === "conflict" ? [30, 30, 30, 30] : [30, 58, 88, 122];
+  let g = dArrow(24, 134, 286, 134, "muted", 1.4) + dText(270, 148, "时间", "muted");
+  rows.forEach(([y, w, color], i) => {
+    g += `<rect x="${starts[i]}" y="${y - 8}" width="${w}" height="16" rx="5" fill="${DIAG[color]}" opacity="0.55"/>`;
+    if (variant === "priority") g += dText(16, y + 4, String(i + 1), "amber", 11);
+    else g += dText(16, y + 4, `#${i + 1}`, "muted", 9);
+  });
+  if (variant === "conflict") {
+    g += `<rect x="66" y="24" width="20" height="48" fill="${DIAG.rose}" opacity="0.22" stroke="${DIAG.rose}" stroke-dasharray="3 3"/>`;
+    g += dText(76, 16, "冲突", "rose");
+    g += dArrow(96, 48, 150, 40, "rose", 1.4, "3 3") + dText(196, 36, "加约束分支重规划", "rose");
+    g += `<rect x="152" y="54" width="128" height="16" rx="5" fill="${DIAG.amber}" opacity="0.55"/>`;
+    g += dText(150, 148, "两层搜索：底层 A* + 顶层冲突树", "muted");
+  } else if (variant === "priority") {
+    g += dText(150, 148, "按优先级顺序规划，低优先级避让高优先级", "muted");
+  } else {
+    g += dText(150, 148, "体素 × 时隙保留表：延迟起飞直到全程无冲突", "muted");
+  }
+  return svgFrame(g);
+}
+
+function diagramJoint() {
+  let g = `<path d="M24,44 C 100,44 150,96 276,80" fill="none" stroke="${DIAG.muted}" stroke-width="1.2" stroke-dasharray="4 3"/>`;
+  g += `<path d="M24,76 C 110,76 160,70 276,58" fill="none" stroke="${DIAG.muted}" stroke-width="1.2" stroke-dasharray="4 3"/>`;
+  g += `<path d="M24,108 C 100,108 150,60 276,36" fill="none" stroke="${DIAG.muted}" stroke-width="1.2" stroke-dasharray="4 3"/>`;
+  g += `<path d="M24,44 C 100,40 170,34 276,30" fill="none" stroke="${DIAG.teal}" stroke-width="2.2"/>`;
+  g += `<path d="M24,76 C 110,74 170,66 276,60" fill="none" stroke="${DIAG.green}" stroke-width="2.2"/>`;
+  g += `<path d="M24,108 C 100,108 170,98 276,92" fill="none" stroke="${DIAG.violet}" stroke-width="2.2"/>`;
+  g += dArrow(150, 72, 150, 48, "rose", 1.6) + dArrow(150, 78, 150, 96, "rose", 1.6);
+  g += dText(186, 118, "迭代推挤 + 平滑（凸化的分离约束）", "muted");
+  g += dText(150, 145, "集中式联合优化全体轨迹，直至无冲突", "muted");
+  return svgFrame(g);
+}
+
+function diagramAssign() {
+  const drones = [[64, 34], [64, 66], [64, 98], [64, 130]];
+  const goals = [[240, 34], [240, 66], [240, 98], [240, 130]];
+  const match = [[0, 1], [1, 0], [2, 3], [3, 2]];
+  let g = "";
+  g += dLine(64, 34, 240, 98, "muted", 1, "4 3");
+  g += `<text x="150" y="60" fill="${DIAG.rose}" font-size="13" text-anchor="middle">✕</text>`;
+  for (const [a, b] of match) g += dLine(drones[a][0] + 8, drones[a][1], goals[b][0] - 8, goals[b][1], "teal", 1.8);
+  for (const [x, y] of drones) g += dDot(x, y, 5.5, "teal");
+  for (const [x, y] of goals) g += dDot(x, y, 5.5, "rose");
+  g += dText(64, 18, "无人机", "teal") + dText(240, 18, "目标 (价格 p)", "rose");
+  g += dText(150, 148, "二分图最小代价匹配：竞价-涨价迭代收敛", "muted");
+  return svgFrame(g);
+}
+
+const algorithmDetails = {
+  A01: {
+    status: "已实现",
+    diagram: () => diagramGridSearch("astar"),
+    principle:
+      "在三维体素栅格上做最优图搜索：维护开放列表，每次弹出 f = g + h 最小的节点扩展，g 是起点到该节点的累计代价，h 是到目标的启发式下界。只要 h 不高估真实代价（可采纳），找到的路径就是最优的。",
+    traits: ["完备且最优，是栅格规划的基准算法", "26 邻域扩展，代价与内存随栅格规模线性增长", "适合静态已知环境，动态环境需要重规划"],
+    demo: "每个起点体素运行一次严格的 open/closed A*，路径经视线简化与样条平滑后跟踪。",
+  },
+  A02: {
+    status: "近似实现",
+    diagram: () => diagramGridSearch("hybrid"),
+    principle:
+      "把航向角加入搜索状态 (x, y, z, θ)：扩展时只允许与当前航向相近的运动方向，并对转向加代价，搜出的路径天然满足转弯约束。原版（斯坦福 Junior）用连续曲率弧线扩展并配合解析扩展命中目标。",
+    traits: ["路径平滑少急转，适合有最小转弯半径的载具", "状态空间是 A* 的数倍（乘以航向离散数）", "最优性受航向离散化影响"],
+    demo: "8 个离散航向、每步最多转 45°、转向计代价的栅格版本，未做连续曲率。",
+  },
+  A03: {
+    status: "近似实现",
+    diagram: () => diagramGridSearch("jps"),
+    principle:
+      "均匀代价栅格上 A* 的无损加速：利用路径对称性沿直线“跳跃”，跳过中间节点，只在遇到 forced neighbor（旁边被障碍堵住又重新打开的格子）或目标时才生成节点，堆操作减少一个数量级。",
+    traits: ["与 A* 同样最优（均匀代价网格）", "扩展节点数远少于 A*，速度快数倍到数十倍", "3D 的完整剪枝规则复杂，工程上常用简化变体"],
+    demo: "26 方向直线跳跃 + 简化的 forced-neighbor 判定，跳点间以长直线段相连。",
+  },
+  A04: {
+    status: "近似实现",
+    diagram: () => diagramTree(),
+    principle:
+      "反复随机采样并把采样点连向树上最近的节点（限制单步长度）生长出搜索树；RRT* 在此之上于新节点邻域内重新选择代价最低的父节点，并把邻居 rewire 到更优路径上，使解随迭代渐进最优。",
+    traits: ["不需要栅格化，适合高维与复杂约束空间", "任意时间算法：随时可取当前最优解，越算越好", "解带随机性，通常需要后处理平滑"],
+    demo: "每个出生区域运行固定迭代预算的 RRT*（最优父节点 + rewire），黄线是树上取出的原始解。",
+  },
+  A05: {
+    status: "近似实现",
+    diagram: () => diagramTree("informed"),
+    principle:
+      "先按 RRT* 找到初始解；之后把采样域收缩到以起点和终点为焦点、长轴等于当前最优代价的椭球内——椭球外的任何点都不可能改进当前解，因此收敛速度大幅提升。",
+    traits: ["首解之后的收敛速度显著快于 RRT*", "椭球随解变优持续收缩，聚焦搜索", "找到首解之前与普通 RRT* 相同"],
+    demo: "找到解后切换为椭球内采样（标准的旋转 + 缩放单位球变换）。",
+  },
+  A06: {
+    status: "近似实现",
+    diagram: () => diagramTree("batches"),
+    principle:
+      "按“批”生成 informed 采样点，把这批点视作隐式图，用类 A* 的最佳优先方式按估计总代价处理边，碰撞检测按需惰性执行；每批结束用当前最优解收缩下一批采样域，兼得图搜索的有序与采样的可扩展。",
+    traits: ["边按潜在价值排序处理，无谓碰撞检测少", "任意时间且渐进最优", "完整实现（边队列 / 剪枝）较复杂"],
+    demo: "3 批 informed 采样 + 路线图上的 A*（惰性碰撞缓存），简化了逐边队列。",
+  },
+  A07: {
+    status: "近似实现",
+    diagram: () => diagramGridSearch("kino"),
+    principle:
+      "把速度纳入搜索状态，扩展时施加加速度约束——新的运动方向必须与当前速度方向足够接近，剧烈变向被禁止或付出高代价，因此搜出的轨迹动力学连续、可直接飞行。",
+    traits: ["输出动力学可行轨迹，无需事后修正", "状态维度高，搜索空间明显变大", "分辨率与实时性需要权衡"],
+    demo: "(体素 × 26 个速度方向) 的晶格搜索：方向夹角约束 + 加速度惩罚。",
+  },
+  A08: {
+    status: "近似实现",
+    diagram: () => diagramGridSearch("primitives"),
+    principle:
+      "先离线构造一小库“运动基元”——固定时长、满足动力学（如最小 jerk）的短轨迹段；在线搜索时逐段拼接基元并对每段做碰撞检测。基元库保证了任何拼接结果都可行。",
+    traits: ["轨迹质量与机动风格由基元库决定", "搜索分支小、在线速度快", "表达能力受基元库限制"],
+    demo: "两格长的弧线基元 + 段中点碰撞校验的晶格搜索。",
+  },
+  B01: {
+    status: "近似实现",
+    diagram: () => diagramTrajectory(),
+    principle:
+      "四旋翼的微分平坦性使位置轨迹的四阶导数 (snap) 直接对应控制输入。Minimum Snap（Mellinger & Kumar 2011）在航点约束下最小化 ∫‖snap‖²，解一个多项式系数的二次规划，得到控制代价最小的平滑轨迹。",
+    traits: ["四旋翼轨迹规划的经典基线", "QP / 闭式求解，效率高", "本身不处理障碍，需配合走廊或重规划"],
+    demo: "离散等价形式：对路径点最小化四阶差分平方和的梯度迭代 + ESDF 防碰推离。",
+  },
+  B02: {
+    status: "近似实现",
+    diagram: () => diagramTrajectory(),
+    principle:
+      "同一框架下把目标函数换成三阶导数 (jerk)：jerk 与机体角速度相关，最小化它得到姿态变化柔和的轨迹，求解比 minimum snap 更轻，平滑度略低。",
+    traits: ["姿态变化柔和，乘性噪声小", "阶数低于 snap，数值条件更好", "同样需要外部处理障碍"],
+    demo: "三阶差分（jerk）版本的离散梯度优化 + ESDF 推离。",
+  },
+  B03: {
+    status: "近似实现",
+    diagram: () => diagramTrajectory("corridor"),
+    principle:
+      "先沿初始路径把自由空间分解成一串互相重叠的凸多面体（安全飞行走廊 SFC），再以“轨迹各段必须留在对应凸体内”为约束做凸优化平滑。碰撞约束被凸化后，求解可靠且有全局最优保证。",
+    traits: ["把非凸避障问题变成凸问题，求解稳定", "走廊质量直接决定轨迹质量", "实机系统（如 EGO、Faster）广泛使用"],
+    demo: "管状走廊近似：平滑迭代中越出走廊半径即投影回来，走廊盒沿路径可视化。",
+  },
+  B04: {
+    status: "近似实现",
+    diagram: () => diagramTrajectory("ctrl"),
+    principle:
+      "用 B 样条控制点参数化轨迹——凸包性质使安全性可以由控制点保证；预计算 ESDF（到最近障碍的欧氏距离场），优化中用其梯度把控制点推离障碍，同时最小化控制点差分的平滑项。",
+    traits: ["距离场梯度信息丰富，优化收敛快", "适合高频在线重规划", "局部优化，可能陷入局部极小"],
+    demo: "三次均匀 B 样条控制点 + 预计算体素 ESDF 的梯度推离。",
+  },
+  B05: {
+    status: "近似实现",
+    diagram: () => diagramTrajectory("speed"),
+    principle:
+      "香港科大 Fast-Planner：动力学可行的前端搜索（kinodynamic A*）+ B 样条 ESDF 后端优化 + 时间重分配（急弯段自动降速），构成未知环境在线重规划的完整管线。",
+    traits: ["前后端解耦的经典系统架构", "毫秒级在线重规划", "需要实时维护 ESDF"],
+    demo: "B 样条 + ESDF 后端，附加曲率自适应限速档（急弯降速）。",
+  },
+  B06: {
+    status: "近似实现",
+    diagram: () => diagramTrajectory("sparse"),
+    principle:
+      "浙大 MINCO：用少量中间路标 + 每段固定为“给定边界条件下的解析最优多项式”来参数化轨迹，把时空联合优化降维到路标位置与段时长上，梯度可解析回传，效率与质量兼得。",
+    traits: ["时间与空间联合优化", "参数稀疏、收敛快，支持多种约束", "GCOPTER 等系统的核心"],
+    demo: "稀疏路标的梯度优化 + 样条重建 + 曲率限速，未做时长联合优化。",
+  },
+  C01: {
+    status: "近似实现",
+    diagram: () => diagramVelocityObstacle("orca"),
+    principle:
+      "对每个邻机在速度空间构造速度障碍并取其边界上距当前相对速度最近的点，得到一条“各自负担一半修正量”的半平面约束（ORCA 线）；所有邻机约束的交集内选最接近期望速度的速度，是一个小线性规划。",
+    traits: ["去中心化、无需通信，理论上成对无碰", "线性规划高效，支持上千智能体", "拥挤 / 死锁场景需要额外机制"],
+    demo: "速度障碍最近逼近投影 + 互惠份额 0.52，未做完整半平面线性规划。",
+  },
+  C02: {
+    status: "近似实现",
+    diagram: () => diagramVelocityObstacle("rvo"),
+    principle:
+      "速度障碍 (VO) 假设对方速度不变，双方同时按 VO 避让会来回振荡。RVO 把锥顶从对方速度 vB 移到双方均值 (vA+vB)/2——相当于假设对方也承担一半避让责任，消除了振荡。",
+    traits: ["互惠假设消除 VO 的振荡问题", "几何直观：速度选在锥外即安全", "多邻居时约束可能互相冲突"],
+    demo: "锥顶取 (vA+vB)/2 的速度障碍投影修正，完整保留互惠结构。",
+  },
+  C03: {
+    status: "近似实现",
+    diagram: () => diagramVoronoiCell(),
+    principle:
+      "每机计算自己的缓冲 Voronoi 胞：Voronoi 胞向内收缩安全半径后的区域。每步保证下一位置仍在胞内（对每个邻居即一条半平面约束）。相邻机的胞互不相交，因此位置永不重叠，安全性有简洁的几何证明。",
+    traits: ["只需邻居位置，不需要速度或意图", "无碰保证的证明非常简洁", "行为保守，拥挤时通行效率低"],
+    demo: "对每个邻居的半平面速度约束做两轮顺序投影。",
+  },
+  C04: {
+    status: "近似实现",
+    diagram: () => diagramRollout(),
+    principle:
+      "分布式模型预测控制：每机用邻机广播 / 预测的未来轨迹作约束，滚动求解自己未来 N 步的最优控制序列，只执行第一步，下一帧滑动重解。冲突在预测域内被显式提前化解。",
+    traits: ["显式处理未来冲突与动力学约束", "计算量随预测域与邻居数增长", "性能依赖邻机轨迹预测的质量"],
+    demo: "采样式 MPC：10 个候选速度 × 6 步常速 rollout，按避碰 + 跟踪 + 离障代价择优。",
+  },
+  C05: {
+    status: "近似实现",
+    diagram: () => diagramCommit(),
+    principle:
+      "MADER（MIT 2020）面向异步通信的去中心化规划：新轨迹必须与所有已收到的邻机“承诺轨迹”无碰（check）才能承诺；承诺间隙里收到别人的新承诺则复查（recheck），失败就放弃新轨迹保留旧承诺——通信延迟下依然安全。",
+    traits: ["显式处理异步与通信延迟", "承诺 / 复查机制保证一致性", "需要广播轨迹"],
+    demo: "简化的 commit / check / recheck 循环 + 近距硬分离，候选含转向、垂直与减速变体。",
+  },
+  C06: {
+    status: "近似实现",
+    diagram: () => diagramDetour(),
+    principle:
+      "EGO-Swarm（浙大 2021）：无需 ESDF 的梯度局部规划——把邻机广播轨迹当作时变障碍写进 B 样条优化的惩罚项，冲突段沿切向生成绕行梯度；整个集群只靠广播轨迹即可互避，计算极轻。",
+    traits: ["无需距离场，单机毫秒级重规划", "分布式、可扩展到大集群", "局部方法，稠密障碍下需要全局引导"],
+    demo: "对邻机常速预测轨迹做最近逼近检测，冲突时施加切向绕行 + ESDF 梯度离障。",
+  },
+  C07: {
+    status: "近似实现",
+    diagram: () => diagramStagger(),
+    principle:
+      "把冲突消解从空间维移到时间维：预测到多机将同时通过同一空间瓶颈时，按优先级或协商给部分机附加起飞 / 通过延迟，错峰通过，空间路径完全不变。",
+    traits: ["不改变空间路径，实现与验证都简单", "对瓶颈型冲突效果显著", "以总时间为代价"],
+    demo: "时空保留表检测体素-时间冲突，自动追加延迟实现错峰通过。",
+  },
+  C08: {
+    status: "近似实现",
+    diagram: () => diagramVelocityObstacle("hrvo"),
+    principle:
+      "混合 RVO：对每对相遇机，把锥顶放在 VO 与 RVO 锥顶之间的偏置位置，使“从期望侧绕行”便宜、“从错误侧绕行”昂贵，从而引导双方选择同侧绕行，解决 RVO 残留的侧向抖动与僵持。",
+    traits: ["绕行方向一致性优于 RVO", "仍然无需通信", "几何构造比 RVO 复杂"],
+    demo: "锥顶按 0.62 混合插值 + 按机号的切向偏置，未做完整 HRVO 几何求解。",
+  },
+  D01: {
+    status: "已实现",
+    diagram: () => diagramForces(false),
+    principle:
+      "人工势场（Khatib 1986）：目标产生吸引势，障碍与邻机产生随距离增强的排斥势，机体沿总势场的负梯度运动。只有局部感知与极小计算量，是最早的反应式避障方法。",
+    traits: ["实现最简单、实时性最好", "存在局部极小陷阱（凹形障碍、对称布局）", "参数敏感，斥力过强会抖动"],
+    demo: "沿全局路径的吸引 + 个体与障碍的二次衰减斥力。",
+  },
+  D02: {
+    status: "已实现",
+    diagram: () => diagramBoids(),
+    principle:
+      "Reynolds 1987 的三条局部规则：分离（远离过近的邻居）、对齐（匹配邻居平均速度）、聚合（靠近邻居质心）。每架个体只看局部邻域，群体层面的协调运动自发涌现。",
+    traits: ["涌现式集群行为的开山之作", "三个权重即可调出丰富群体形态", "无全局目标保证，需叠加导航项"],
+    demo: "独立实现的三规则（各自权重可配）+ 全局路径导航项。",
+  },
+  D03: {
+    status: "近似实现",
+    diagram: () => diagramLattice(),
+    principle:
+      "Olfati-Saber 2006 给出带收敛性证明的 flocking 控制律：用 σ-norm 平滑距离度量与 bump 函数构造邻接权重，有界作用函数 φ 产生“近推远拉”的梯度项（收敛到等间距 α-lattice），加上速度一致项与导航项。",
+    traits: ["有 Lyapunov 收敛性分析的理论方法", "参数物理含义清晰（间距 d、感知半径 r）", "力有界，稠密拥挤下不保证避碰"],
+    demo: "σ-norm 梯度项 + 速度一致项（邻居数均值归一化 + 近距硬壳增强防拥挤）。",
+  },
+  D04: {
+    status: "近似实现",
+    diagram: () => diagramBraking(),
+    principle:
+      "Vásárhelyi 2018（30 架实机户外验证）：短程线性排斥 + 基于理想制动曲线 D(r) 的速度对齐——两机距离越近，允许的速度差越小，超出即产生摩擦力把速度拉齐，显式吸收真实飞行器的惯性、延迟与噪声。",
+    traits: ["面向实机干扰设计，鲁棒性强", "制动曲线显式处理惯性约束", "参数较多（原文用进化算法整定）"],
+    demo: "线性短程排斥 + 制动曲线摩擦对齐（论文的两个核心项）。",
+  },
+  D05: {
+    status: "已实现",
+    diagram: () => diagramForces(true),
+    principle:
+      "Helbing 社会力模型移植到 3D：期望速度驱动力 (v* − v)/τ 让个体回到目标速度，个体间与障碍的指数衰减斥力 A·e^((r−d)/B) 表达“心理安全距离”，近距离陡增、远距离温和。",
+    traits: ["行人 / 群体流动建模的经典模型", "指数斥力的软硬边界特性良好", "原为二阶（力→加速度）模型"],
+    demo: "驱动力 + 个体指数斥力 + 障碍指数斥力三项完整实现（速度级积分近似）。",
+  },
+  E01: {
+    status: "近似实现",
+    diagram: () => diagramPolicy("blend"),
+    principle:
+      "GLAS（Rivière 2020）：用全局规划器批量生成示教数据，模仿学习出只依赖局部观测的分布式策略，部署时策略输出与安全备份动作按危险度 λ 混合：u = (1−λ)·u_π + λ·u_safe，兼顾全局知识与安全保证。",
+    traits: ["离线学到全局协调知识，在线只需局部观测", "安全模块提供可证明的兜底", "依赖示教数据的覆盖度"],
+    demo: "邻域加权聚合的策略结构 + 危险度 λ 安全混合（无学习权重）。",
+  },
+  E02: {
+    status: "近似实现",
+    diagram: () => diagramPolicy("discrete"),
+    principle:
+      "PRIMAL（Sartoretti 2019）：强化学习 (A3C) 与模仿学习 (ODrM*) 混合训练分布式 MAPF 策略——每机从局部视野的网格观测中选择离散移动动作，“给别人让路”等协作行为从训练中涌现。",
+    traits: ["在线推理极快，规模近似线性扩展", "离散网格动作空间", "无最优与完备性保证"],
+    demo: "27 个离散动作按（距离场进展 + 邻机预测惩罚）逐步择优的策略结构（无网络）。",
+  },
+  E03: {
+    status: "近似实现",
+    diagram: () => diagramPolicy("filter"),
+    principle:
+      "控制屏障函数 (CBF)：h(x) ≥ 0 定义安全集，只要控制满足 ḣ ≥ −αh 系统就永不出界。Neural CBF 用网络学习 h，部署时对任意上游策略解一个小 QP：在 CBF 约束下最小改动策略输出——安全滤波器。",
+    traits: ["对任意上游策略提供安全保证", "QP 逐约束可解析投影，代价小", "难点在 h 的构造 / 学习"],
+    demo: "解析 h = d² − d_s²，对邻机与障碍约束做两轮顺序投影滤波（无神经网络）。",
+  },
+  E04: {
+    status: "近似实现",
+    diagram: () => diagramPolicy("safety"),
+    principle:
+      "把安全责任从策略中剥离：RL 策略专注任务性能，输出动作先经过独立安全层——预测未来短时域内是否碰撞，若是则修正或抑制该动作再执行。训练与安全解耦，各自可独立迭代。",
+    traits: ["责任分离，训练可专注性能", "安全层可能牺牲策略最优性", "安全层本身的覆盖度是关键"],
+    demo: "前向预测碰撞检测：预测位置将碰撞或过近时放大避让并修正期望速度（启发式安全层，无 RL 策略网络）。",
+  },
+  E05: {
+    status: "近似实现",
+    diagram: () => diagramPolicy("mlp"),
+    principle:
+      "端到端集群强化学习：邻机相对状态等观测直接映射到控制输出，中间不设人工规则，协作与避碰行为完全由奖励函数塑造。集中训练、分布执行 (CTDE) 是常见范式。",
+    traits: ["表达能力最强，无手工设计偏置", "训练成本高，泛化与安全难保证", "部署常需蒸馏 / 剪裁"],
+    demo: "固定随机权重的 24-16-3 MLP 前向 + 期望速度先验混合 + 分离保护（非训练权重，仅展示推理结构）。",
+  },
+  F01: {
+    status: "近似实现",
+    diagram: () => diagramGantt(),
+    principle:
+      "多智能体路径规划 (MAPF) 的一般形式：在空间 × 时间图上为全体智能体求互不冲突（不同时占同一顶点 / 不对穿同一条边）的路径集合。经典解法族包括联合 A*、CBS、优先级规划与保留表法。",
+    traits: ["集中式全局视角，可做到最优", "联合状态空间随机数指数增长", "仓储、编队等结构化场景的标准问题"],
+    demo: "体素 × 时隙保留表：按机号依次延迟起飞直到全程无冲突。",
+  },
+  F02: {
+    status: "近似实现",
+    diagram: () => diagramGantt("conflict"),
+    principle:
+      "冲突驱动搜索 (CBS)：底层为每机独立 A*，顶层维护约束树——发现两机冲突就分支成两个子问题（各禁止一方在该时刻占该格）分别重规划，直到无冲突，可证最优。ECBS 允许有界次优以换取速度。",
+    traits: ["最优且通常远快于联合搜索", "冲突密集时约束树可能爆炸", "ECBS / 加权变体是工程主力"],
+    demo: "CBS-lite：迭代定位最早冲突、贪心延迟代价较小的一方（单分支贪心，非完整约束树）。",
+  },
+  F03: {
+    status: "近似实现",
+    diagram: () => diagramGantt("priority"),
+    principle:
+      "基于优先级的搜索 (PBS)：给智能体排优先序，低优先级把所有高优先级的轨迹当作动态障碍依次规划。PBS 在优先序导致失败时对“谁让谁”做二分分支，按需探索优先序空间。",
+    traits: ["比 CBS 快得多，适合大规模编队", "牺牲最优性", "固定优先序可能死锁，需要回溯"],
+    demo: "按路径长度降序的固定优先序 + 带缓冲时隙的顺序保留表调度。",
+  },
+  F04: {
+    status: "近似实现",
+    diagram: () => diagramJoint(),
+    principle:
+      "序列凸规划 (SCP)：机间避碰约束非凸，无法直接用凸优化；SCP 在当前解附近把它线性化（凸化），解凸 QP 更新全体轨迹，再重新线性化迭代，直至收敛。可集中生成高密度编队变换轨迹。",
+    traits: ["全体轨迹联合优化，队形变换丝滑", "集中式，规模与实时性受限", "收敛到局部最优"],
+    demo: "时间采样轨迹的迭代推挤（等价于线性化分离约束）+ 平滑 + 障碍投影。",
+  },
+  F05: {
+    status: "近似实现",
+    diagram: () => diagramAssign(),
+    principle:
+      "任务分配层：“谁去哪个目标”建模为二分图最小代价完美匹配。匈牙利算法 O(n³) 给出精确解；拍卖算法让每机对净收益最高的目标竞价、价格上涨直到无人愿意换，天然支持分布式与增量式执行。",
+    traits: ["最优分配可显著缩短总航程", "拍卖算法可分布式、可在线增量", "需与底层路径规划器配合"],
+    demo: "ε-拍卖分配 + 到指定目标的单目标 A*（超过 300 架时改用简化直线路由）。",
+  },
+};
+
+function renderAlgorithmInfo() {
+  const algorithm = getAlgorithm();
+  const details = algorithmDetails[algorithm.id];
+  const panel = document.querySelector("#infoPanel");
+  if (!details || !panel) return;
+  document.querySelector("#infoCode").textContent = algorithm.id;
+  document.querySelector("#infoName").textContent = algorithm.name;
+  document.querySelector("#infoFamily").textContent = algorithm.familyTitle;
+  const status = document.querySelector("#infoStatus");
+  status.textContent = details.status;
+  status.className = `info-status${details.status === "已实现" ? " full" : details.status === "部分实现" ? " partial" : ""}`;
+  document.querySelector("#infoDiagram").innerHTML = details.diagram();
+  document.querySelector("#infoPrinciple").textContent = details.principle;
+  document.querySelector("#infoTraits").innerHTML = details.traits.map((trait) => `<li>${trait}</li>`).join("");
+  document.querySelector("#infoDemo").textContent = details.demo;
+}
 
 const modeTint = {
   search: new THREE.Color("#2ee6d6"),
@@ -657,6 +1404,8 @@ function rebuildGrid() {
   state.grid = grid;
   state.goals = buildGoals(grid);
   state.distance = computeDistanceField(grid, state.goals);
+  goalSet = new Set(state.goals.map((goal) => goal.index));
+  computeEsdf();
   rebuildGridOverlay();
   rebuildSearchCloud();
 }
@@ -836,6 +1585,827 @@ function smoothPath(points) {
   return curve.getPoints(samples).map((point) => point.clone());
 }
 
+// ===== Per-algorithm global planners and trajectory optimizers =====
+
+let goalSet = new Set();
+let esdf = null;
+
+const offsetUnits = neighborOffsets.map((offset) =>
+  new THREE.Vector3(offset.dx, offset.dy, offset.dz).normalize(),
+);
+
+function computeEsdf() {
+  const grid = state.grid;
+  const field = new Float32Array(grid.total);
+  field.fill(Number.POSITIVE_INFINITY);
+  const heap = new MinHeap();
+  for (let i = 0; i < grid.total; i += 1) {
+    if (!grid.passable[i]) {
+      field[i] = 0;
+      heap.push(i, 0);
+    }
+  }
+  while (heap.items.length) {
+    const current = heap.pop();
+    if (!current || current.priority !== field[current.node]) continue;
+    const c = grid.unpack(current.node);
+    for (const offset of neighborOffsets) {
+      const nx = c.x + offset.dx;
+      const ny = c.y + offset.dy;
+      const nz = c.z + offset.dz;
+      if (nx < 0 || ny < 0 || nz < 0 || nx >= grid.nx || ny >= grid.ny || nz >= grid.nz) continue;
+      const next = grid.index(nx, ny, nz);
+      const stepWorld = Math.hypot(offset.dx * grid.cell, offset.dy * grid.yStep, offset.dz * grid.cell);
+      const nextDistance = current.priority + stepWorld;
+      if (nextDistance < field[next]) {
+        field[next] = nextDistance;
+        heap.push(next, nextDistance);
+      }
+    }
+  }
+  esdf = field;
+}
+
+function sampleEsdf(point) {
+  if (!esdf) return 10;
+  const grid = state.grid;
+  const cell = grid.worldToCell(point);
+  const value = esdf[grid.index(cell.x, cell.y, cell.z)];
+  return Number.isFinite(value) ? value : 10;
+}
+
+function esdfGradient(point, out) {
+  const grid = state.grid;
+  const cell = grid.worldToCell(point);
+  const at = (x, y, z) => {
+    const value = esdf[grid.index(clamp(x, 0, grid.nx - 1), clamp(y, 0, grid.ny - 1), clamp(z, 0, grid.nz - 1))];
+    return Number.isFinite(value) ? value : 10;
+  };
+  out.set(
+    at(cell.x + 1, cell.y, cell.z) - at(cell.x - 1, cell.y, cell.z),
+    at(cell.x, cell.y + 1, cell.z) - at(cell.x, cell.y - 1, cell.z),
+    at(cell.x, cell.y, cell.z + 1) - at(cell.x, cell.y, cell.z - 1),
+  );
+  if (out.lengthSq() < 0.0001) out.set(0, 1, 0);
+  return out.normalize();
+}
+
+function distanceFieldAt(point) {
+  const grid = state.grid;
+  const cell = grid.worldToCell(point);
+  const value = state.distance[grid.index(cell.x, cell.y, cell.z)];
+  return Number.isFinite(value) ? value : 500;
+}
+
+const latticeSearch = { gen: 0, stamp: null, gScore: null, parent: null, size: 0 };
+
+function ensureSearchArrays(size) {
+  if (latticeSearch.size < size) {
+    latticeSearch.stamp = new Int32Array(size);
+    latticeSearch.gScore = new Float32Array(size);
+    latticeSearch.parent = new Int32Array(size);
+    latticeSearch.size = size;
+  }
+  latticeSearch.gen += 1;
+  return latticeSearch;
+}
+
+function cellsFromStateChain(found, dims) {
+  const grid = state.grid;
+  const cells = [];
+  let walk = found;
+  let guard = 800;
+  while (walk >= 0 && guard-- > 0) {
+    const cellIndex = Math.floor(walk / dims);
+    const c = grid.unpack(cellIndex);
+    if (!cells.length || cells[cells.length - 1].index !== cellIndex) {
+      cells.push({ x: c.x, y: c.y, z: c.z, index: cellIndex });
+    }
+    walk = latticeSearch.parent[walk];
+  }
+  cells.reverse();
+  return cells;
+}
+
+function planGridAStar(start, goals = goalSet, goalCell = null) {
+  const grid = state.grid;
+  if (!goals.size) return null;
+  const goalX = grid.nx - 3;
+  const heuristic = goalCell
+    ? (x, y, z) => Math.hypot(goalCell.x - x, (goalCell.y - y) * 1.25, goalCell.z - z)
+    : (x) => Math.max(0, goalX - x);
+  const s = ensureSearchArrays(grid.total);
+  const heap = new MinHeap();
+  s.stamp[start.index] = s.gen;
+  s.gScore[start.index] = 0;
+  s.parent[start.index] = -1;
+  heap.push(start.index, heuristic(start.x, start.y, start.z));
+  let found = -1;
+  let expansions = 0;
+  while (heap.items.length) {
+    const current = heap.pop();
+    if (!current) break;
+    const index = current.node;
+    const c = grid.unpack(index);
+    const g = s.gScore[index];
+    if (current.priority > g + heuristic(c.x, c.y, c.z) + 0.001) continue;
+    if (goals.has(index)) {
+      found = index;
+      break;
+    }
+    if ((expansions += 1) > 40000) break;
+    for (const offset of neighborOffsets) {
+      const nx = c.x + offset.dx;
+      const ny = c.y + offset.dy;
+      const nz = c.z + offset.dz;
+      if (nx < 0 || ny < 0 || nz < 0 || nx >= grid.nx || ny >= grid.ny || nz >= grid.nz) continue;
+      const next = grid.index(nx, ny, nz);
+      if (!grid.passable[next]) continue;
+      const ng = g + offset.cost;
+      if (s.stamp[next] !== s.gen || ng < s.gScore[next] - 1e-6) {
+        s.stamp[next] = s.gen;
+        s.gScore[next] = ng;
+        s.parent[next] = index;
+        heap.push(next, ng + heuristic(nx, ny, nz));
+      }
+    }
+  }
+  if (found < 0) return null;
+  return cellsFromStateChain(found, 1);
+}
+
+const hybridHeadings = [
+  [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1],
+];
+const offsetHeading = neighborOffsets.map((offset) => {
+  if (offset.dx === 0 && offset.dz === 0) return -1;
+  return hybridHeadings.findIndex((h) => h[0] === offset.dx && h[1] === offset.dz);
+});
+
+function planHybridAStar(start) {
+  const grid = state.grid;
+  if (!goalSet.size) return null;
+  const H = 8;
+  const goalX = grid.nx - 3;
+  const s = ensureSearchArrays(grid.total * H);
+  const heap = new MinHeap();
+  const startState = start.index * H;
+  s.stamp[startState] = s.gen;
+  s.gScore[startState] = 0;
+  s.parent[startState] = -1;
+  heap.push(startState, Math.max(0, goalX - start.x));
+  let found = -1;
+  let expansions = 0;
+  while (heap.items.length) {
+    const current = heap.pop();
+    if (!current) break;
+    const stateIndex = current.node;
+    const cellIndex = Math.floor(stateIndex / H);
+    const heading = stateIndex % H;
+    const c = grid.unpack(cellIndex);
+    const g = s.gScore[stateIndex];
+    if (current.priority > g + Math.max(0, goalX - c.x) + 0.001) continue;
+    if (goalSet.has(cellIndex)) {
+      found = stateIndex;
+      break;
+    }
+    if ((expansions += 1) > 70000) break;
+    for (let oi = 0; oi < neighborOffsets.length; oi += 1) {
+      const offset = neighborOffsets[oi];
+      const hIdx = offsetHeading[oi];
+      let turn = 0;
+      let nextHeading = heading;
+      if (hIdx >= 0) {
+        turn = Math.min(Math.abs(hIdx - heading), H - Math.abs(hIdx - heading));
+        if (turn > 1) continue;
+        nextHeading = hIdx;
+      }
+      const nx = c.x + offset.dx;
+      const ny = c.y + offset.dy;
+      const nz = c.z + offset.dz;
+      if (nx < 0 || ny < 0 || nz < 0 || nx >= grid.nx || ny >= grid.ny || nz >= grid.nz) continue;
+      const nextCell = grid.index(nx, ny, nz);
+      if (!grid.passable[nextCell]) continue;
+      const cost = offset.cost + turn * 0.55 + (hIdx < 0 ? 0.22 : 0);
+      const nextState = nextCell * H + nextHeading;
+      const ng = g + cost;
+      if (s.stamp[nextState] !== s.gen || ng < s.gScore[nextState] - 1e-6) {
+        s.stamp[nextState] = s.gen;
+        s.gScore[nextState] = ng;
+        s.parent[nextState] = stateIndex;
+        heap.push(nextState, ng + Math.max(0, goalX - nx));
+      }
+    }
+  }
+  if (found < 0) return null;
+  return cellsFromStateChain(found, H);
+}
+
+function jpsForced(x, y, z, dx, dy, dz, grid) {
+  for (let axis = 0; axis < 3; axis += 1) {
+    const move = axis === 0 ? dx : axis === 1 ? dy : dz;
+    if (move !== 0) continue;
+    for (const sign of [1, -1]) {
+      const ux = axis === 0 ? sign : 0;
+      const uy = axis === 1 ? sign : 0;
+      const uz = axis === 2 ? sign : 0;
+      const bx = x + ux;
+      const by = y + uy;
+      const bz = z + uz;
+      if (bx < 0 || by < 0 || bz < 0 || bx >= grid.nx || by >= grid.ny || bz >= grid.nz) continue;
+      if (grid.passable[grid.index(bx, by, bz)]) continue;
+      const fx = bx + dx;
+      const fy = by + dy;
+      const fz = bz + dz;
+      if (fx < 0 || fy < 0 || fz < 0 || fx >= grid.nx || fy >= grid.ny || fz >= grid.nz) continue;
+      if (grid.passable[grid.index(fx, fy, fz)]) return true;
+    }
+  }
+  return false;
+}
+
+function jpsJump(x, y, z, dx, dy, dz, grid, depth = 0) {
+  if (depth > 3) return -1;
+  let cx = x;
+  let cy = y;
+  let cz = z;
+  const order = Math.abs(dx) + Math.abs(dy) + Math.abs(dz);
+  for (let step = 0; step < 40; step += 1) {
+    cx += dx;
+    cy += dy;
+    cz += dz;
+    if (cx < 0 || cy < 0 || cz < 0 || cx >= grid.nx || cy >= grid.ny || cz >= grid.nz) return -1;
+    const index = grid.index(cx, cy, cz);
+    if (!grid.passable[index]) return -1;
+    if (goalSet.has(index)) return index;
+    if (jpsForced(cx, cy, cz, dx, dy, dz, grid)) return index;
+    if (order >= 2) {
+      if (dx !== 0 && jpsJump(cx, cy, cz, dx, 0, 0, grid, depth + 1) >= 0) return index;
+      if (dy !== 0 && jpsJump(cx, cy, cz, 0, dy, 0, grid, depth + 1) >= 0) return index;
+      if (dz !== 0 && jpsJump(cx, cy, cz, 0, 0, dz, grid, depth + 1) >= 0) return index;
+      if (order === 3) {
+        if (jpsJump(cx, cy, cz, dx, dy, 0, grid, depth + 1) >= 0) return index;
+        if (jpsJump(cx, cy, cz, dx, 0, dz, grid, depth + 1) >= 0) return index;
+        if (jpsJump(cx, cy, cz, 0, dy, dz, grid, depth + 1) >= 0) return index;
+      }
+    }
+  }
+  return -1;
+}
+
+function planJumpPointSearch(start) {
+  const grid = state.grid;
+  if (!goalSet.size) return null;
+  const goalX = grid.nx - 3;
+  const gScores = new Map([[start.index, 0]]);
+  const parents = new Map([[start.index, -1]]);
+  const closed = new Set();
+  const heap = new MinHeap();
+  heap.push(start.index, Math.max(0, goalX - start.x));
+  let found = -1;
+  let expansions = 0;
+  while (heap.items.length) {
+    const current = heap.pop();
+    if (!current) break;
+    const index = current.node;
+    if (closed.has(index)) continue;
+    closed.add(index);
+    const c = grid.unpack(index);
+    if (goalSet.has(index)) {
+      found = index;
+      break;
+    }
+    if ((expansions += 1) > 2200) break;
+    for (const offset of neighborOffsets) {
+      const jump = jpsJump(c.x, c.y, c.z, offset.dx, offset.dy, offset.dz, grid);
+      if (jump < 0 || closed.has(jump)) continue;
+      const j = grid.unpack(jump);
+      const cost = Math.hypot(j.x - c.x, (j.y - c.y) * 1.25, j.z - c.z);
+      const ng = gScores.get(index) + cost;
+      if (!gScores.has(jump) || ng < gScores.get(jump) - 1e-6) {
+        gScores.set(jump, ng);
+        parents.set(jump, index);
+        heap.push(jump, ng + Math.max(0, goalX - j.x));
+      }
+    }
+  }
+  if (found < 0) return null;
+  const cells = [];
+  let walk = found;
+  while (walk >= 0) {
+    const c = grid.unpack(walk);
+    cells.push({ x: c.x, y: c.y, z: c.z, index: walk });
+    walk = parents.get(walk) ?? -1;
+  }
+  cells.reverse();
+  return cells;
+}
+
+function planKinodynamicAStar(start, primitives = false) {
+  const grid = state.grid;
+  if (!goalSet.size) return null;
+  const D = 27;
+  const goalX = grid.nx - 3;
+  const s = ensureSearchArrays(grid.total * D);
+  const heap = new MinHeap();
+  const startState = start.index * D + 26;
+  s.stamp[startState] = s.gen;
+  s.gScore[startState] = 0;
+  s.parent[startState] = -1;
+  heap.push(startState, Math.max(0, goalX - start.x));
+  let found = -1;
+  let expansions = 0;
+  const reach = primitives ? 2 : 1;
+  const midPoint = new THREE.Vector3();
+  while (heap.items.length) {
+    const current = heap.pop();
+    if (!current) break;
+    const stateIndex = current.node;
+    const cellIndex = Math.floor(stateIndex / D);
+    const dir = stateIndex % D;
+    const c = grid.unpack(cellIndex);
+    const g = s.gScore[stateIndex];
+    if (current.priority > g + Math.max(0, goalX - c.x) + 0.001) continue;
+    if (goalSet.has(cellIndex)) {
+      found = stateIndex;
+      break;
+    }
+    if ((expansions += 1) > 90000) break;
+    for (let oi = 0; oi < neighborOffsets.length; oi += 1) {
+      const offset = neighborOffsets[oi];
+      let accelPenalty = 0.35;
+      if (dir !== 26) {
+        const dot = offsetUnits[dir].dot(offsetUnits[oi]);
+        if (dot < (primitives ? 0.3 : 0.35)) continue;
+        accelPenalty = (1 - dot) * (primitives ? 1.8 : 1.3);
+      }
+      const nx = c.x + offset.dx * reach;
+      const ny = c.y + offset.dy * reach;
+      const nz = c.z + offset.dz * reach;
+      if (nx < 0 || ny < 0 || nz < 0 || nx >= grid.nx || ny >= grid.ny || nz >= grid.nz) continue;
+      const nextCell = grid.index(nx, ny, nz);
+      if (!grid.passable[nextCell]) continue;
+      if (primitives) {
+        const mx = c.x + offset.dx;
+        const my = c.y + offset.dy;
+        const mz = c.z + offset.dz;
+        if (!grid.passable[grid.index(mx, my, mz)]) continue;
+        midPoint.copy(grid.cellToWorld(mx, my, mz));
+        if (dir !== 26) midPoint.addScaledVector(offsetUnits[dir], 0.8);
+        if (isWorldBlocked(midPoint, 0.6)) continue;
+      }
+      const cost = offset.cost * reach * (primitives ? 0.95 : 1) + accelPenalty;
+      const nextState = nextCell * D + oi;
+      const ng = g + cost;
+      if (s.stamp[nextState] !== s.gen || ng < s.gScore[nextState] - 1e-6) {
+        s.stamp[nextState] = s.gen;
+        s.gScore[nextState] = ng;
+        s.parent[nextState] = stateIndex;
+        heap.push(nextState, ng + Math.max(0, goalX - nx));
+      }
+    }
+  }
+  if (found < 0) return null;
+  return cellsFromStateChain(found, D);
+}
+
+function segmentBlocked(a, b, margin = 0.5) {
+  const length = a.distanceTo(b);
+  const steps = Math.max(1, Math.ceil(length / 0.7));
+  const point = new THREE.Vector3();
+  for (let i = 0; i <= steps; i += 1) {
+    point.lerpVectors(a, b, i / steps);
+    if (isWorldBlocked(point, margin)) return true;
+  }
+  return false;
+}
+
+function goalPointFor(start) {
+  const grid = state.grid;
+  let best = null;
+  let bestScore = Number.POSITIVE_INFINITY;
+  for (const goal of state.goals) {
+    const score = Math.abs(goal.z - start.z) + Math.abs(goal.y - start.y) * 1.6;
+    if (score < bestScore) {
+      bestScore = score;
+      best = goal;
+    }
+  }
+  return best ? grid.cellToWorld(best.x, best.y, best.z) : null;
+}
+
+function makeInformedSampler(startPoint, goalPoint, rng) {
+  const cmin = startPoint.distanceTo(goalPoint);
+  const mid = startPoint.clone().add(goalPoint).multiplyScalar(0.5);
+  const axis = goalPoint.clone().sub(startPoint).normalize();
+  const seedU = Math.abs(axis.y) < 0.9 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0);
+  const basisU = seedU.cross(axis).normalize();
+  const basisV = axis.clone().cross(basisU).normalize();
+  return (bestCost, out) => {
+    if (!Number.isFinite(bestCost)) {
+      out.set(rng() * 66 - 33, 1.3 + rng() * 13.2, rng() * 66 - 33);
+    } else {
+      let x;
+      let y;
+      let z;
+      let lenSq;
+      do {
+        x = rng() * 2 - 1;
+        y = rng() * 2 - 1;
+        z = rng() * 2 - 1;
+        lenSq = x * x + y * y + z * z;
+      } while (lenSq > 1);
+      const r1 = bestCost / 2;
+      const r2 = Math.sqrt(Math.max(0.04, bestCost * bestCost - cmin * cmin)) / 2;
+      out.copy(mid).addScaledVector(axis, x * r1).addScaledVector(basisU, y * r2).addScaledVector(basisV, z * r2);
+    }
+    out.y = clamp(out.y, 1.3, 14.6);
+    out.x = clamp(out.x, -34, 34);
+    out.z = clamp(out.z, -34, 34);
+    return out;
+  };
+}
+
+function planRrtStar(start, informed) {
+  const grid = state.grid;
+  const startPoint = grid.cellToWorld(start.x, start.y, start.z);
+  const goalPoint = goalPointFor(start);
+  if (!goalPoint) return null;
+  const rng = createRng((scenarioSeed(state.scenario) ^ Math.imul(start.index, 2654435761)) + (informed ? 977 : 331));
+  const sampler = makeInformedSampler(startPoint, goalPoint, rng);
+  const nodes = [{ point: startPoint.clone(), parent: -1, cost: 0 }];
+  const sample = new THREE.Vector3();
+  const step = 3.1;
+  let bestGoal = -1;
+  let bestCost = Number.POSITIVE_INFINITY;
+  const iterations = informed ? 540 : 440;
+  for (let it = 0; it < iterations; it += 1) {
+    if (rng() < 0.08) sample.copy(goalPoint);
+    else sampler(informed ? bestCost : Number.POSITIVE_INFINITY, sample);
+    let nearestIndex = 0;
+    let nearestSq = Number.POSITIVE_INFINITY;
+    for (let i = 0; i < nodes.length; i += 1) {
+      const d = nodes[i].point.distanceToSquared(sample);
+      if (d < nearestSq) {
+        nearestSq = d;
+        nearestIndex = i;
+      }
+    }
+    const nearNode = nodes[nearestIndex];
+    const toward = sample.clone().sub(nearNode.point);
+    const dist = toward.length();
+    if (dist < 0.05) continue;
+    if (dist > step) toward.multiplyScalar(step / dist);
+    const newPoint = nearNode.point.clone().add(toward);
+    if (isWorldBlocked(newPoint, 0.55) || segmentBlocked(nearNode.point, newPoint)) continue;
+    const radius = 4.4;
+    let parent = nearestIndex;
+    let cost = nearNode.cost + nearNode.point.distanceTo(newPoint);
+    const nearIndexes = [];
+    for (let i = 0; i < nodes.length; i += 1) {
+      if (nodes[i].point.distanceToSquared(newPoint) < radius * radius) nearIndexes.push(i);
+    }
+    for (const i of nearIndexes) {
+      const c = nodes[i].cost + nodes[i].point.distanceTo(newPoint);
+      if (c < cost - 0.01 && !segmentBlocked(nodes[i].point, newPoint)) {
+        cost = c;
+        parent = i;
+      }
+    }
+    const nodeIndex = nodes.length;
+    nodes.push({ point: newPoint, parent, cost });
+    for (const i of nearIndexes) {
+      const through = cost + newPoint.distanceTo(nodes[i].point);
+      if (through + 0.01 < nodes[i].cost && !segmentBlocked(newPoint, nodes[i].point)) {
+        nodes[i].parent = nodeIndex;
+        nodes[i].cost = through;
+      }
+    }
+    const goalDistance = newPoint.distanceTo(goalPoint);
+    if (goalDistance < 2.6 && !segmentBlocked(newPoint, goalPoint)) {
+      const total = cost + goalDistance;
+      if (total < bestCost) {
+        bestCost = total;
+        bestGoal = nodeIndex;
+      }
+    }
+    if (!informed && bestGoal >= 0 && it > 320) break;
+  }
+  if (bestGoal < 0) return null;
+  const points = [goalPoint.clone()];
+  let walk = bestGoal;
+  let guard = 600;
+  while (walk >= 0 && guard-- > 0) {
+    points.push(nodes[walk].point.clone());
+    walk = nodes[walk].parent;
+  }
+  points.reverse();
+  return points;
+}
+
+function planBitStar(start) {
+  const grid = state.grid;
+  const startPoint = grid.cellToWorld(start.x, start.y, start.z);
+  const goalPoint = goalPointFor(start);
+  if (!goalPoint) return null;
+  const rng = createRng((scenarioSeed(state.scenario) ^ Math.imul(start.index, 40503)) + 613);
+  const sampler = makeInformedSampler(startPoint, goalPoint, rng);
+  const samples = [startPoint.clone(), goalPoint.clone()];
+  const radius = 5.4;
+  const radiusSq = radius * radius;
+  const edgeCache = new Map();
+  const edgeFree = (i, j) => {
+    const key = i < j ? i * 100000 + j : j * 100000 + i;
+    let free = edgeCache.get(key);
+    if (free === undefined) {
+      free = !segmentBlocked(samples[i], samples[j], 0.55);
+      edgeCache.set(key, free);
+    }
+    return free;
+  };
+  let bestPath = null;
+  let bestCost = Number.POSITIVE_INFINITY;
+  const sample = new THREE.Vector3();
+  for (let batch = 0; batch < 3; batch += 1) {
+    for (let sIdx = 0; sIdx < 120; sIdx += 1) {
+      if (!Number.isFinite(bestCost) && rng() < 0.35) {
+        sample.copy(startPoint).lerp(goalPoint, rng());
+        sample.x += (rng() - 0.5) * 8;
+        sample.y = clamp(sample.y + (rng() - 0.5) * 6, 1.3, 14.6);
+        sample.z += (rng() - 0.5) * 8;
+      } else {
+        sampler(bestCost, sample);
+      }
+      if (!isWorldBlocked(sample, 0.55)) samples.push(sample.clone());
+    }
+    const n = samples.length;
+    const g = new Float64Array(n).fill(Number.POSITIVE_INFINITY);
+    const parent = new Int32Array(n).fill(-1);
+    const closed = new Uint8Array(n);
+    const heap = new MinHeap();
+    g[0] = 0;
+    heap.push(0, startPoint.distanceTo(goalPoint));
+    while (heap.items.length) {
+      const current = heap.pop();
+      if (!current) break;
+      const i = current.node;
+      if (closed[i]) continue;
+      closed[i] = 1;
+      if (i === 1) break;
+      for (let j = 0; j < n; j += 1) {
+        if (j === i || closed[j]) continue;
+        const dSq = samples[i].distanceToSquared(samples[j]);
+        if (dSq > radiusSq) continue;
+        const ng = g[i] + Math.sqrt(dSq);
+        if (ng >= g[j] - 0.01 || ng >= bestCost) continue;
+        if (!edgeFree(i, j)) continue;
+        g[j] = ng;
+        parent[j] = i;
+        heap.push(j, ng + samples[j].distanceTo(goalPoint));
+      }
+    }
+    if (g[1] < bestCost) {
+      bestCost = g[1];
+      const points = [];
+      let walk = 1;
+      let guard = 500;
+      while (walk >= 0 && guard-- > 0) {
+        points.push(samples[walk].clone());
+        walk = parent[walk];
+      }
+      points.reverse();
+      bestPath = points;
+    }
+  }
+  return bestPath;
+}
+
+function shortcutPoints(points, margin = 0.5) {
+  if (points.length <= 2) return points;
+  const out = [points[0]];
+  let i = 0;
+  while (i < points.length - 1) {
+    let j = points.length - 1;
+    for (; j > i + 1; j -= 1) {
+      if (!segmentBlocked(points[i], points[j], margin)) break;
+    }
+    out.push(points[j]);
+    i = j;
+  }
+  return out;
+}
+
+function routeFromCells(cells) {
+  const grid = state.grid;
+  const raw = cells.map((cell) => grid.cellToWorld(cell.x, cell.y, cell.z));
+  const simplified = simplifyCells(cells).map((cell) => grid.cellToWorld(cell.x, cell.y, cell.z));
+  const smooth = smoothPath(simplified);
+  return { cells, raw, smooth: smooth.length > 1 ? smooth : raw };
+}
+
+function densifyPolyline(points, spacing = 1.2) {
+  const out = [points[0].clone()];
+  for (let i = 1; i < points.length; i += 1) {
+    const a = points[i - 1];
+    const b = points[i];
+    const steps = Math.max(1, Math.ceil(a.distanceTo(b) / spacing));
+    for (let s = 1; s <= steps; s += 1) out.push(a.clone().lerp(b, s / steps));
+  }
+  return out;
+}
+
+function routeFromPoints(points) {
+  const raw = points.map((point) => point.clone());
+  const sparse = shortcutPoints(points);
+  const smooth = smoothPath(densifyPolyline(sparse));
+  return { cells: null, raw, smooth: smooth.length > 1 ? smooth : raw };
+}
+
+// --- B-family trajectory optimizers ---
+
+const STENCIL_ACCEL = [1, -2, 1];
+const STENCIL_JERK = [-1, 3, -3, 1];
+const STENCIL_SNAP = [1, -4, 6, -4, 1];
+
+function refinePath(points, opts) {
+  const pts = points.map((point) => point.clone());
+  const n = pts.length;
+  if (n < 6) return pts;
+  const stencil = opts.stencil;
+  const step = opts.step ?? 0.02;
+  const orig = opts.tube ? points.map((point) => point.clone()) : null;
+  const grad = pts.map(() => new THREE.Vector3());
+  const tmp = new THREE.Vector3();
+  for (let iter = 0; iter < (opts.iterations ?? 24); iter += 1) {
+    for (const g of grad) g.set(0, 0, 0);
+    for (let j = 0; j + stencil.length <= n; j += 1) {
+      tmp.set(0, 0, 0);
+      for (let m = 0; m < stencil.length; m += 1) tmp.addScaledVector(pts[j + m], stencil[m]);
+      for (let m = 0; m < stencil.length; m += 1) grad[j + m].addScaledVector(tmp, stencil[m]);
+    }
+    for (let i = 2; i < n - 2; i += 1) {
+      const move = grad[i].multiplyScalar(-step);
+      const len = move.length();
+      if (len > 0.25) move.multiplyScalar(0.25 / len);
+      pts[i].add(move);
+      if (opts.esdfMargin) {
+        const d = sampleEsdf(pts[i]);
+        if (d < opts.esdfMargin) {
+          esdfGradient(pts[i], tmp);
+          pts[i].addScaledVector(tmp, (opts.esdfMargin - d) * (opts.esdfWeight ?? 0.3));
+        }
+      }
+      if (orig) {
+        tmp.copy(pts[i]).sub(orig[i]);
+        const dist = tmp.length();
+        if (dist > opts.tube) pts[i].addScaledVector(tmp.normalize(), -(dist - opts.tube));
+      }
+      pts[i].y = clamp(pts[i].y, 1.2, 15);
+    }
+  }
+  return pts;
+}
+
+function bsplinePoint(a, b, c, d, t) {
+  const t2 = t * t;
+  const t3 = t2 * t;
+  const w0 = (1 - 3 * t + 3 * t2 - t3) / 6;
+  const w1 = (4 - 6 * t2 + 3 * t3) / 6;
+  const w2 = (1 + 3 * t + 3 * t2 - 3 * t3) / 6;
+  const w3 = t3 / 6;
+  return new THREE.Vector3(
+    a.x * w0 + b.x * w1 + c.x * w2 + d.x * w3,
+    a.y * w0 + b.y * w1 + c.y * w2 + d.y * w3,
+    a.z * w0 + b.z * w1 + c.z * w2 + d.z * w3,
+  );
+}
+
+function optimizeBspline(points) {
+  const src = points;
+  if (src.length < 8) return src.map((point) => point.clone());
+  const ctrl = [];
+  for (let i = 0; i < src.length; i += 3) ctrl.push(src[i].clone());
+  if (!ctrl[ctrl.length - 1].equals(src[src.length - 1])) ctrl.push(src[src.length - 1].clone());
+  const q = [ctrl[0].clone(), ctrl[0].clone(), ...ctrl, ctrl[ctrl.length - 1].clone(), ctrl[ctrl.length - 1].clone()];
+  const refined = refinePath(q, { stencil: STENCIL_ACCEL, iterations: 22, step: 0.06, esdfMargin: 1.6, esdfWeight: 0.45 });
+  const out = [];
+  for (let j = 0; j + 3 < refined.length; j += 1) {
+    for (let s = 0; s < 5; s += 1) {
+      out.push(bsplinePoint(refined[j], refined[j + 1], refined[j + 2], refined[j + 3], s / 5));
+    }
+  }
+  out.push(refined[refined.length - 2].clone());
+  return out;
+}
+
+function optimizeSparseWaypoints(points) {
+  if (points.length < 8) return points.map((point) => point.clone());
+  const sparse = [];
+  for (let i = 0; i < points.length; i += 6) sparse.push(points[i].clone());
+  if (!sparse[sparse.length - 1].equals(points[points.length - 1])) sparse.push(points[points.length - 1].clone());
+  const refined = sparse.length >= 6
+    ? refinePath(sparse, { stencil: STENCIL_ACCEL, iterations: 30, step: 0.08, esdfMargin: 1.5, esdfWeight: 0.5 })
+    : sparse;
+  return smoothPath(refined);
+}
+
+function curvatureSpeedProfile(points) {
+  const n = points.length;
+  const profile = new Array(n).fill(1);
+  for (let i = 1; i < n - 1; i += 1) {
+    const a = points[i].clone().sub(points[i - 1]);
+    const b = points[i + 1].clone().sub(points[i]);
+    const la = a.length();
+    const lb = b.length();
+    if (la < 0.001 || lb < 0.001) continue;
+    const angle = Math.acos(clamp(a.dot(b) / (la * lb), -1, 1));
+    profile[i] = clamp(1.18 - angle * 2.1, 0.55, 1.18);
+  }
+  for (let pass = 0; pass < 2; pass += 1) {
+    for (let i = 1; i < n - 1; i += 1) {
+      profile[i] = Math.min(profile[i], profile[i - 1] + 0.09, profile[i + 1] + 0.09);
+    }
+  }
+  return profile;
+}
+
+// --- route dispatch and cache ---
+
+const routeCache = new Map();
+let planStartTime = 0;
+let planBudgetExceeded = false;
+
+function planRouteForAlgorithm(id, start) {
+  if (id === "A01") {
+    const cells = planGridAStar(start);
+    return cells && routeFromCells(cells);
+  }
+  if (id === "A02") {
+    const cells = planHybridAStar(start);
+    return cells && routeFromCells(cells);
+  }
+  if (id === "A03") {
+    const cells = planJumpPointSearch(start);
+    return cells && routeFromCells(cells);
+  }
+  if (id === "A04" || id === "A05") {
+    const points = planRrtStar(start, id === "A05");
+    return points && routeFromPoints(points);
+  }
+  if (id === "A06") {
+    const points = planBitStar(start);
+    return points && routeFromPoints(points);
+  }
+  if (id === "A07") {
+    const cells = planKinodynamicAStar(start, false);
+    return cells && routeFromCells(cells);
+  }
+  if (id === "A08") {
+    const cells = planKinodynamicAStar(start, true);
+    return cells && routeFromCells(cells);
+  }
+  return null;
+}
+
+function postProcessRoute(id, route) {
+  if (id === "B01") {
+    route.smooth = refinePath(route.smooth, { stencil: STENCIL_SNAP, iterations: 40, step: 0.005, esdfMargin: 1.3, esdfWeight: 0.35 });
+  } else if (id === "B02") {
+    route.smooth = refinePath(route.smooth, { stencil: STENCIL_JERK, iterations: 30, step: 0.02, esdfMargin: 1.3, esdfWeight: 0.35 });
+  } else if (id === "B03") {
+    route.smooth = refinePath(route.smooth, { stencil: STENCIL_ACCEL, iterations: 26, step: 0.05, tube: 1.45, esdfMargin: 1.1, esdfWeight: 0.4 });
+  } else if (id === "B04" || id === "B05") {
+    route.smooth = optimizeBspline(route.smooth);
+  } else if (id === "B06") {
+    route.smooth = optimizeSparseWaypoints(route.smooth);
+  }
+  if (id === "B05" || id === "B06") {
+    route.speedScale = curvatureSpeedProfile(route.smooth);
+  }
+  return route;
+}
+
+function computeRoute(start) {
+  const id = state.algorithmId;
+  const sampling = id === "A04" || id === "A05" || id === "A06";
+  const key = sampling ? `${id}:${start.x},${start.y},${start.z & ~1}` : `${id}:${start.index}`;
+  const cached = routeCache.get(key);
+  if (cached) return cached;
+  if (!planBudgetExceeded && performance.now() - planStartTime > 1600) planBudgetExceeded = true;
+  let route = null;
+  if (!planBudgetExceeded) {
+    try {
+      route = planRouteForAlgorithm(id, start);
+    } catch (error) {
+      route = null;
+    }
+  }
+  if (!route) route = tracePathFromCell(start);
+  route = postProcessRoute(id, route);
+  routeCache.set(key, route);
+  return route;
+}
+
 function startCellForDrone(index, rng) {
   const grid = state.grid;
   const profile = getProfile();
@@ -855,10 +2425,13 @@ function spawnDrones() {
   const rng = createRng(scenarioSeed(state.scenario) + scenarioSeed(algorithm.id) + state.count * 31 + 1009);
   state.elapsed = 0;
   state.drones = [];
+  routeCache.clear();
+  planStartTime = performance.now();
+  planBudgetExceeded = false;
 
   for (let i = 0; i < state.count; i += 1) {
     const start = startCellForDrone(i, rng);
-    const route = tracePathFromCell(start);
+    const route = computeRoute(start);
     const laneCount = profile.laneCount ?? 5;
     const laneLift = state.mode === "central" ? ((i % laneCount) - (laneCount - 1) / 2) * 0.22 : 0;
     const points = route.smooth.map((point) => point.clone().add(new THREE.Vector3(0, laneLift, 0)));
@@ -876,7 +2449,9 @@ function spawnDrones() {
       avoidance: new THREE.Vector3(),
       policy: new THREE.Vector3(),
       path: points,
-      rawPath: route.raw,
+      rawPath: route.raw.map((point) => point.clone()),
+      cells: route.cells ?? null,
+      speedScale: route.speedScale ? route.speedScale.slice() : null,
       waypoint: 1,
       speed: (2.2 + rng() * 1.1) * (profile.speed ?? 1),
       radius: 0.36,
@@ -893,6 +2468,7 @@ function spawnDrones() {
   }
 
   state.selected = Math.min(state.selected, state.count - 1);
+  coordinateCentral();
   rebuildInstanceMeshes();
   rebuildPathLines();
   rebuildSelectedVisuals();
@@ -1183,7 +2759,8 @@ function updateSimulation(dt) {
   if (!state.running) return;
   state.elapsed += dt;
   const profile = getProfile();
-  const hashCell = profile.avoidRange ? profile.avoidRange * 1.65 : state.mode === "field" ? 4.8 : 3.4;
+  const baseCell = profile.avoidRange ? profile.avoidRange * 1.65 : state.mode === "field" ? 4.8 : 3.4;
+  const hashCell = Math.max(baseCell, profile.perceptionRadius ?? 0);
   const buckets = buildSpatialHash(hashCell);
   let conflicts = 0;
   let spacingSum = 0;
@@ -1233,6 +2810,7 @@ function advanceWaypoint(drone) {
     if (drone.waypoint >= drone.path.length) {
       drone.path.reverse();
       drone.rawPath.reverse();
+      if (drone.speedScale) drone.speedScale.reverse();
       drone.waypoint = 1;
       drone.startDelay = state.elapsed + 0.15 + (drone.id % 17) * 0.025;
     }
@@ -1251,6 +2829,7 @@ function computeDesiredVelocity(drone) {
   }
   desired.normalize();
   let speed = drone.speed;
+  if (drone.speedScale) speed *= drone.speedScale[Math.min(drone.waypoint, drone.speedScale.length - 1)];
   if (state.mode === "central") {
     const phase = (drone.id % 9) / 9;
     speed *= 0.86 + phase * 0.22;
@@ -1323,6 +2902,24 @@ function computeBoidsForces(drone, neighbors) {
   return nearest;
 }
 
+function computeApfForces(drone, neighbors) {
+  const profile = getProfile();
+  const range = profile.avoidRange ?? 3.2;
+  const gain = profile.avoidWeight ?? 3.1;
+  let nearest = Number.POSITIVE_INFINITY;
+  for (const other of neighbors) {
+    if (other === drone) continue;
+    const offset = drone.position.clone().sub(other.position);
+    const distance = offset.length();
+    if (distance < 0.001) continue;
+    nearest = Math.min(nearest, distance);
+    if (distance > range) continue;
+    const strength = (range - distance) / range;
+    drone.avoidance.add(offset.normalize().multiplyScalar(strength * strength * gain));
+    drone.neighborCount += 1;
+  }
+  return nearest;
+}
 function computeSocialForceInteractions(drone, neighbors) {
   const profile = getProfile();
   const range = profile.avoidRange ?? 4.5;
@@ -1369,7 +2966,9 @@ function computeVelocityObstacleAvoidance(drone, neighbors, variant) {
     const apex =
       variant === "hrvo"
         ? other.velocity.clone().lerp(drone.velocity.clone().add(other.velocity).multiplyScalar(0.5), 0.62)
-        : other.velocity;
+        : variant === "rvo"
+          ? drone.velocity.clone().add(other.velocity).multiplyScalar(0.5)
+          : other.velocity;
     const relVelocity = candidate.clone().sub(apex);
     const relSpeedSq = Math.max(relVelocity.lengthSq(), 0.0001);
     const closestTime = clamp(relPos.dot(relVelocity) / relSpeedSq, 0, timeHorizon);
@@ -1405,11 +3004,575 @@ function computeVelocityObstacleAvoidance(drone, neighbors, variant) {
   return nearest;
 }
 
+function rotatedAroundY(vector, angle) {
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  return new THREE.Vector3(vector.x * cos + vector.z * sin, vector.y, -vector.x * sin + vector.z * cos);
+}
+
+function computeBvcAvoidance(drone, neighbors) {
+  const profile = getProfile();
+  const range = profile.avoidRange ?? 2.85;
+  const tau = 0.42;
+  const candidate = drone.desired.clone();
+  const normal = new THREE.Vector3();
+  let nearest = Number.POSITIVE_INFINITY;
+  for (let pass = 0; pass < 2; pass += 1) {
+    for (const other of neighbors) {
+      if (other === drone) continue;
+      normal.copy(other.position).sub(drone.position);
+      const distance = normal.length();
+      if (distance < 0.001) continue;
+      if (pass === 0) {
+        nearest = Math.min(nearest, distance);
+        if (distance < range) drone.neighborCount += 1;
+      }
+      if (distance > range * 2.4) continue;
+      normal.multiplyScalar(1 / distance);
+      const buffer = (drone.safety + other.safety) * 0.31;
+      const limit = Math.max(0, distance / 2 - buffer) / tau;
+      const vn = candidate.dot(normal);
+      if (vn > limit) candidate.addScaledVector(normal, limit - vn);
+    }
+  }
+  drone.avoidance.add(candidate.sub(drone.desired));
+  return nearest;
+}
+
+function computeDmpcAvoidance(drone, neighbors) {
+  const profile = getProfile();
+  const horizon = 6;
+  const dt = 0.3;
+  const dsafe = drone.safety * 1.35;
+  const range = profile.avoidRange ?? 2.7;
+  let nearest = Number.POSITIVE_INFINITY;
+  const others = [];
+  for (const other of neighbors) {
+    if (other === drone) continue;
+    const distance = drone.position.distanceTo(other.position);
+    if (distance < 0.001) continue;
+    nearest = Math.min(nearest, distance);
+    if (distance < range) drone.neighborCount += 1;
+    if (distance < 9) others.push(other);
+  }
+  const desired = drone.desired;
+  const candidates = [
+    desired.clone(),
+    desired.clone().multiplyScalar(0.65),
+    desired.clone().multiplyScalar(0.35),
+    rotatedAroundY(desired, 0.38),
+    rotatedAroundY(desired, -0.38),
+    rotatedAroundY(desired, 0.8),
+    rotatedAroundY(desired, -0.8),
+    desired.clone().add(new THREE.Vector3(0, drone.speed * 0.35, 0)),
+    desired.clone().add(new THREE.Vector3(0, -drone.speed * 0.35, 0)),
+    new THREE.Vector3(0, 0, 0),
+  ];
+  let best = candidates[0];
+  let bestCost = Number.POSITIVE_INFINITY;
+  const pt = new THREE.Vector3();
+  const nq = new THREE.Vector3();
+  for (const candidate of candidates) {
+    let cost = candidate.distanceTo(desired) * 1.15;
+    for (let t = 1; t <= horizon; t += 1) {
+      pt.copy(drone.position).addScaledVector(candidate, t * dt);
+      for (const other of others) {
+        nq.copy(other.position).addScaledVector(other.velocity, t * dt);
+        const d = pt.distanceTo(nq);
+        if (d < dsafe) cost += (dsafe - d) * (dsafe - d) * 26 * (1 - t / (horizon + 2));
+      }
+      const clearance = sampleEsdf(pt);
+      if (clearance < 1.0) cost += (1.0 - clearance) * 12;
+    }
+    if (cost < bestCost) {
+      bestCost = cost;
+      best = candidate;
+    }
+  }
+  drone.avoidance.add(best.clone().sub(desired));
+  return nearest;
+}
+
+function trajectoryConflict(drone, velocity, neighbors, horizon, dsafe) {
+  const relP = new THREE.Vector3();
+  const relV = new THREE.Vector3();
+  for (const other of neighbors) {
+    if (other === drone) continue;
+    relP.copy(other.position).sub(drone.position);
+    if (relP.lengthSq() > 130) continue;
+    const otherVel = other.plan ? other.plan.vel : other.velocity;
+    relV.copy(velocity).sub(otherVel);
+    const relSpeedSq = Math.max(relV.lengthSq(), 0.0001);
+    const tStar = clamp(relP.dot(relV) / relSpeedSq, 0, horizon);
+    const minDistSq = relP.clone().sub(relV.clone().multiplyScalar(tStar)).lengthSq();
+    if (minDistSq < dsafe * dsafe) return true;
+  }
+  return false;
+}
+
+function computeMaderAvoidance(drone, neighbors) {
+  const now = state.elapsed;
+  if (!drone.plan) drone.plan = { vel: drone.desired.clone(), next: 0 };
+  const horizon = 2.2;
+  const dsafe = drone.safety * 1.22;
+  const range = getProfile().avoidRange ?? 2.65;
+  const hardRange = drone.safety * 1.5;
+  const away = new THREE.Vector3();
+  let nearest = Number.POSITIVE_INFINITY;
+  for (const other of neighbors) {
+    if (other === drone) continue;
+    away.copy(drone.position).sub(other.position);
+    const distance = away.length();
+    if (distance < 0.001) continue;
+    nearest = Math.min(nearest, distance);
+    if (distance < range) drone.neighborCount += 1;
+    if (distance < hardRange) {
+      drone.avoidance.addScaledVector(away.normalize(), ((hardRange - distance) / hardRange) * 3.2);
+    }
+  }
+  if (now >= drone.plan.next) {
+    const base = drone.desired;
+    const options = [
+      base.clone(),
+      rotatedAroundY(base, 0.5),
+      rotatedAroundY(base, -0.5),
+      base.clone().add(new THREE.Vector3(0, drone.speed * 0.4, 0)),
+      base.clone().add(new THREE.Vector3(0, -drone.speed * 0.4, 0)),
+      base.clone().multiplyScalar(0.55),
+      rotatedAroundY(base, 0.95),
+      rotatedAroundY(base, -0.95),
+      base.clone().multiplyScalar(0.22),
+    ];
+    let committed = false;
+    for (const option of options) {
+      if (!trajectoryConflict(drone, option, neighbors, horizon, dsafe)) {
+        drone.plan.vel.copy(option);
+        committed = true;
+        break;
+      }
+    }
+    if (!committed) drone.plan.vel.multiplyScalar(0.6);
+    drone.plan.next = now + 0.3 + (drone.id % 7) * 0.05;
+  } else if (trajectoryConflict(drone, drone.plan.vel, neighbors, horizon * 0.7, dsafe * 0.92)) {
+    drone.plan.vel.multiplyScalar(0.85);
+  }
+  drone.avoidance.add(drone.plan.vel.clone().sub(drone.desired));
+  return nearest;
+}
+
+function computeEgoAvoidance(drone, neighbors) {
+  const profile = getProfile();
+  const horizon = 1.9;
+  const dsafe = drone.safety * 1.3;
+  const range = profile.avoidRange ?? 2.55;
+  let nearest = Number.POSITIVE_INFINITY;
+  const correction = new THREE.Vector3();
+  const desiredDir =
+    drone.desired.lengthSq() > 0.0001 ? drone.desired.clone().normalize() : new THREE.Vector3(1, 0, 0);
+  const relP = new THREE.Vector3();
+  const relV = new THREE.Vector3();
+  const minVec = new THREE.Vector3();
+  for (const other of neighbors) {
+    if (other === drone) continue;
+    relP.copy(other.position).sub(drone.position);
+    const distance = relP.length();
+    if (distance < 0.001) continue;
+    nearest = Math.min(nearest, distance);
+    if (distance < range) drone.neighborCount += 1;
+    relV.copy(drone.desired).sub(other.velocity);
+    const relSpeedSq = Math.max(relV.lengthSq(), 0.0001);
+    const tStar = clamp(relP.dot(relV) / relSpeedSq, 0, horizon);
+    minVec.copy(relP).sub(relV.clone().multiplyScalar(tStar));
+    const minDist = minVec.length();
+    if (minDist >= dsafe) continue;
+    const away = minDist > 0.001 ? minVec.clone().multiplyScalar(-1 / minDist) : new THREE.Vector3(-desiredDir.z, 0.15, desiredDir.x);
+    away.addScaledVector(desiredDir, -away.dot(desiredDir));
+    if (away.lengthSq() < 0.0001) {
+      away.set(-desiredDir.z, 0.15, desiredDir.x).multiplyScalar(drone.id % 2 === 0 ? 1 : -1);
+    }
+    const strength = (dsafe - minDist) / dsafe;
+    correction.addScaledVector(away.normalize(), strength * 2.7);
+    correction.addScaledVector(desiredDir, -strength * 0.55);
+  }
+  const predicted = drone.position.clone().addScaledVector(drone.desired, 0.7);
+  const clearance = sampleEsdf(predicted);
+  const margin = (profile.obstacleMargin ?? 2.9) * 0.6;
+  if (clearance < margin) {
+    const gradient = esdfGradient(predicted, relP);
+    correction.addScaledVector(gradient, (margin - clearance) * 2.1);
+  }
+  drone.avoidance.add(correction);
+  return nearest;
+}
+
+function computeOlfatiSaberForces(drone, neighbors) {
+  const profile = getProfile();
+  const eps = 0.1;
+  const h = 0.25;
+  const a = 1.6;
+  const b = 5.5;
+  const c = Math.abs(a - b) / Math.sqrt(4 * a * b);
+  const range = profile.perceptionRadius ?? 6.6;
+  const spacing = (profile.avoidRange ?? 3.25) * 0.82;
+  const sigmaNorm = (z) => (Math.sqrt(1 + eps * z * z) - 1) / eps;
+  const bump = (s) => (s < h ? 1 : s > 1 ? 0 : 0.5 * (1 + Math.cos((Math.PI * (s - h)) / (1 - h))));
+  const sigma1 = (z) => z / Math.sqrt(1 + z * z);
+  const phi = (z) => 0.5 * ((a + b) * sigma1(z + c) + (a - b));
+  const rSigma = sigmaNorm(range);
+  const dSigma = sigmaNorm(spacing);
+  let nearest = Number.POSITIVE_INFINITY;
+  let count = 0;
+  const gradient = new THREE.Vector3();
+  const consensus = new THREE.Vector3();
+  const qij = new THREE.Vector3();
+  const dv = new THREE.Vector3();
+  for (const other of neighbors) {
+    if (other === drone) continue;
+    qij.copy(other.position).sub(drone.position);
+    const distance = qij.length();
+    if (distance < 0.001) continue;
+    nearest = Math.min(nearest, distance);
+    if (distance > range) continue;
+    drone.neighborCount += 1;
+    count += 1;
+    const sig = sigmaNorm(distance);
+    const adjacency = bump(sig / rSigma);
+    const scale = (phi(sig - dSigma) * adjacency) / Math.sqrt(1 + eps * distance * distance);
+    gradient.addScaledVector(qij, scale);
+    dv.copy(other.velocity).sub(drone.velocity);
+    consensus.addScaledVector(dv, adjacency);
+    const shell = spacing * 0.78;
+    if (distance < shell) {
+      const urgency = (shell - distance) / shell;
+      drone.avoidance.addScaledVector(qij, (-(urgency * urgency) * 8) / distance);
+    }
+  }
+  if (count > 1) {
+    gradient.multiplyScalar(1 / Math.max(1, count * 0.35));
+    consensus.multiplyScalar(1 / Math.max(1, count * 0.35));
+  }
+  if (gradient.length() > 5.5) gradient.setLength(5.5);
+  drone.avoidance.addScaledVector(gradient, 1.15);
+  drone.avoidance.addScaledVector(consensus, 0.8);
+  return nearest;
+}
+
+function computeVasarhelyiForces(drone, neighbors) {
+  const profile = getProfile();
+  const rRep = profile.avoidRange ?? 3.0;
+  const pRep = 1.4;
+  const rFrict = 4.1;
+  const cFrict = 0.5;
+  const vFrict = 0.32;
+  const pFrict = 3.2;
+  const aFrict = 2.1;
+  const braking = (r, aa, pp) => {
+    const rp = r * pp;
+    if (rp <= 0) return 0;
+    if (rp <= aa / pp) return rp;
+    return Math.sqrt(Math.max(0, 2 * aa * r - (aa * aa) / (pp * pp)));
+  };
+  let nearest = Number.POSITIVE_INFINITY;
+  const rep = new THREE.Vector3();
+  const frict = new THREE.Vector3();
+  const offset = new THREE.Vector3();
+  const dv = new THREE.Vector3();
+  for (const other of neighbors) {
+    if (other === drone) continue;
+    offset.copy(drone.position).sub(other.position);
+    const distance = offset.length();
+    if (distance < 0.001) continue;
+    nearest = Math.min(nearest, distance);
+    if (distance > 8) continue;
+    if (distance < rRep) {
+      drone.neighborCount += 1;
+      rep.addScaledVector(offset, (pRep * (rRep - distance)) / distance);
+    }
+    dv.copy(other.velocity).sub(drone.velocity);
+    const vDiff = dv.length();
+    const vMax = Math.max(vFrict, braking(distance - rFrict, aFrict, pFrict));
+    if (vDiff > vMax) {
+      frict.addScaledVector(dv, (cFrict * (vDiff - vMax)) / vDiff);
+    }
+  }
+  drone.avoidance.add(rep).add(frict);
+  return nearest;
+}
+
+function computeGlasPolicy(drone, neighbors) {
+  const profile = getProfile();
+  const radius = (profile.avoidRange ?? 2.35) * 2.1;
+  let nearest = Number.POSITIVE_INFINITY;
+  const aggregate = new THREE.Vector3();
+  const offset = new THREE.Vector3();
+  const dv = new THREE.Vector3();
+  for (const other of neighbors) {
+    if (other === drone) continue;
+    offset.copy(drone.position).sub(other.position);
+    const distance = offset.length();
+    if (distance < 0.001) continue;
+    nearest = Math.min(nearest, distance);
+    if (distance > radius) continue;
+    drone.neighborCount += 1;
+    const w = (1 - distance / radius) ** 2;
+    aggregate.addScaledVector(offset, (w * 2.7) / distance);
+    dv.copy(other.velocity).sub(drone.velocity);
+    aggregate.addScaledVector(dv, w * 0.3);
+  }
+  const policy = drone.desired.clone().multiplyScalar(0.9).add(aggregate);
+  if (policy.length() > drone.speed * 1.25) policy.setLength(drone.speed * 1.25);
+  const clearance = sampleEsdf(drone.position);
+  const proximity = Math.min(nearest / (drone.safety * 1.7), clearance / 1.25);
+  const lambda = clamp(1 - proximity, 0, 1) ** 2;
+  if (lambda > 0.01) {
+    const backup = aggregate.clone().multiplyScalar(1.6).addScaledVector(drone.velocity, -0.4);
+    esdfGradient(drone.position, offset);
+    backup.addScaledVector(offset, clamp(1.25 - clearance, 0, 1.25) * 2.2);
+    policy.multiplyScalar(1 - lambda).addScaledVector(backup, lambda);
+  }
+  drone.policy.copy(policy);
+  drone.avoidance.add(policy.sub(drone.desired));
+  return nearest;
+}
+
+function computePrimalPolicy(drone, neighbors) {
+  const profile = getProfile();
+  const range = profile.avoidRange ?? 2.25;
+  const away = new THREE.Vector3();
+  let nearest = Number.POSITIVE_INFINITY;
+  for (const other of neighbors) {
+    if (other === drone) continue;
+    away.copy(drone.position).sub(other.position);
+    const distance = away.length();
+    if (distance < 0.001) continue;
+    nearest = Math.min(nearest, distance);
+    if (distance < range) {
+      drone.neighborCount += 1;
+      const urgency = (range - distance) / range;
+      drone.avoidance.addScaledVector(away.normalize(), urgency * urgency * 2.4);
+    }
+  }
+  if (drone.actionUntil === undefined) drone.actionUntil = -1;
+  if (state.elapsed >= drone.actionUntil) {
+    const bucket = Math.floor(state.elapsed / 0.24);
+    const target = new THREE.Vector3();
+    const predicted = new THREE.Vector3();
+    let bestScore = Number.POSITIVE_INFINITY;
+    let bestDir = null;
+    for (let oi = 0; oi <= neighborOffsets.length; oi += 1) {
+      const unit = oi < neighborOffsets.length ? offsetUnits[oi] : null;
+      target.copy(drone.position);
+      if (unit) {
+        target.addScaledVector(unit, 1.25);
+        if (isWorldBlocked(target, 0.6)) continue;
+      }
+      let score = distanceFieldAt(target) + (unit ? 0 : 0.6);
+      for (const other of neighbors) {
+        if (other === drone) continue;
+        predicted.copy(other.position).addScaledVector(other.velocity, 0.4);
+        if (predicted.distanceTo(target) < 1.4) score += 3.2;
+      }
+      score += Math.sin(drone.id * 12.9898 + bucket * 78.233 + oi * 37.719) * 0.3;
+      if (score < bestScore) {
+        bestScore = score;
+        bestDir = unit;
+      }
+    }
+    if (!drone.actionDir) drone.actionDir = new THREE.Vector3();
+    if (bestDir) drone.actionDir.copy(bestDir).multiplyScalar(drone.speed * 0.95);
+    else drone.actionDir.set(0, 0, 0);
+    drone.actionUntil = state.elapsed + 0.24;
+  }
+  if (drone.actionDir) {
+    drone.desired.copy(drone.actionDir);
+    drone.policy.copy(drone.actionDir);
+  }
+  return nearest;
+}
+
+function computeCbfFilter(drone, neighbors) {
+  const profile = getProfile();
+  const alpha = 2.3;
+  const range = profile.avoidRange ?? 2.55;
+  const filtered = drone.desired.clone();
+  const p = new THREE.Vector3();
+  let nearest = Number.POSITIVE_INFINITY;
+  for (let pass = 0; pass < 2; pass += 1) {
+    for (const other of neighbors) {
+      if (other === drone) continue;
+      p.copy(drone.position).sub(other.position);
+      const distance = p.length();
+      if (distance < 0.001) continue;
+      if (pass === 0) {
+        nearest = Math.min(nearest, distance);
+        if (distance < range) drone.neighborCount += 1;
+      }
+      if (distance > 7) continue;
+      const ds = (drone.safety + other.safety) * 0.58;
+      const hval = distance * distance - ds * ds;
+      const rhs = -alpha * hval + 2 * p.dot(other.velocity);
+      const lhs = 2 * p.dot(filtered);
+      if (lhs < rhs) {
+        filtered.addScaledVector(p, (rhs - lhs) / (2 * distance * distance));
+      }
+    }
+    for (const obstacle of state.obstacles) {
+      const closest = closestPointOnObstacle(drone.position, obstacle);
+      p.copy(drone.position).sub(closest);
+      const distance = p.length();
+      if (distance < 0.001 || distance > 4.5) continue;
+      const hval = distance * distance - 1;
+      const rhs = -alpha * hval;
+      const lhs = 2 * p.dot(filtered);
+      if (lhs < rhs) {
+        filtered.addScaledVector(p, (rhs - lhs) / (2 * distance * distance));
+      }
+    }
+  }
+  drone.policy.copy(filtered);
+  drone.avoidance.add(filtered.sub(drone.desired));
+  return nearest;
+}
+
+function computeRlSafetyLayerPolicy(drone, neighbors) {
+  const profile = getProfile();
+  const range = profile.avoidRange ?? 2.4;
+  let nearest = Number.POSITIVE_INFINITY;
+  const base = drone.desired.clone();
+  const wave = new THREE.Vector3(
+    Math.sin(state.elapsed * 1.8 + drone.id * 0.77),
+    Math.sin(state.elapsed * 1.1 + drone.id * 0.31) * 0.35,
+    Math.cos(state.elapsed * 1.6 + drone.id * 0.53),
+  ).multiplyScalar(drone.speed * 0.22);
+  const action = base.clone().add(wave);
+  const options = [
+    action,
+    base.clone(),
+    base.clone().multiplyScalar(0.62),
+    rotatedAroundY(base, 0.55),
+    rotatedAroundY(base, -0.55),
+    base.clone().add(new THREE.Vector3(0, drone.speed * 0.36, 0)),
+    base.clone().add(new THREE.Vector3(0, -drone.speed * 0.28, 0)),
+  ];
+  let best = options[0];
+  let bestCost = Number.POSITIVE_INFINITY;
+  for (const option of options) {
+    if (option.length() > drone.speed * 1.12) option.setLength(drone.speed * 1.12);
+    let cost = option.distanceToSquared(action) * 0.35 + option.distanceToSquared(base) * 0.18;
+    for (const horizon of [0.45, 0.9, 1.35]) {
+      const predicted = drone.position.clone().addScaledVector(option, horizon);
+      if (isWorldBlocked(predicted, 0.92)) cost += 80;
+      for (const other of neighbors) {
+        if (other === drone) continue;
+        const distance = drone.position.distanceTo(other.position);
+        if (distance < 0.001) continue;
+        nearest = Math.min(nearest, distance);
+        if (distance < range) drone.neighborCount += 1;
+        const otherPredicted = other.position.clone().addScaledVector(other.velocity, horizon);
+        const gap = predicted.distanceTo(otherPredicted);
+        const safe = drone.safety + other.safety + 0.35;
+        if (gap < safe) cost += (safe - gap) * (safe - gap) * 34;
+      }
+    }
+    if (cost < bestCost) {
+      bestCost = cost;
+      best = option.clone();
+    }
+  }
+  drone.policy.copy(best);
+  drone.avoidance.add(best.sub(drone.desired));
+  return nearest;
+}
+const e05Net = { W1: null, W2: null };
+
+function ensureE05Net() {
+  if (e05Net.W1) return;
+  const rng = createRng(20260705);
+  const w1 = new Float32Array(24 * 16);
+  for (let i = 0; i < w1.length; i += 1) w1[i] = (rng() * 2 - 1) * 0.65;
+  const w2 = new Float32Array(16 * 3);
+  for (let i = 0; i < w2.length; i += 1) w2[i] = (rng() * 2 - 1) * 0.65;
+  e05Net.W1 = w1;
+  e05Net.W2 = w2;
+}
+
+function computeE2eRlPolicy(drone, neighbors) {
+  ensureE05Net();
+  const profile = getProfile();
+  const range = profile.avoidRange ?? 2.2;
+  const away = new THREE.Vector3();
+  let nearest = Number.POSITIVE_INFINITY;
+  const closest = [];
+  for (const other of neighbors) {
+    if (other === drone) continue;
+    const distance = drone.position.distanceTo(other.position);
+    if (distance < 0.001) continue;
+    nearest = Math.min(nearest, distance);
+    if (distance < range) {
+      drone.neighborCount += 1;
+      away.copy(drone.position).sub(other.position);
+      drone.avoidance.addScaledVector(away.normalize(), ((range - distance) / range) ** 2 * 3.4);
+    }
+    closest.push({ other, distance });
+  }
+  closest.sort((left, right) => left.distance - right.distance);
+  const obs = new Float32Array(24);
+  const desiredDir =
+    drone.desired.lengthSq() > 0.0001 ? drone.desired.clone().normalize() : new THREE.Vector3(1, 0, 0);
+  obs[0] = desiredDir.x;
+  obs[1] = desiredDir.y;
+  obs[2] = desiredDir.z;
+  obs[3] = drone.velocity.x / 4;
+  obs[4] = drone.velocity.y / 4;
+  obs[5] = drone.velocity.z / 4;
+  for (let k = 0; k < 3; k += 1) {
+    const entry = closest[k];
+    if (!entry) continue;
+    const base = 6 + k * 6;
+    obs[base] = (entry.other.position.x - drone.position.x) / 6;
+    obs[base + 1] = (entry.other.position.y - drone.position.y) / 6;
+    obs[base + 2] = (entry.other.position.z - drone.position.z) / 6;
+    obs[base + 3] = (entry.other.velocity.x - drone.velocity.x) / 4;
+    obs[base + 4] = (entry.other.velocity.y - drone.velocity.y) / 4;
+    obs[base + 5] = (entry.other.velocity.z - drone.velocity.z) / 4;
+  }
+  const hidden = new Float32Array(16);
+  for (let hIdx = 0; hIdx < 16; hIdx += 1) {
+    let sum = 0;
+    for (let iIdx = 0; iIdx < 24; iIdx += 1) sum += e05Net.W1[hIdx * 24 + iIdx] * obs[iIdx];
+    hidden[hIdx] = Math.tanh(sum);
+  }
+  const dv = new THREE.Vector3();
+  for (let oIdx = 0; oIdx < 3; oIdx += 1) {
+    let sum = 0;
+    for (let hIdx = 0; hIdx < 16; hIdx += 1) sum += e05Net.W2[oIdx * 16 + hIdx] * hidden[hIdx];
+    dv.setComponent(oIdx, Math.tanh(sum) * drone.speed * 0.45);
+  }
+  const policy = drone.desired.clone().add(dv);
+  if (policy.length() > drone.speed * 1.15) policy.setLength(drone.speed * 1.15);
+  drone.policy.copy(policy);
+  drone.avoidance.add(policy.sub(drone.desired));
+  return nearest;
+}
+
 function computeSwarmAvoidance(drone, neighbors) {
   if (isAlgorithm("C01")) return computeVelocityObstacleAvoidance(drone, neighbors, "orca");
+  if (isAlgorithm("C02")) return computeVelocityObstacleAvoidance(drone, neighbors, "rvo");
   if (isAlgorithm("C08")) return computeVelocityObstacleAvoidance(drone, neighbors, "hrvo");
-  if (isAlgorithm("D02", "D03", "D04")) return computeBoidsForces(drone, neighbors);
+  if (isAlgorithm("C03")) return computeBvcAvoidance(drone, neighbors);
+  if (isAlgorithm("C04")) return computeDmpcAvoidance(drone, neighbors);
+  if (isAlgorithm("C05")) return computeMaderAvoidance(drone, neighbors);
+  if (isAlgorithm("C06")) return computeEgoAvoidance(drone, neighbors);
+  if (isAlgorithm("D01")) return computeApfForces(drone, neighbors);
+  if (isAlgorithm("D02")) return computeBoidsForces(drone, neighbors);
+  if (isAlgorithm("D03")) return computeOlfatiSaberForces(drone, neighbors);
+  if (isAlgorithm("D04")) return computeVasarhelyiForces(drone, neighbors);
   if (isAlgorithm("D05")) return computeSocialForceInteractions(drone, neighbors);
+  if (isAlgorithm("E01")) return computeGlasPolicy(drone, neighbors);
+  if (isAlgorithm("E02")) return computePrimalPolicy(drone, neighbors);
+  if (isAlgorithm("E03")) return computeCbfFilter(drone, neighbors);
+  if (isAlgorithm("E04")) return computeRlSafetyLayerPolicy(drone, neighbors);
+  if (isAlgorithm("E05")) return computeE2eRlPolicy(drone, neighbors);
 
   let nearest = Number.POSITIVE_INFINITY;
   const profile = getProfile();
@@ -1436,6 +3599,12 @@ function computeSwarmAvoidance(drone, neighbors) {
 function computeObstacleAvoidance(drone) {
   if (isAlgorithm("D05")) {
     computeSocialObstacleForces(drone);
+    return;
+  }
+
+  if (isAlgorithm("E03")) {
+    if (drone.position.y < 1.45) drone.avoidance.y += (1.45 - drone.position.y) * 4;
+    if (drone.position.y > 14.4) drone.avoidance.y -= (drone.position.y - 14.4) * 4;
     return;
   }
 
@@ -1523,6 +3692,285 @@ function applyModeForces(drone, neighbors, dt) {
   if (state.mode === "optimize") {
     drone.desired.lerp(drone.velocity.clone(), Math.min(0.16, dt * 1.4));
   }
+}
+
+// ===== Centralized coordination (F-family) =====
+
+function droneScheduleKeys(drone, extraDelay, dt) {
+  const keys = [];
+  if (!drone.cells || drone.cells.length < 2 || drone.cells.length !== drone.rawPath.length) return keys;
+  let time = drone.startDelay + extraDelay;
+  const speed = Math.max(0.6, drone.speed * 0.88);
+  for (let i = 0; i < drone.cells.length; i += 1) {
+    if (i > 0) time += drone.rawPath[i].distanceTo(drone.rawPath[i - 1]) / speed;
+    keys.push(drone.cells[i].index * 4096 + Math.min(4095, Math.floor(time / dt)));
+  }
+  return keys;
+}
+
+function scheduleWithReservations(order, pad, dt) {
+  const reserved = new Set();
+  for (const drone of order) {
+    let shift = 0;
+    for (; shift < 55; shift += 1) {
+      const keys = droneScheduleKeys(drone, shift * dt, dt);
+      let conflict = false;
+      for (const key of keys) {
+        for (let p = -pad; p <= pad && !conflict; p += 1) {
+          if (reserved.has(key + p)) conflict = true;
+        }
+        if (conflict) break;
+      }
+      if (!conflict) break;
+    }
+    drone.startDelay += shift * dt;
+    for (const key of droneScheduleKeys(drone, 0, dt)) {
+      for (let p = -pad; p <= pad; p += 1) reserved.add(key + p);
+    }
+  }
+}
+
+function scheduleCbsLite(dt) {
+  const drones = state.drones;
+  const rounds = state.count > 300 ? 140 : 340;
+  for (let round = 0; round < rounds; round += 1) {
+    const occupancy = new Map();
+    let conflictPair = null;
+    let conflictBucket = Number.POSITIVE_INFINITY;
+    for (const drone of drones) {
+      for (const key of droneScheduleKeys(drone, 0, dt)) {
+        const existing = occupancy.get(key);
+        if (existing !== undefined && existing !== drone.id) {
+          const bucket = key % 4096;
+          if (bucket < conflictBucket) {
+            conflictBucket = bucket;
+            conflictPair = [drones[existing], drone];
+          }
+        } else {
+          occupancy.set(key, drone.id);
+        }
+      }
+    }
+    if (!conflictPair) break;
+    const [a, b] = conflictPair;
+    const lenA = a.cells ? a.cells.length : 0;
+    const lenB = b.cells ? b.cells.length : 0;
+    (lenA <= lenB ? a : b).startDelay += dt;
+  }
+}
+
+function scpDeconflict() {
+  const drones = state.drones;
+  if (drones.length < 2) return;
+  const heavy = state.count > 300;
+  const steps = heavy ? 30 : 44;
+  const dtT = 0.5;
+  const iterations = heavy ? 7 : 14;
+  const dsep = 1.85;
+  const trajs = drones.map((drone) => {
+    const path = drone.path;
+    const cum = [0];
+    for (let i = 1; i < path.length; i += 1) cum.push(cum[i - 1] + path[i].distanceTo(path[i - 1]));
+    const total = cum[cum.length - 1];
+    const speed = Math.max(0.8, drone.speed * 0.9);
+    const pts = [];
+    let seg = 1;
+    for (let t = 0; t < steps; t += 1) {
+      const dist = Math.min(total, t * dtT * speed);
+      while (seg < path.length - 1 && cum[seg] < dist) seg += 1;
+      const span = Math.max(0.0001, cum[seg] - cum[seg - 1]);
+      const alpha = clamp((dist - cum[seg - 1]) / span, 0, 1);
+      pts.push(path[seg - 1].clone().lerp(path[seg], alpha));
+    }
+    return pts;
+  });
+  const gradient = new THREE.Vector3();
+  for (let iter = 0; iter < iterations; iter += 1) {
+    for (let t = 1; t < steps; t += 1) {
+      const buckets = new Map();
+      for (let i = 0; i < trajs.length; i += 1) {
+        const p = trajs[i][t];
+        const key = `${Math.floor(p.x / 3.2)},${Math.floor(p.y / 3.2)},${Math.floor(p.z / 3.2)}`;
+        let bucket = buckets.get(key);
+        if (!bucket) {
+          bucket = [];
+          buckets.set(key, bucket);
+        }
+        bucket.push(i);
+      }
+      for (const bucket of buckets.values()) {
+        for (let aIdx = 0; aIdx < bucket.length; aIdx += 1) {
+          for (let bIdx = aIdx + 1; bIdx < bucket.length; bIdx += 1) {
+            const pa = trajs[bucket[aIdx]][t];
+            const pb = trajs[bucket[bIdx]][t];
+            gradient.copy(pa).sub(pb);
+            const d = gradient.length();
+            if (d > dsep || d < 0.0001) continue;
+            gradient.multiplyScalar(((dsep - d) * 0.3) / d);
+            pa.add(gradient);
+            pb.sub(gradient);
+          }
+        }
+      }
+    }
+    for (const pts of trajs) {
+      for (let t = 1; t < steps - 1; t += 1) {
+        const p = pts[t];
+        p.x += ((pts[t - 1].x + pts[t + 1].x) / 2 - p.x) * 0.24;
+        p.y += ((pts[t - 1].y + pts[t + 1].y) / 2 - p.y) * 0.24;
+        p.z += ((pts[t - 1].z + pts[t + 1].z) / 2 - p.z) * 0.24;
+        const clearance = sampleEsdf(p);
+        if (clearance < 0.9) {
+          esdfGradient(p, gradient);
+          p.addScaledVector(gradient, (0.9 - clearance) * 0.5);
+        }
+        p.y = clamp(p.y, 1.2, 15);
+      }
+    }
+  }
+  for (const pts of trajs) {
+    for (let pass = 0; pass < 3; pass += 1) {
+      for (const p of pts) {
+        const clearance = sampleEsdf(p);
+        if (clearance < 0.6) {
+          esdfGradient(p, gradient);
+          p.addScaledVector(gradient, 0.6 - clearance);
+          p.y = clamp(p.y, 1.2, 15);
+        }
+      }
+    }
+  }
+  drones.forEach((drone, i) => {
+    drone.path = trajs[i];
+    drone.waypoint = 1;
+    drone.speedScale = null;
+  });
+}
+
+function auctionAssign() {
+  const grid = state.grid;
+  const candidates = [];
+  for (let y = 1; y < grid.ny - 1; y += 1) {
+    for (let z = 3; z < grid.nz - 3; z += 1) {
+      const x = grid.nx - 3;
+      const index = grid.index(x, y, z);
+      if (grid.passable[index] && Number.isFinite(state.distance[index])) {
+        candidates.push({ x, y, z, index, point: grid.cellToWorld(x, y, z) });
+      }
+    }
+  }
+  if (!candidates.length) return;
+  const drones = state.drones;
+  const baseCount = candidates.length;
+  for (let i = 0; candidates.length < drones.length; i += 1) {
+    candidates.push(candidates[i % baseCount]);
+  }
+  const m = candidates.length;
+  const price = new Float64Array(m);
+  const owner = new Int32Array(m).fill(-1);
+  const assignment = new Int32Array(drones.length).fill(-1);
+  const costOf = (drone, goal) => {
+    const p = drone.position;
+    const q = goal.point;
+    return Math.hypot(q.x - p.x, (q.y - p.y) * 1.25, q.z - p.z);
+  };
+  const queue = drones.map((_, i) => i);
+  const eps = 0.3;
+  let guard = drones.length * 40;
+  while (queue.length && guard-- > 0) {
+    const di = queue.shift();
+    const drone = drones[di];
+    let best = -1;
+    let bestValue = -Infinity;
+    let second = -Infinity;
+    for (let j = 0; j < m; j += 1) {
+      const value = -costOf(drone, candidates[j]) - price[j];
+      if (value > bestValue) {
+        second = bestValue;
+        bestValue = value;
+        best = j;
+      } else if (value > second) {
+        second = value;
+      }
+    }
+    if (best < 0) break;
+    price[best] += bestValue - (Number.isFinite(second) ? second : bestValue) + eps;
+    if (owner[best] >= 0) {
+      assignment[owner[best]] = -1;
+      queue.push(owner[best]);
+    }
+    owner[best] = di;
+    assignment[di] = best;
+  }
+  for (let i = 0; i < drones.length; i += 1) {
+    if (assignment[i] >= 0) continue;
+    let best = 0;
+    let bestCost = Number.POSITIVE_INFINITY;
+    for (let j = 0; j < m; j += 1) {
+      const cost = costOf(drones[i], candidates[j]) + (owner[j] >= 0 ? 3 : 0);
+      if (cost < bestCost) {
+        bestCost = cost;
+        best = j;
+      }
+    }
+    assignment[i] = best;
+  }
+  const detailed = state.count <= 300;
+  for (const drone of drones) {
+    const goal = candidates[assignment[drone.id]];
+    if (!goal) continue;
+    let route = null;
+    if (detailed) {
+      const startCell = nearestFreeCell(grid.worldToCell(drone.position), false);
+      const cells = planGridAStar(startCell, new Set([goal.index]), goal);
+      if (cells && cells.length > 1) route = routeFromCells(cells);
+    }
+    if (route) {
+      drone.path = route.smooth.map((point) => point.clone());
+      drone.rawPath = route.raw.map((point) => point.clone());
+      drone.cells = route.cells;
+    } else {
+      const startPoint = drone.position.clone();
+      const mid = startPoint.clone().lerp(goal.point, 0.5);
+      let clear = false;
+      for (let lift = 0; lift < 9; lift += 1) {
+        if (!segmentBlocked(startPoint, mid, 0.5) && !segmentBlocked(mid, goal.point, 0.5)) {
+          clear = true;
+          break;
+        }
+        mid.y = Math.min(14.2, mid.y + 1.5);
+      }
+      if (clear) {
+        const raw = [startPoint, mid, goal.point.clone()];
+        drone.path = densifyPolyline(raw, 1.2);
+        drone.rawPath = raw;
+      } else {
+        const fallback = tracePathFromCell(nearestFreeCell(grid.worldToCell(drone.position), true));
+        drone.path = fallback.smooth.map((point) => point.clone());
+        drone.rawPath = fallback.raw.map((point) => point.clone());
+        drone.cells = fallback.cells;
+      }
+    }
+    drone.waypoint = 1;
+    drone.speedScale = null;
+  }
+}
+
+function coordinateCentral() {
+  const dt = 0.45;
+  if (isAlgorithm("C07")) {
+    const order = [...state.drones].sort((a, b) => a.startDelay - b.startDelay || a.id - b.id);
+    scheduleWithReservations(order, 1, dt);
+    return;
+  }
+  if (state.mode !== "central") return;
+  if (isAlgorithm("F01")) scheduleWithReservations([...state.drones], 0, dt);
+  else if (isAlgorithm("F02")) scheduleCbsLite(dt);
+  else if (isAlgorithm("F03")) {
+    const order = [...state.drones].sort((a, b) => (b.cells?.length ?? 0) - (a.cells?.length ?? 0));
+    scheduleWithReservations(order, 1, dt);
+  } else if (isAlgorithm("F04")) scpDeconflict();
+  else if (isAlgorithm("F05")) auctionAssign();
 }
 
 function integrateDrone(drone, dt) {
@@ -1757,6 +4205,7 @@ function selectAlgorithm(algorithmId, regenerate = true) {
   state.mode = algorithm.mode;
   syncFamilyButtons();
   renderAlgorithmButtons();
+  renderAlgorithmInfo();
   if (changedMode || regenerate) {
     spawnDrones();
     updateModeVisuals();
@@ -1796,6 +4245,15 @@ function bindUi() {
   ui.resetButton.addEventListener("click", () => {
     resetScene();
   });
+
+  const infoPanel = document.querySelector("#infoPanel");
+  const infoToggle = document.querySelector("#infoToggle");
+  if (infoPanel && infoToggle) {
+    infoToggle.addEventListener("click", () => {
+      infoPanel.classList.toggle("collapsed");
+    });
+    if (window.innerWidth < 1150) infoPanel.classList.add("collapsed");
+  }
 
   document.querySelector("#togglePaths").addEventListener("change", (event) => {
     state.showPaths = event.target.checked;
@@ -1838,6 +4296,7 @@ function bindUi() {
 }
 
 bindUi();
+renderAlgorithmInfo();
 resetScene();
 resize();
 window.addEventListener("resize", resize);
@@ -1855,3 +4314,7 @@ window.search3DLab = {
 };
 window.__search3dReady = true;
 requestAnimationFrame(animate);
+
+
+
+

@@ -1,4 +1,4 @@
-# 100pathfinding-algorithms
+﻿# 100pathfinding-algorithms
 
 [![CI](https://github.com/bailehang/100pathfinding-algorithms/actions/workflows/ci.yml/badge.svg)](https://github.com/bailehang/100pathfinding-algorithms/actions/workflows/ci.yml)
 
@@ -14,6 +14,24 @@ I am very interested in further summarizing all the pathfinding algorithms.
 IMPLEMENTED   [####################] 100%   100/100
 DEMO GIF      [####################] 100%   100/100
 ```
+
+## 3D 空中算法进度 (3D Aerial Algorithms Status)
+
+**更新时间：2026-07-05**
+
+该部分对应 `Search_3D/` 的 Three.js 3D 群体无人机寻路与避让展示，覆盖全局搜索 / 采样、轨迹优化、分布式避让、反应式场方法、学习类与集中式协调等 37 个 3D 空中算法编号。
+
+**当前进度：37 个 3D 空中算法条目已建档，其中 37 个已实现、0 个未实现。**
+
+```text
+3D IMPLEMENTED      [####################] 100%   37/37
+3D NOT IMPLEMENTED  [--------------------]   0%    0/37
+```
+
+| 状态 | 数量 | 代表算法 |
+|---|---:|---|
+| 已实现 | 37 | A01-A08、B01-B06、C01-C08、D01-D05、E01-E05、F01-F05 |
+| 未实现 | 0 | - |
 
 ## Contents
 
@@ -622,11 +640,12 @@ pip install -r requirements.txt pytest
 pytest tests/
 ```
 
-`tools/check_readme_status.py` 校验本 README 的状态表与磁盘上的文件（实现与演示 GIF）保持一致 /
-checks that the status tables above stay consistent with the files on disk:
+`tools/check_readme_status.py` 校验本 README 的 2D 状态表与磁盘上的文件（实现与演示 GIF）保持一致；`tools/check_search3d_status.py` 校验 3D 空中算法的根 README 进度、`Search_3D/README.md` 状态表与 `Search_3D/src/main.js` 元数据保持一致 /
+checks that the 2D status tables stay consistent with files on disk, and that the 3D aerial algorithm status metadata stays consistent across README files and source code:
 
 ```bash
 python tools/check_readme_status.py
+python tools/check_search3d_status.py
 ```
 
 GitHub Actions 会在每次 push 与 pull request 时于 Python 3.12 / 3.13 上运行 smoke 测试 /
@@ -674,3 +693,7 @@ the copyright notice, the `LICENSE` file, and the `NOTICE` attribution file as
 required by Apache-2.0.
 
 Required attribution: `100pathfinding-algorithms by bailehang`.
+
+
+
+
