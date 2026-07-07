@@ -144,8 +144,10 @@ http://127.0.0.1:5173/
 也可以手动在 `Search_3D` 目录下启动：
 
 ```powershell
-C:\Users\admin\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe -m http.server 5173 --bind 127.0.0.1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\start_server.ps1 -Port 5173
 ```
+
+启动脚本使用 Windows 自带 PowerShell 静态服务器，不需要安装 Python。如果浏览器显示 `127.0.0.1 拒绝连接 / ERR_CONNECTION_REFUSED`，说明本地服务器没有启动成功。请查看 `3D Swarm Pathfinding Lab Server` 窗口里的报错，常见原因是端口 `5173` 已被占用，或服务器窗口被关闭。
 
 页面使用 CDN 加载 Three.js，需要浏览器可以访问 jsDelivr。
 
